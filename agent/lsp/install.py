@@ -262,7 +262,6 @@ def _install_npm(
             capture_output=True,
             text=True,
             timeout=300,
-            stdin=subprocess.DEVNULL,
         )
         if proc.returncode != 0:
             logger.warning(
@@ -311,7 +310,6 @@ def _install_go(pkg: str, bin_name: str) -> Optional[str]:
             text=True,
             timeout=600,
             env=env,
-            stdin=subprocess.DEVNULL,
         )
         if proc.returncode != 0:
             logger.warning(
@@ -349,7 +347,6 @@ def _install_pip(pkg: str, bin_name: str) -> Optional[str]:
             capture_output=True,
             text=True,
             timeout=300,
-            stdin=subprocess.DEVNULL,
         )
         if proc.returncode != 0:
             logger.warning(

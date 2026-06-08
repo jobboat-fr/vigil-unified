@@ -41,8 +41,7 @@ function resetStores() {
     reason: null,
     requested: false,
     firstRunSkipped: false,
-    manual: false,
-    localEndpoint: false
+    manual: false
   })
 }
 

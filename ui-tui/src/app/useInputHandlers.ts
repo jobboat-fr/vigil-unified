@@ -151,10 +151,6 @@ export function useInputHandlers(ctx: InputHandlerContext): InputHandlerResult {
       return patchOverlayState({ skillsHub: false })
     }
 
-    if (overlay.pluginsHub) {
-      return patchOverlayState({ pluginsHub: false })
-    }
-
     if (overlay.sessions) {
       return patchOverlayState({ sessions: false })
     }

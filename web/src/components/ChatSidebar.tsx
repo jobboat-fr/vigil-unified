@@ -120,11 +120,7 @@ export function ChatSidebar({ channel, className }: ChatSidebarProps) {
         if (cancelled) {
           return;
         }
-        // close_on_disconnect: the gateway reaps this sidecar session (and its
-        // slash_worker subprocess) when the WS drops, instead of leaking it.
-        return gw.request<{ session_id: string }>("session.create", {
-          close_on_disconnect: true,
-        });
+        return gw.request<{ session_id: string }>("session.create", {});
       })
       .then((created) => {
         if (cancelled || !created?.session_id) {
@@ -292,6 +288,24 @@ export function ChatSidebar({ channel, className }: ChatSidebarProps) {
     setVersion((v) => v + 1);
   }, []);
 
+  // Picker hands us a fully-formed slash command (e.g. "/model anthropic/...").
+  // Fire-and-forget through `slash.exec`; the TUI pane will render the result
+  // via PTY, so the sidebar doesn't need to surface output of its own.
+  const onModelSubmit = useCallback(
+    (slashCommand: string) => {
+      if (!sessionId) {
+        return;
+      }
+
+      void gw.request("slash.exec", {
+        session_id: sessionId,
+        command: slashCommand,
+      });
+      setModelOpen(false);
+    },
+    [gw, sessionId],
+  );
+
   const canPickModel = state === "open" && !!sessionId;
   const modelLabel = (info.model ?? "—").split("/").slice(-1)[0] ?? "—";
   const banner = error ?? info.credential_warning ?? null;
@@ -372,6 +386,7 @@ export function ChatSidebar({ channel, className }: ChatSidebarProps) {
           gw={gw}
           sessionId={sessionId}
           onClose={() => setModelOpen(false)}
+          onSubmit={onModelSubmit}
         />
       )}
     </aside>

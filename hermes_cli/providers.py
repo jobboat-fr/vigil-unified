@@ -492,10 +492,7 @@ def get_label(provider_id: str) -> str:
 
 def is_aggregator(provider: str) -> bool:
     """Return True when the provider is a multi-model aggregator."""
-    provider_norm = normalize_provider(provider or "")
-    if provider_norm.startswith("custom:"):
-        return True
-    pdef = get_provider(provider_norm)
+    pdef = get_provider(provider)
     return pdef.is_aggregator if pdef else False
 
 

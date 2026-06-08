@@ -13,7 +13,6 @@ import { Streamdown } from 'streamdown'
 import { HERMES_PATHS_MIME } from '@/app/chat/hooks/use-composer-actions'
 import { PageLoader } from '@/components/page-loader'
 import { translateNow, useI18n } from '@/i18n'
-import { readDesktopFileDataUrl, readDesktopFileText } from '@/lib/desktop-fs'
 import { cn } from '@/lib/utils'
 import type { PreviewTarget } from '@/store/preview'
 
@@ -181,13 +180,15 @@ function looksBinaryBytes(bytes: Uint8Array) {
 }
 
 async function readTextPreview(filePath: string) {
-  try {
-    return await readDesktopFileText(filePath)
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
+  if (window.hermesDesktop.readFileText) {
+    try {
+      return await window.hermesDesktop.readFileText(filePath)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
 
-    if (!message.includes("No handler registered for 'hermes:readFileText'")) {
-      throw error
+      if (!message.includes("No handler registered for 'hermes:readFileText'")) {
+        throw error
+      }
     }
   }
 
@@ -287,7 +288,7 @@ const MARKDOWN_COMPONENTS = {
 
 function MarkdownPreview({ text }: { text: string }) {
   return (
-    <div className="preview-markdown mx-auto max-w-3xl px-4 py-3 text-sm text-foreground" data-selectable-text="true">
+    <div className="preview-markdown mx-auto max-w-3xl px-4 py-3 text-sm text-foreground">
       <Streamdown components={MARKDOWN_COMPONENTS} controls={false} mode="static" parseIncompleteMarkdown={false}>
         {text}
       </Streamdown>
@@ -383,10 +384,7 @@ function SourceView({ filePath, language, text }: { filePath: string; language: 
           )
         })}
       </div>
-      <div
-        className="relative [&_pre]:m-0 [&_pre]:px-3 [&_pre]:py-3 [&_pre]:bg-transparent!"
-        data-selectable-text="true"
-      >
+      <div className="relative [&_pre]:m-0 [&_pre]:px-3 [&_pre]:py-3 [&_pre]:bg-transparent!">
         {selection && (
           <div
             aria-hidden
@@ -448,9 +446,7 @@ export function LocalFilePreview({ reloadKey, target }: { reloadKey: number; tar
 
       try {
         if (isImage) {
-          // Prefer bytes the caller already handed us (a pasted/dropped
-          // screenshot) over re-reading a path that may be transient/unreadable.
-          const dataUrl = target.dataUrl || (await readDesktopFileDataUrl(filePath))
+          const dataUrl = await window.hermesDesktop.readFileDataUrl(filePath)
 
           if (active) {
             setState({ dataUrl, loading: false })
@@ -488,7 +484,7 @@ export function LocalFilePreview({ reloadKey, target }: { reloadKey: number; tar
     return () => {
       active = false
     }
-  }, [blockedByTarget, filePath, forcePreview, isImage, isText, reloadKey, target.dataUrl, target.language])
+  }, [blockedByTarget, filePath, forcePreview, isImage, isText, reloadKey, target.language])
 
   if (state.loading) {
     return <PageLoader label={t.preview.loading} />

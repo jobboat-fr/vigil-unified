@@ -26,7 +26,7 @@ import { Spinner } from "@nous-research/ui/ui/components/spinner";
 import { Stats } from "@nous-research/ui/ui/components/stats";
 import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/components/card";
 import { Badge } from "@nous-research/ui/ui/components/badge";
-import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { ConfirmDialog } from "@nous-research/ui/ui/components/confirm-dialog";
 import { useModalBehavior } from "@/hooks/useModalBehavior";
 import { usePageHeader } from "@/contexts/usePageHeader";
 import { useI18n } from "@/i18n";
@@ -209,16 +209,10 @@ function UseAsMenu({
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [pendingConfirm, setPendingConfirm] = useState<{
-    message: string;
-    scope: "main" | "auxiliary";
-    task: string;
-  } | null>(null);
 
   const assign = async (
     scope: "main" | "auxiliary",
     task: string,
-    confirmExpensiveModel = false,
   ) => {
     if (!provider || !model) {
       setError("Missing provider/model");
@@ -227,23 +221,7 @@ function UseAsMenu({
     setBusy(true);
     setError(null);
     try {
-      const result = await api.setModelAssignment({
-        confirm_expensive_model: confirmExpensiveModel,
-        scope,
-        provider,
-        model,
-        task,
-      });
-      if (result.confirm_required) {
-        setPendingConfirm({
-          scope,
-          task,
-          message:
-            result.confirm_message ||
-            "This model has unusually high known pricing.",
-        });
-        return;
-      }
+      await api.setModelAssignment({ scope, provider, model, task });
       onAssigned();
       setOpen(false);
     } catch (e) {
@@ -332,22 +310,6 @@ function UseAsMenu({
           )}
         </div>
       )}
-      <ConfirmDialog
-        open={!!pendingConfirm}
-        title="Expensive Model Warning"
-        description={pendingConfirm?.message}
-        destructive
-        confirmLabel="Switch anyway"
-        cancelLabel="Cancel"
-        loading={busy}
-        onCancel={() => setPendingConfirm(null)}
-        onConfirm={() => {
-          const pending = pendingConfirm;
-          if (!pending) return;
-          setPendingConfirm(null);
-          void assign(pending.scope, pending.task, true);
-        }}
-      />
     </div>
   );
 }
@@ -657,16 +619,14 @@ function AuxiliaryTasksModal({
               AUX_TASKS.find((t) => t.key === picker.task)?.label ??
               picker.task
             }`}
-            onApply={async ({ provider, model, confirmExpensiveModel }) => {
-              const result = await api.setModelAssignment({
-                confirm_expensive_model: confirmExpensiveModel,
+            onApply={async ({ provider, model }) => {
+              await api.setModelAssignment({
                 scope: "auxiliary",
                 task: picker.task,
                 provider,
                 model,
               });
-              if (!result.confirm_required) onSaved();
-              return result;
+              onSaved();
             }}
             onClose={() => setPicker(null)}
           />
@@ -706,23 +666,14 @@ function ModelSettingsPanel({
     task,
     provider,
     model,
-    confirmExpensiveModel,
   }: {
-    confirmExpensiveModel?: boolean;
     scope: "main" | "auxiliary";
     task: string;
     provider: string;
     model: string;
   }) => {
-    const result = await api.setModelAssignment({
-      confirm_expensive_model: confirmExpensiveModel,
-      scope,
-      task,
-      provider,
-      model,
-    });
-    if (!result.confirm_required) onSaved();
-    return result;
+    await api.setModelAssignment({ scope, task, provider, model });
+    onSaved();
   };
 
   // Count how many aux tasks have overrides
@@ -798,15 +749,14 @@ function ModelSettingsPanel({
             loader={api.getModelOptions}
             alwaysGlobal
             title="Set Main Model"
-            onApply={({ provider, model, confirmExpensiveModel }) =>
-              applyAssignment({
-                confirmExpensiveModel,
+            onApply={async ({ provider, model }) => {
+              await applyAssignment({
                 scope: "main",
                 task: "",
                 provider,
                 model,
-              })
-            }
+              });
+            }}
             onClose={() => setPicker(null)}
           />
         )}

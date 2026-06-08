@@ -240,7 +240,7 @@ export default function PluginsPage() {
               <Input
                 className="font-mono-ui lowercase"
                 id="install-url"
-                placeholder="owner/repo, owner/repo/subdir, or https://..."
+                placeholder="owner/repo or https://..."
                 spellCheck={false}
                 value={installId}
                 onChange={(e) => setInstallId(e.target.value)}

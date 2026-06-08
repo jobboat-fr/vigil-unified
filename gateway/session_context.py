@@ -106,7 +106,6 @@ def set_session_vars(
     user_id: str = "",
     user_name: str = "",
     session_key: str = "",
-    session_id: str = "",
     message_id: str = "",
     cwd: str = "",
 ) -> list:
@@ -128,7 +127,6 @@ def set_session_vars(
         _SESSION_USER_ID.set(user_id),
         _SESSION_USER_NAME.set(user_name),
         _SESSION_KEY.set(session_key),
-        _SESSION_ID.set(session_id),
         _SESSION_MESSAGE_ID.set(message_id),
     ]
     try:
@@ -159,7 +157,6 @@ def clear_session_vars(tokens: list) -> None:
         _SESSION_USER_ID,
         _SESSION_USER_NAME,
         _SESSION_KEY,
-        _SESSION_ID,
         _SESSION_MESSAGE_ID,
     ):
         var.set("")

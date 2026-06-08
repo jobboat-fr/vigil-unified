@@ -103,8 +103,6 @@ export interface ConfigGetValueResponse {
 }
 
 export interface ConfigSetResponse {
-  confirm_message?: string
-  confirm_required?: boolean
   credential_warning?: string
   history_reset?: boolean
   info?: SessionInfo
@@ -569,11 +567,7 @@ export type GatewayEvent =
       session_id?: string
       type: 'clarify.request'
     }
-  | {
-      payload: { allow_permanent?: boolean; command: string; description: string }
-      session_id?: string
-      type: 'approval.request'
-    }
+  | { payload: { command: string; description: string }; session_id?: string; type: 'approval.request' }
   | { payload: { request_id: string }; session_id?: string; type: 'sudo.request' }
   | { payload: { env_var: string; prompt: string; request_id: string }; session_id?: string; type: 'secret.request' }
   | { payload: { task_id: string; text: string }; session_id?: string; type: 'background.complete' }

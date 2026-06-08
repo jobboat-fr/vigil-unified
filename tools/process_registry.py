@@ -472,7 +472,6 @@ class ProcessRegistry:
                     text=True,
                     timeout=10,
                     creationflags=windows_hide_flags(),
-                    stdin=subprocess.DEVNULL,
                 )
             except (FileNotFoundError, subprocess.TimeoutExpired, OSError):
                 try:
@@ -1208,14 +1207,10 @@ class ProcessRegistry:
         if session.exited:
             return {"status": "already_exited", "error": "Process has already finished"}
 
-        # PTY mode -- write through pty handle.
+        # PTY mode -- write through pty handle (expects bytes)
         if hasattr(session, '_pty') and session._pty:
             try:
-                # pywinpty expects str on Windows; ptyprocess expects bytes on POSIX.
-                if _IS_WINDOWS:
-                    pty_data = data.decode("utf-8") if isinstance(data, bytes) else str(data)
-                else:
-                    pty_data = data.encode("utf-8") if isinstance(data, str) else data
+                pty_data = data.encode("utf-8") if isinstance(data, str) else data
                 session._pty.write(pty_data)
                 return {"status": "ok", "bytes_written": len(data)}
             except Exception as e:

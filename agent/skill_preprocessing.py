@@ -74,7 +74,6 @@ def run_inline_shell(command: str, cwd: Path | None, timeout: int) -> str:
             text=True,
             timeout=max(1, int(timeout)),
             check=False,
-            stdin=subprocess.DEVNULL,
         )
     except subprocess.TimeoutExpired:
         return f"[inline-shell timeout after {timeout}s: {command}]"

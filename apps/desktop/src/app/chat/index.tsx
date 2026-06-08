@@ -49,9 +49,9 @@ import { ChatDropOverlay } from './chat-drop-overlay'
 import { ChatSwapOverlay } from './chat-swap-overlay'
 import { ChatBar, ChatBarFallback } from './composer'
 import { requestComposerInsert, requestComposerInsertRefs } from './composer/focus'
-import { droppedFileInlineRefs, type SessionDragPayload, sessionInlineRef } from './composer/inline-refs'
+import { droppedFileInlineRef, type SessionDragPayload, sessionInlineRef } from './composer/inline-refs'
 import type { ChatBarState } from './composer/types'
-import { type DroppedFile, partitionDroppedFiles } from './hooks/use-composer-actions'
+import type { DroppedFile } from './hooks/use-composer-actions'
 import { useFileDropZone } from './hooks/use-file-drop-zone'
 import { SessionActionsMenu } from './sidebar/session-actions-menu'
 import { lastVisibleMessageIsUser, threadLoadingState } from './thread-loading'
@@ -126,10 +126,7 @@ function ChatHeader({
     <header className={cn(titlebarHeaderBaseClass, isRoutedSessionView && titlebarHeaderShadowClass)}>
       <div
         className="min-w-0 flex-1"
-        style={{
-          maxWidth:
-            'calc(100vw - var(--titlebar-content-inset,0px) - var(--titlebar-tools-right) - var(--titlebar-tools-width) - 1.5rem)'
-        }}
+        style={{ maxWidth: 'calc(100vw - var(--titlebar-content-inset,0px) - var(--titlebar-tools-right) - var(--titlebar-tools-width) - 1.5rem)' }}
       >
         <SessionActionsMenu
           align="start"
@@ -302,25 +299,19 @@ export function ChatView({
   })
 
   // Drop files anywhere in the conversation area, not just on the composer
-  // input. In-app drags (project tree / gutter) carry workspace-relative paths
-  // the gateway resolves directly, so they stay inline `@file:` refs. OS/Finder
-  // drops carry absolute local paths that don't exist on a remote gateway (and
-  // images need byte upload for vision), so route them through the attachment
-  // pipeline — otherwise the local path leaks into the prompt verbatim.
+  // input — appending the same inline `@file:` ref chips the composer drop
+  // produces (vs. attachment cards) so both surfaces behave identically.
   const onDropFiles = useCallback(
     (candidates: DroppedFile[]) => {
-      const { inAppRefs, osDrops } = partitionDroppedFiles(candidates)
-      const refs = droppedFileInlineRefs(inAppRefs, currentCwd)
+      const refs = candidates
+        .map(candidate => droppedFileInlineRef(candidate, currentCwd))
+        .filter((ref): ref is string => Boolean(ref))
 
       if (refs.length) {
         requestComposerInsert(refs.join(' '), { mode: 'inline', target: 'main' })
       }
-
-      if (osDrops.length) {
-        void onAttachDroppedItems(osDrops)
-      }
     },
-    [currentCwd, onAttachDroppedItems]
+    [currentCwd]
   )
 
   // Dropping a sidebar session inserts an @session link the agent can resolve

@@ -163,11 +163,7 @@ agent_version = "local"
 
 When `HERMES_NEMO_RELAY_PLUGINS_TOML` is set and initializes successfully, NeMo
 Relay owns exporter lifecycle through that config. The direct
-`HERMES_NEMO_RELAY_ATOF_*` fallback setup is skipped. If the same
-`plugins.toml` observability config enables `atif`, the direct
-`HERMES_NEMO_RELAY_ATIF_*` fallback setup is also skipped so Hermes does not
-double-export trajectories on teardown. If `plugins.toml` initialization fails,
-Hermes keeps the direct env-var fallbacks active for that run.
+`HERMES_NEMO_RELAY_ATOF_*` fallback setup is skipped.
 
 To enable NeMo Relay managed execution intercepts for provider and tool calls,
 include an adaptive component in the same `plugins.toml`:
@@ -177,8 +173,8 @@ include an adaptive component in the same `plugins.toml`:
 kind = "adaptive"
 enabled = true
 
-[components.config.tool_parallelism]
-mode = "observe_only"
+[components.config]
+mode = "route"
 ```
 
 When the adaptive component is enabled and the installed NeMo Relay runtime
@@ -186,16 +182,15 @@ exposes `llm.execute(...)` / `tools.execute(...)`, Hermes routes LLM and tool
 execution through those middleware boundaries. The observer hooks still emit
 session, turn, approval, and subagent marks; the plugin skips its manual
 `llm.call` and `tools.call` spans for executions that are already managed by
-NeMo Relay. `tool_parallelism.mode = "observe_only"` keeps tool scheduling
-observational while still wrapping the real execution boundary.
+NeMo Relay.
 
 For the full generic Hermes middleware contract, see
 [`docs/middleware/README.md`](../../../docs/middleware/README.md).
 
 ## Canonical Local Examples
 
-The observe-only examples in this section use the official `nemo-relay==0.3`
-distribution and a local Ollama model served through the OpenAI-compatible API.
+The examples below use the official `nemo-relay==0.3` distribution and a local
+Ollama model served through the OpenAI-compatible API.
 
 ```bash
 pip install "nemo-relay==0.3"
@@ -409,8 +404,8 @@ version = 1
 kind = "adaptive"
 enabled = true
 
-[components.config.tool_parallelism]
-mode = "observe_only"
+[components.config]
+mode = "route"
 ```
 
 Enable it for Hermes:
@@ -443,12 +438,11 @@ for the same execution.
 ### Local Adaptive E2E
 
 This example enables both NeMo Relay observability export and adaptive execution
-middleware for a local Hermes run. This path requires a NeMo Relay runtime that
-supports `[components.config.tool_parallelism]`; the `nemo-relay==0.3`
-install used by the earlier observability-only examples does not support this
-adaptive config.
+middleware for a local Hermes run.
 
 ```bash
+pip install "nemo-relay==0.3"
+
 export HERMES_HOME=/tmp/hermes-middleware-test/hermes-home
 mkdir -p "$HERMES_HOME" /tmp/hermes-middleware-test/nemo-relay
 
@@ -490,8 +484,8 @@ agent_version = "local"
 kind = "adaptive"
 enabled = true
 
-[components.config.tool_parallelism]
-mode = "observe_only"
+[components.config]
+mode = "route"
 TOML
 
 export HERMES_NEMO_RELAY_PLUGINS_TOML=/tmp/hermes-middleware-test/nemo-relay/plugins.toml
@@ -516,8 +510,8 @@ middleware_execution_ok
 Expected ATOF shape:
 
 ```jsonl
-{"kind":"scope","category":"llm","name":"custom","scope_category":"start","metadata":{"session_id":"middleware-demo-session"},"data":{"mode":"observe_only"}}
-{"kind":"scope","category":"tool","name":"terminal","scope_category":"start","metadata":{"session_id":"middleware-demo-session","tool_call_id":"call_terminal"},"data":{"mode":"observe_only"}}
+{"kind":"scope","category":"llm","name":"custom","scope_category":"start","metadata":{"session_id":"middleware-demo-session"},"data":{"mode":"route"}}
+{"kind":"scope","category":"tool","name":"terminal","scope_category":"start","metadata":{"session_id":"middleware-demo-session","tool_call_id":"call_terminal"},"data":{"mode":"route"}}
 {"kind":"scope","category":"tool","name":"terminal","scope_category":"end","metadata":{"session_id":"middleware-demo-session","tool_call_id":"call_terminal","status":"ok"},"data":"{\"output\":\"middleware_execution_ok\",\"exit_code\":0,\"error\":null}"}
 ```
 

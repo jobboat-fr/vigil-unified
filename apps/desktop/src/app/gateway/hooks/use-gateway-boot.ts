@@ -3,7 +3,6 @@ import { useEffect, useRef } from 'react'
 import type { HermesConnection } from '@/global'
 import { HermesGateway } from '@/hermes'
 import { translateNow } from '@/i18n'
-import { desktopDefaultCwd } from '@/lib/desktop-fs'
 import { isGatewayReauthRequired, resolveGatewayWsUrl } from '@/lib/gateway-ws-url'
 import {
   $desktopBoot,
@@ -26,16 +25,11 @@ import {
 import { notify, notifyError } from '@/store/notifications'
 import { $activeGatewayProfile, normalizeProfileKey, touchActiveGatewayBackend } from '@/store/profile'
 import {
-  $activeSessionId,
   $attentionSessionIds,
   $connection,
-  $currentCwd,
   $sessions,
   $workingSessionIds,
-  ensureDefaultWorkspaceCwd,
   setConnection,
-  setCurrentBranch,
-  setCurrentCwd,
   setSessionsLoading
 } from '@/store/session'
 import type { RpcEvent } from '@/types/hermes'
@@ -357,12 +351,6 @@ export function useGatewayBoot({
           message: translateNow('boot.steps.loadingSettings'),
           progress: 97
         })
-        await ensureDefaultWorkspaceCwd()
-        const remoteDefault = await desktopDefaultCwd().catch(() => null)
-        if (remoteDefault?.cwd && !$activeSessionId.get() && !$currentCwd.get()) {
-          setCurrentCwd(remoteDefault.cwd)
-          setCurrentBranch(remoteDefault.branch || '')
-        }
         await callbacksRef.current.refreshHermesConfig()
 
         if (cancelled) {
