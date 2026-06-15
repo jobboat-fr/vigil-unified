@@ -34,7 +34,7 @@ import { HERMES_BASE_PATH, buildWsAuthParam } from "@/lib/api";
 
 import { cn } from "@/lib/utils";
 import { AlertCircle, ChevronDown, RefreshCw } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 interface SessionInfo {
   cwd?: string;
@@ -92,11 +92,28 @@ export function ChatSidebar({ channel, profile, className }: ChatSidebarProps) {
   const [modelOpen, setModelOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Profile or PTY channel change tears down both WebSockets. Bump `version`
+  // (same path as the manual Reconnect button) so the gateway client is
+  // recreated and the events feed resubscribes — otherwise the old events
+  // socket's close handler can leave a stale error banner after a switch.
+  const scopeKey = `${channel}\0${profile ?? ""}`;
+  const prevScopeKey = useRef<string | null>(null);
+  useEffect(() => {
+    if (prevScopeKey.current === null) {
+      prevScopeKey.current = scopeKey;
+      return;
+    }
+    if (prevScopeKey.current === scopeKey) return;
+    prevScopeKey.current = scopeKey;
+    setError(null);
+    setTools([]);
+    setVersion((v) => v + 1);
+  }, [scopeKey]);
+
   useEffect(() => {
     let cancelled = false;
     setSessionId(null);
     setInfo({});
-    setTools([]);
     setError(null);
     const offState = gw.onState(setState);
 
@@ -152,7 +169,8 @@ export function ChatSidebar({ channel, profile, className }: ChatSidebarProps) {
       offError();
       gw.close();
     };
-  }, [gw, profile]);
+    // `profile` is read from render; scope changes bump `version` → new `gw`.
+  }, [gw]);
 
   // Event subscriber WebSocket — receives the rebroadcast of every
   // dispatcher emit from the PTY child's gateway.  See /api/pub +
