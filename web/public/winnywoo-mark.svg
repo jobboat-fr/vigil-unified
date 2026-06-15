@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="ww-title ww-desc">
+  <title id="ww-title">WinnyWoo mark</title>
+  <desc id="ww-desc">A luminous operations eye with a trading-candle pupil — mirrors the VIGIL eye family, tuned cyan/purple for the WinnyWoo trader desk.</desc>
+  <defs>
+    <linearGradient id="ww-bg" x1="16" y1="16" x2="112" y2="112" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#06b6d4"/>
+      <stop offset=".52" stop-color="#fbbf24"/>
+      <stop offset="1" stop-color="#a855f7"/>
+    </linearGradient>
+    <linearGradient id="ww-candle" x1="60" y1="50" x2="68" y2="80" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#a5f3fc"/>
+      <stop offset="1" stop-color="#ffffff"/>
+    </linearGradient>
+    <filter id="ww-glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feColorMatrix in="blur" type="matrix" values="0 0 0 0 .655  0 0 0 0 .333  0 0 0 0 .969  0 0 0 .55 0" result="glow"/>
+      <feMerge>
+        <feMergeNode in="glow"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <rect width="128" height="128" rx="30" fill="#0a0716"/>
+  <path d="M22 64c9.8-18.5 24-28 42-28s32.2 9.5 42 28c-9.8 18.5-24 28-42 28S31.8 82.5 22 64Z"
+        fill="none" stroke="url(#ww-bg)" stroke-width="7"
+        stroke-linecap="round" stroke-linejoin="round" filter="url(#ww-glow)"/>
+  <circle cx="64" cy="64" r="20" fill="#06030f" stroke="#06b6d4" stroke-opacity=".6" stroke-width="3"/>
+  <line x1="64" y1="50" x2="64" y2="78" stroke="url(#ww-candle)" stroke-width="2" stroke-linecap="round"/>
+  <rect x="60" y="56" width="8" height="16" rx="1.5" fill="url(#ww-candle)"/>
+  <path d="M58 50 L64 44 L70 50" fill="none" stroke="#00ff88" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round" opacity=".85"/>
+</svg>

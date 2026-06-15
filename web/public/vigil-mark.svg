@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title desc">
+  <title id="title">VIGIL mark</title>
+  <desc id="desc">A luminous operations eye with a central V monogram.</desc>
+  <defs>
+    <linearGradient id="vigil-bg" x1="16" y1="16" x2="112" y2="112" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#00e5ff"/>
+      <stop offset=".52" stop-color="#e8b544"/>
+      <stop offset="1" stop-color="#a855f7"/>
+    </linearGradient>
+    <linearGradient id="vigil-v" x1="40" y1="36" x2="88" y2="98" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#b7f7ff"/>
+    </linearGradient>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feColorMatrix in="blur" type="matrix" values="0 0 0 0 0  0 0 0 0 .898  0 0 0 0 1  0 0 0 .55 0" result="glow"/>
+      <feMerge>
+        <feMergeNode in="glow"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <rect width="128" height="128" rx="30" fill="#050507"/>
+  <path d="M22 64c9.8-18.5 24-28 42-28s32.2 9.5 42 28c-9.8 18.5-24 28-42 28S31.8 82.5 22 64Z" fill="none" stroke="url(#vigil-bg)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/>
+  <circle cx="64" cy="64" r="20" fill="#081018" stroke="#00e5ff" stroke-opacity=".55" stroke-width="3"/>
+  <path d="M47 48l17 37 17-37h-9L64 68l-8-20h-9Z" fill="url(#vigil-v)"/>
+  <path d="M64 18v14M64 96v14M18 64h14M96 64h14" stroke="#e8b544" stroke-width="5" stroke-linecap="round" opacity=".9"/>
+</svg>

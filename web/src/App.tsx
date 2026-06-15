@@ -51,6 +51,14 @@ import {
   Wrench,
   X,
   Zap,
+  Video,
+  PenLine,
+  Lock,
+  LineChart,
+  TrendingUp,
+  Wallet,
+  ListOrdered,
+  ScrollText,
 } from "lucide-react";
 import { Button } from "@nous-research/ui/ui/components/button";
 import { SelectionSwitcher } from "@nous-research/ui/ui/components/selection-switcher";
@@ -89,6 +97,15 @@ import ChannelsPage from "@/pages/ChannelsPage";
 import WebhooksPage from "@/pages/WebhooksPage";
 import SystemPage from "@/pages/SystemPage";
 import ChatPage from "@/pages/ChatPage";
+// VIGIL × WinnyWoo product pages (added on top of the agent runtime)
+import MeetingRoomPage from "@/pages/MeetingRoomPage";
+import StudioPage from "@/pages/StudioPage";
+import VaultPage from "@/pages/VaultPage";
+import TradeDeskPage from "@/pages/TradeDeskPage";
+import SignalsPage from "@/pages/SignalsPage";
+import PositionsPage from "@/pages/PositionsPage";
+import OrdersPage from "@/pages/OrdersPage";
+import AuditPage from "@/pages/AuditPage";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { useI18n } from "@/i18n";
@@ -131,6 +148,16 @@ const CHAT_NAV_ITEM: NavItem = {
 const BUILTIN_ROUTES_CORE: Record<string, ComponentType> = {
   "/": RootRedirect,
   "/sessions": SessionsPage,
+  // VIGIL workspace
+  "/meeting-room": MeetingRoomPage,
+  "/studio": StudioPage,
+  "/vault": VaultPage,
+  // WinnyWoo workspace
+  "/trade-desk": TradeDeskPage,
+  "/signals": SignalsPage,
+  "/positions": PositionsPage,
+  "/orders": OrdersPage,
+  "/audit": AuditPage,
   "/files": FilesPage,
   "/analytics": AnalyticsPage,
   "/models": ModelsPage,
@@ -165,6 +192,16 @@ const BUILTIN_NAV_REST: NavItem[] = [
     label: "Sessions",
     icon: MessageSquare,
   },
+  // ── VIGIL workspace ──
+  { path: "/meeting-room", label: "Meeting Room", icon: Video },
+  { path: "/studio", label: "Studio", icon: PenLine },
+  { path: "/vault", label: "Vault", icon: Lock },
+  // ── WinnyWoo workspace ──
+  { path: "/trade-desk", label: "Trade Desk", icon: LineChart },
+  { path: "/signals", label: "Signals", icon: TrendingUp },
+  { path: "/positions", label: "Positions", icon: Wallet },
+  { path: "/orders", label: "Orders", icon: ListOrdered },
+  { path: "/audit", label: "Audit", icon: ScrollText },
   { path: "/files", label: "Files", icon: FolderOpen },
   {
     path: "/analytics",
@@ -571,13 +608,20 @@ export default function App() {
               >
                 <PluginSlot name="header-left" />
 
+                <img
+                  src="/vigil-mark.svg"
+                  alt="VIGIL"
+                  width={28}
+                  height={28}
+                  className="shrink-0"
+                />
                 <Typography
-                  className="font-bold text-[1.125rem] leading-[0.95] tracking-[0.0525rem] text-midground uppercase"
+                  className="font-bold text-[1.05rem] leading-[0.95] tracking-[0.045rem] text-midground"
                   style={{ mixBlendMode: "plus-lighter" }}
                 >
-                  Hermes
+                  VIGIL
                   <br />
-                  Agent
+                  <span className="text-[0.8rem] opacity-70">× WinnyWoo</span>
                 </Typography>
               </div>
 
