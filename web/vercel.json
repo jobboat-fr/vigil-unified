@@ -1,0 +1,26 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "vite",
+  "installCommand": "npm install",
+  "buildCommand": "tsc -b && vite build --outDir dist --emptyOutDir",
+  "outputDirectory": "dist",
+  "rewrites": [
+    {
+      "source": "/((?!assets/.*|favicon\\.svg|vigil-mark\\.svg|winnywoo-mark\\.svg|.*\\.[a-zA-Z0-9]+$).*)",
+      "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://*.supabase.co; media-src 'self' blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://winnywoo-production.up.railway.app wss://winnywoo-production.up.railway.app https://min-api.cryptocompare.com; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
+        },
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
+      ]
+    }
+  ]
+}
