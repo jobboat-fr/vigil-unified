@@ -121,6 +121,37 @@ export interface Artifact {
   updated_at: string;
 }
 
+export interface FinanceAccount {
+  id: string;
+  name: string;
+  type: string;
+  created_at: string;
+}
+
+export interface FinanceTxn {
+  id: string;
+  txn_date: string;
+  description: string;
+  amount: number;
+  currency: string;
+  category: string | null;
+  account_id: string | null;
+  status: string;
+  source: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface FinanceSummary {
+  income: number;
+  expense: number;
+  net: number;
+  by_category: Record<string, number>;
+  transaction_count: number;
+  reconciled_count: number;
+  reconcile_progress: number;
+}
+
 export const vigil = {
   council: {
     tasks: () => vigilCall<{ tasks: Record<string, CouncilTaskInfo> }>("GET", "/v1/council/tasks"),
@@ -153,6 +184,32 @@ export const vigil = {
     remove: (id: string) => vigilCall("DELETE", `/v1/artifacts/${id}`),
     refine: (id: string, instruction: string) =>
       vigilCall<Artifact>("POST", `/v1/artifacts/${id}/refine`, { instruction }),
+  },
+  finance: {
+    accounts: () => vigilCall<{ accounts: FinanceAccount[] }>("GET", "/v1/finance/accounts"),
+    addAccount: (name: string, type: string) =>
+      vigilCall<FinanceAccount>("POST", "/v1/finance/accounts", { name, type }),
+    transactions: (params?: { status?: string; category?: string; limit?: number }) => {
+      const qs = new URLSearchParams();
+      if (params?.status) qs.set("status", params.status);
+      if (params?.category) qs.set("category", params.category);
+      if (params?.limit) qs.set("limit", String(params.limit));
+      const suffix = qs.toString() ? `?${qs.toString()}` : "";
+      return vigilCall<{ transactions: FinanceTxn[] }>("GET", `/v1/finance/transactions${suffix}`);
+    },
+    addTransaction: (input: {
+      amount: number;
+      description?: string;
+      txn_date?: string;
+      currency?: string;
+      category?: string;
+      account_id?: string;
+      source?: string;
+    }) => vigilCall<FinanceTxn>("POST", "/v1/finance/transactions", input),
+    updateTransaction: (id: string, patch: Partial<Pick<FinanceTxn, "description" | "amount" | "category" | "account_id" | "status" | "txn_date">>) =>
+      vigilCall<FinanceTxn>("PATCH", `/v1/finance/transactions/${id}`, patch),
+    removeTransaction: (id: string) => vigilCall("DELETE", `/v1/finance/transactions/${id}`),
+    summary: () => vigilCall<FinanceSummary>("GET", "/v1/finance/summary"),
   },
 };
 

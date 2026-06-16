@@ -102,6 +102,8 @@ _USER_SCOPED_TABLES = frozenset({
     "support_tickets",
     "artifacts",
     "rooms",
+    "finance_accounts",
+    "finance_transactions",
 })
 
 

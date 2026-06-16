@@ -49,6 +49,7 @@ from winny_gateway.routes import (
 from winny_gateway.routes.vigil import council as vigil_council
 from winny_gateway.routes.vigil import rooms as vigil_rooms
 from winny_gateway.routes.vigil import studio as vigil_studio
+from winny_gateway.routes.vigil import finance as vigil_finance
 from winny_gateway.security import SecurityMiddleware
 
 logger = get_logger(__name__)
@@ -208,6 +209,8 @@ def create_app(config: GatewayConfig | None = None) -> FastAPI:
     app.include_router(vigil_rooms.router)
     # Studio — artifact drafting behind the brainstorm-first gate.
     app.include_router(vigil_studio.router)
+    # Finance — the books/ledger backend the cfo-* skills route into.
+    app.include_router(vigil_finance.router)
 
     @app.get("/health")
     async def health() -> dict[str, Any]:

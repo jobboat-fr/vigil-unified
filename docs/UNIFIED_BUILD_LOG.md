@@ -122,3 +122,10 @@ Moved both surfaces off in-memory stores onto the **existing** VIGIL tables (not
 - **studio.py** now uses `db_insert/db_select/db_update/db_delete` against `artifacts` (content -> `text_dump`, `version` counts revisions, refine bumps `updated_at`). **rooms.py** -> `rooms` (lens -> `default_lens`, members/transcript as jsonb).
 - **Scoping:** added `artifacts` + `rooms` to `db._USER_SCOPED_TABLES`, so the admin-client cross-tenant guard now blocks any unscoped read/write — every query carries `user_id = sub`.
 - **Verified:** both routers import + routes intact; the exact insert/update/delete column shape round-tripped against the live tables via MCP (no NOT NULL/type/FK issues), with cleanup. Reads/writes now survive restarts (was the in-memory gap).
+
+### 2026-06-16 — Finance backend (the cfo-* skills' ledger)
+The books/ledger store the finance skills route into is now real.
+- **Migration** `011_finance_ledger.sql` (applied via MCP): `finance_accounts` (chart of accounts) + `finance_transactions` (the ledger: txn_date, signed amount, currency, category, account_id FK, status uncategorized→categorized→reconciled, source, metadata). RLS-on (auth.uid()=user_id + service-role bypass), per-user indexes, updated_at trigger.
+- **Routes** `winny_gateway/routes/vigil/finance.py` (`/v1/finance/*`, registered in app.py): accounts list/create; transactions list (status/category filters) / capture / patch (classify+reconcile) / delete; `GET /summary` → P&L rollup (income/expense/net, by_category, reconcile progress). All scoped via `db._USER_SCOPED_TABLES` (+= finance_accounts, finance_transactions).
+- **Client** `web/src/lib/vigil.ts` `finance.*` + FinanceAccount/FinanceTxn/FinanceSummary types.
+- **Verified:** router imports + routes intact; `tsc -b` exit 0; live capture→classify→reconcile round-trip via MCP (FK to account + updated_at trigger) with cleanup.
