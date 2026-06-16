@@ -115,3 +115,10 @@ The `brainstorming` thinking skill is now wired to a real product surface as the
   - LLM via the council provider `ask(worker_registry()["primary"], …)` — degrades to a deterministic stub when no API key, so the surface never crashes keyless. Storage in-memory, **scoped to the authenticated user** (same model as rooms).
 - **Frontend** `web/src/pages/StudioPage.tsx` (real, replaced scaffold) + `web/src/lib/vigil.ts` `studio.*` client + `Artifact`/`BrainstormPlan` types — composer → "Think it through" → approach cards (Recommended badge) → "Approve & draft" → artifact view + refine. Kind selector (proposal/brief/contract/memo/report), optional Vault grounding box.
 - **Verified:** `tsc -b` exit 0; backend imports + route signatures checked; functional smoke (brainstorm→create→list→refine) passes on the stub provider; **tenant scoping enforced** (other user → 404).
+
+### 2026-06-16 — Stage 5 persistence: Studio + Meeting Room onto Supabase
+Moved both surfaces off in-memory stores onto the **existing** VIGIL tables (not parallel ones — same lesson as the support_tickets collision): `public.artifacts` (13 live rows) and `public.rooms` (7 live rows), both RLS-on.
+- **Migration** `winny_gateway/migrations/010_studio_rooms_persistence.sql` — purely **additive**: `artifacts` += `brief`, `approach`, `stub`; `rooms` += `members jsonb`, `default_lens text`. Applied to project `pqikzrcykdynxhtnjgeh` via Supabase MCP; existing rows untouched.
+- **studio.py** now uses `db_insert/db_select/db_update/db_delete` against `artifacts` (content -> `text_dump`, `version` counts revisions, refine bumps `updated_at`). **rooms.py** -> `rooms` (lens -> `default_lens`, members/transcript as jsonb).
+- **Scoping:** added `artifacts` + `rooms` to `db._USER_SCOPED_TABLES`, so the admin-client cross-tenant guard now blocks any unscoped read/write — every query carries `user_id = sub`.
+- **Verified:** both routers import + routes intact; the exact insert/update/delete column shape round-tripped against the live tables via MCP (no NOT NULL/type/FK issues), with cleanup. Reads/writes now survive restarts (was the in-memory gap).

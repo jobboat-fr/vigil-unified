@@ -10,17 +10,20 @@ surface. The flow is two explicit stages, mirroring the skill's checklist:
   2. POST /v1/artifacts              → only after the user picks an approach;
      drafts the structured document and stores it.
 
-Plus list/get/delete and /refine to iterate. Storage is in-memory and scoped to
-the authenticated user (same model as rooms.py); Supabase persistence layers on
-later. The LLM call reuses the council's provider (`winny.council.providers.ask`)
-which degrades to a deterministic stub when no API key is set, so the surface
-never crashes in a keyless deploy.
+Plus list/get/delete and /refine to iterate.
+
+Persistence (Stage 5): the EXISTING `public.artifacts` table (shared with the
+prior VIGIL app, RLS on). We map content→text_dump, brief→brief, approach→
+approach, the Markdown stays in text_dump, and `version` counts revisions. All
+reads/writes are scoped to the authenticated user's id (the db layer's
+cross-tenant guard enforces a user_id filter on this table). The LLM call reuses
+the council's provider (`winny.council.providers.ask`) which degrades to a
+deterministic stub when no API key is set, so the surface never crashes keyless.
 """
 
 from __future__ import annotations
 
 import json
-import uuid
 from datetime import UTC, datetime
 from typing import Any
 
@@ -30,13 +33,13 @@ from pydantic import BaseModel, Field
 from winny.council.providers import ask
 from winny.council.registry import worker_registry
 from winny_gateway.auth import get_current_user
+from winny_gateway.db import db_delete, db_insert, db_select, db_update
 from winny_gateway.logging import get_logger
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/v1/artifacts", tags=["studio"])
 
-# In-memory artifact store: artifact_id -> dict (carries owner_sub for scoping).
-_ARTIFACTS: dict[str, dict[str, Any]] = {}
+_TABLE = "artifacts"
 
 # Artifact kinds the Studio understands → a one-line shape hint for the drafter.
 KINDS: dict[str, str] = {
@@ -48,22 +51,27 @@ KINDS: dict[str, str] = {
 }
 
 
-def _sub(user: dict[str, Any]) -> str:
-    return str(user.get("sub") or user.get("email") or "anon")
+def _uid(user: dict[str, Any]) -> str:
+    uid = user.get("sub")
+    if not uid:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="no user id in token")
+    return str(uid)
 
 
-def _owned(artifact_id: str, user: dict[str, Any]) -> dict[str, Any]:
-    art = _ARTIFACTS.get(artifact_id)
-    if art is None or art["owner_sub"] != _sub(user):
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"error": "artifact_not_found", "artifact_id": artifact_id},
-        )
-    return art
-
-
-def _public(art: dict[str, Any]) -> dict[str, Any]:
-    return {k: v for k, v in art.items() if k != "owner_sub"}
+def _public(row: dict[str, Any]) -> dict[str, Any]:
+    """Map a DB row onto the Artifact shape the web client expects."""
+    return {
+        "id": row.get("id"),
+        "title": row.get("title") or "Untitled artifact",
+        "kind": row.get("kind") or "proposal",
+        "brief": row.get("brief") or "",
+        "approach": row.get("approach") or "",
+        "content": row.get("text_dump") or "",
+        "stub": bool(row.get("stub", False)),
+        "revisions": max(int(row.get("version") or 1) - 1, 0),
+        "created_at": row.get("created_at"),
+        "updated_at": row.get("updated_at"),
+    }
 
 
 def _primary_worker() -> dict[str, Any]:
@@ -77,6 +85,16 @@ def _grounding_block(grounding: str | None) -> str:
         "\n\nGround your work strictly in these source documents — quote and cite "
         f"them, do not invent facts beyond them:\n\n<<<\n{grounding}\n>>>\n"
     )
+
+
+async def _owned_row(artifact_id: str, uid: str) -> dict[str, Any]:
+    rows = await db_select(_TABLE, filters={"id": artifact_id, "user_id": uid}, limit=1)
+    if not rows:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"error": "artifact_not_found", "artifact_id": artifact_id},
+        )
+    return rows[0]
 
 
 # ── Stage 1: brainstorm (the gate) ──────────────────────────────────────────
@@ -151,6 +169,7 @@ async def create_artifact(body: CreateArtifactBody, user: dict = Depends(get_cur
             status_code=status.HTTP_400_BAD_REQUEST,
             detail={"error": "unknown_kind", "kind": body.kind, "available": list(KINDS)},
         )
+    uid = _uid(user)
     user_prompt = (
         f"Draft {KINDS[body.kind]}.\n\n"
         f"Brief:\n{body.brief}\n\n"
@@ -159,44 +178,47 @@ async def create_artifact(body: CreateArtifactBody, user: dict = Depends(get_cur
         "Write the full document now."
     )
     result = await ask(_primary_worker(), user_prompt, system=_DRAFT_SYSTEM, temperature=0.5, max_tokens=2400)
-    now = datetime.now(UTC).isoformat()
-    artifact_id = str(uuid.uuid4())
-    art = {
-        "id": artifact_id,
-        "owner_sub": _sub(user),
-        "title": body.title,
-        "kind": body.kind,
-        "brief": body.brief,
-        "approach": body.approach,
-        "content": result.get("output", ""),
-        "stub": result.get("stub", False),
-        "revisions": 0,
-        "created_at": now,
-        "updated_at": now,
-    }
-    _ARTIFACTS[artifact_id] = art
-    return {"ok": True, "data": _public(art)}
+    row = await db_insert(
+        _TABLE,
+        {
+            "user_id": uid,
+            "title": body.title,
+            "kind": body.kind,
+            "brief": body.brief,
+            "approach": body.approach,
+            "text_dump": result.get("output", ""),
+            "stub": bool(result.get("stub", False)),
+            "status": "draft",
+            "version": 1,
+        },
+    )
+    if row is None:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail={"error": "artifact_write_failed"})
+    return {"ok": True, "data": _public(row)}
 
 
 @router.get("")
 async def list_artifacts(user: dict = Depends(get_current_user)) -> dict[str, Any]:
-    sub = _sub(user)
-    arts = [_public(a) for a in _ARTIFACTS.values() if a["owner_sub"] == sub]
-    arts.sort(key=lambda a: a["updated_at"], reverse=True)
-    # Trim content in the list view; full content via GET /{id}.
-    summaries = [{**a, "content": (a["content"][:280] + "…") if len(a["content"]) > 280 else a["content"]} for a in arts]
+    rows = await db_select(_TABLE, filters={"user_id": _uid(user)}, order_by="-updated_at", limit=100)
+    summaries = []
+    for r in rows:
+        art = _public(r)
+        if len(art["content"]) > 280:
+            art["content"] = art["content"][:280] + "…"
+        summaries.append(art)
     return {"ok": True, "data": {"artifacts": summaries}}
 
 
 @router.get("/{artifact_id}")
 async def get_artifact(artifact_id: str, user: dict = Depends(get_current_user)) -> dict[str, Any]:
-    return {"ok": True, "data": _public(_owned(artifact_id, user))}
+    return {"ok": True, "data": _public(await _owned_row(artifact_id, _uid(user)))}
 
 
 @router.delete("/{artifact_id}")
 async def delete_artifact(artifact_id: str, user: dict = Depends(get_current_user)) -> dict[str, Any]:
-    _owned(artifact_id, user)
-    _ARTIFACTS.pop(artifact_id, None)
+    uid = _uid(user)
+    await _owned_row(artifact_id, uid)  # 404s if not owned
+    await db_delete(_TABLE, filters={"id": artifact_id, "user_id": uid})
     return {"ok": True, "data": {"deleted": artifact_id}}
 
 
@@ -207,18 +229,27 @@ class RefineBody(BaseModel):
 @router.post("/{artifact_id}/refine")
 async def refine_artifact(artifact_id: str, body: RefineBody, user: dict = Depends(get_current_user)) -> dict[str, Any]:
     """Iterate on an existing artifact with the agent (the Studio side-chat)."""
-    art = _owned(artifact_id, user)
+    uid = _uid(user)
+    art = await _owned_row(artifact_id, uid)
     user_prompt = (
-        f"Here is the current {art['kind']} (Markdown):\n\n<<<\n{art['content']}\n>>>\n\n"
+        f"Here is the current {art.get('kind')} (Markdown):\n\n<<<\n{art.get('text_dump') or ''}\n>>>\n\n"
         f"Revise it per this instruction:\n{body.instruction}\n\n"
         "Output only the full revised document."
     )
     result = await ask(_primary_worker(), user_prompt, system=_DRAFT_SYSTEM, temperature=0.5, max_tokens=2400)
-    art["content"] = result.get("output", art["content"])
-    art["stub"] = result.get("stub", False)
-    art["revisions"] += 1
-    art["updated_at"] = datetime.now(UTC).isoformat()
-    return {"ok": True, "data": _public(art)}
+    updated = await db_update(
+        _TABLE,
+        {
+            "text_dump": result.get("output", art.get("text_dump") or ""),
+            "stub": bool(result.get("stub", False)),
+            "version": int(art.get("version") or 1) + 1,
+            "updated_at": datetime.now(UTC).isoformat(),
+        },
+        filters={"id": artifact_id, "user_id": uid},
+    )
+    if not updated:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail={"error": "artifact_update_failed"})
+    return {"ok": True, "data": _public(updated[0])}
 
 
 def _parse_json(text: str) -> dict[str, Any]:

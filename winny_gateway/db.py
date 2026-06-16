@@ -100,6 +100,8 @@ _USER_SCOPED_TABLES = frozenset({
     "positions",
     "orders",
     "support_tickets",
+    "artifacts",
+    "rooms",
 })
 
 

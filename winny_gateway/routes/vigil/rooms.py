@@ -4,14 +4,17 @@ drive the Meeting Room UI) to the unified gateway.
 Scope of this port: room lifecycle, Deal Board members (advisors), transcript
 capture, and convening the council over the transcript with a live SSE stream.
 Avatar/voice/LiveKit/Hume are separate concerns (Stage 3e) and degrade to
-absent here. Storage is in-memory and scoped to the authenticated user — good
-enough for the live session model; Supabase persistence can layer on later.
+absent here.
+
+Persistence (Stage 5): the EXISTING `public.rooms` table (shared with the prior
+VIGIL app, RLS on). We map title→title, lens→default_lens, members→members
+jsonb, transcript→transcript jsonb. Every read/write is scoped to the
+authenticated user's id (the db layer's cross-tenant guard enforces a user_id
+filter on this table).
 """
 
 from __future__ import annotations
 
-import uuid
-from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -20,12 +23,12 @@ from pydantic import BaseModel, Field
 
 from winny.council import ROLE_SYSTEM_PROMPTS, REVIEWER_SYSTEM_PROMPT, TASK_MATRIX
 from winny_gateway.auth import get_current_user
+from winny_gateway.db import db_delete, db_insert, db_select, db_update
 from winny_gateway.routes.vigil.council import _run_council_sse
 
 router = APIRouter(prefix="/v1/rooms", tags=["rooms"])
 
-# In-memory room store: room_id -> room dict (carries owner_sub for scoping).
-_ROOMS: dict[str, dict[str, Any]] = {}
+_TABLE = "rooms"
 
 # Template advisors for the Deal Board — map to council lenses.
 TEMPLATE_MEMBERS = {
@@ -36,19 +39,33 @@ TEMPLATE_MEMBERS = {
 }
 
 
-def _sub(user: dict[str, Any]) -> str:
-    return str(user.get("sub") or user.get("email") or "anon")
+def _uid(user: dict[str, Any]) -> str:
+    uid = user.get("sub")
+    if not uid:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="no user id in token")
+    return str(uid)
 
 
-def _owned(room_id: str, user: dict[str, Any]) -> dict[str, Any]:
-    room = _ROOMS.get(room_id)
-    if room is None or room["owner_sub"] != _sub(user):
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail={"error": "room_not_found", "room_id": room_id})
-    return room
+def _public(row: dict[str, Any]) -> dict[str, Any]:
+    """Map a DB row onto the Room shape the web client expects."""
+    return {
+        "id": row.get("id"),
+        "title": row.get("title") or "Advisory Session",
+        "lens": row.get("default_lens") or "cfo_review",
+        "members": row.get("members") or [],
+        "transcript": row.get("transcript") or [],
+        "created_at": row.get("created_at"),
+    }
 
 
-def _public(room: dict[str, Any]) -> dict[str, Any]:
-    return {k: v for k, v in room.items() if k != "owner_sub"}
+async def _owned_row(room_id: str, uid: str) -> dict[str, Any]:
+    rows = await db_select(_TABLE, filters={"id": room_id, "user_id": uid}, limit=1)
+    if not rows:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"error": "room_not_found", "room_id": room_id},
+        )
+    return rows[0]
 
 
 class CreateRoomBody(BaseModel):
@@ -72,43 +89,46 @@ class MessageBody(BaseModel):
 
 @router.post("")
 async def create_room(body: CreateRoomBody, user: dict = Depends(get_current_user)) -> dict[str, Any]:
-    room_id = str(uuid.uuid4())
-    room = {
-        "id": room_id,
-        "owner_sub": _sub(user),
-        "title": body.title,
-        "lens": body.lens if body.lens in TASK_MATRIX else "cfo_review",
-        "members": [],
-        "transcript": [],
-        "created_at": datetime.now(UTC).isoformat(),
-    }
-    _ROOMS[room_id] = room
-    return {"ok": True, "data": _public(room)}
+    lens = body.lens if body.lens in TASK_MATRIX else "cfo_review"
+    row = await db_insert(
+        _TABLE,
+        {
+            "user_id": _uid(user),
+            "title": body.title,
+            "default_lens": lens,
+            "members": [],
+            "transcript": [],
+            "status": "active",
+        },
+    )
+    if row is None:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail={"error": "room_write_failed"})
+    return {"ok": True, "data": _public(row)}
 
 
 @router.get("")
 async def list_rooms(user: dict = Depends(get_current_user)) -> dict[str, Any]:
-    sub = _sub(user)
-    rooms = [_public(r) for r in _ROOMS.values() if r["owner_sub"] == sub]
-    rooms.sort(key=lambda r: r["created_at"], reverse=True)
-    return {"ok": True, "data": {"rooms": rooms}}
+    rows = await db_select(_TABLE, filters={"user_id": _uid(user)}, order_by="-created_at", limit=100)
+    return {"ok": True, "data": {"rooms": [_public(r) for r in rows]}}
 
 
 @router.get("/{room_id}")
 async def get_room(room_id: str, user: dict = Depends(get_current_user)) -> dict[str, Any]:
-    return {"ok": True, "data": _public(_owned(room_id, user))}
+    return {"ok": True, "data": _public(await _owned_row(room_id, _uid(user)))}
 
 
 @router.delete("/{room_id}")
 async def delete_room(room_id: str, user: dict = Depends(get_current_user)) -> dict[str, Any]:
-    _owned(room_id, user)
-    _ROOMS.pop(room_id, None)
+    uid = _uid(user)
+    await _owned_row(room_id, uid)  # 404s if not owned
+    await db_delete(_TABLE, filters={"id": room_id, "user_id": uid})
     return {"ok": True, "data": {"deleted": room_id}}
 
 
 @router.post("/{room_id}/members")
 async def add_member(room_id: str, body: MemberBody, user: dict = Depends(get_current_user)) -> dict[str, Any]:
-    room = _owned(room_id, user)
+    uid = _uid(user)
+    room = await _owned_row(room_id, uid)
     template = TEMPLATE_MEMBERS.get(body.id, {})
     member = {
         "id": body.id,
@@ -120,32 +140,37 @@ async def add_member(room_id: str, body: MemberBody, user: dict = Depends(get_cu
         "status": "active",
     }
     # Replace any existing member with the same id (idempotent invite).
-    room["members"] = [m for m in room["members"] if m["id"] != body.id] + [member]
+    members = [m for m in (room.get("members") or []) if m.get("id") != body.id] + [member]
+    await db_update(_TABLE, {"members": members}, filters={"id": room_id, "user_id": uid})
     return {"ok": True, "data": member}
 
 
 @router.get("/{room_id}/members")
 async def list_members(room_id: str, user: dict = Depends(get_current_user)) -> dict[str, Any]:
-    room = _owned(room_id, user)
-    return {"ok": True, "data": {"members": room["members"]}}
+    room = await _owned_row(room_id, _uid(user))
+    return {"ok": True, "data": {"members": room.get("members") or []}}
 
 
 @router.post("/{room_id}/messages")
 async def post_message(room_id: str, body: MessageBody, user: dict = Depends(get_current_user)) -> dict[str, Any]:
-    room = _owned(room_id, user)
+    uid = _uid(user)
+    room = await _owned_row(room_id, uid)
+    from datetime import UTC, datetime
+
     entry = {"speaker": body.speaker, "text": body.text, "ts": datetime.now(UTC).isoformat()}
-    room["transcript"].append(entry)
+    transcript = list(room.get("transcript") or []) + [entry]
+    await db_update(_TABLE, {"transcript": transcript}, filters={"id": room_id, "user_id": uid})
     return {"ok": True, "data": entry}
 
 
 @router.get("/{room_id}/transcript")
 async def get_transcript(room_id: str, user: dict = Depends(get_current_user)) -> dict[str, Any]:
-    room = _owned(room_id, user)
-    return {"ok": True, "data": {"transcript": room["transcript"]}}
+    room = await _owned_row(room_id, _uid(user))
+    return {"ok": True, "data": {"transcript": room.get("transcript") or []}}
 
 
-def _transcript_text(room: dict[str, Any]) -> str:
-    return "\n".join(f"{m['speaker']}: {m['text']}" for m in room["transcript"])
+def _transcript_text(transcript: list[dict[str, Any]]) -> str:
+    return "\n".join(f"{m.get('speaker')}: {m.get('text')}" for m in transcript)
 
 
 @router.get("/{room_id}/stream")
@@ -156,11 +181,11 @@ async def convene_stream(
     user: dict = Depends(get_current_user),
 ) -> StreamingResponse:
     """Convene the council over the room transcript and stream stage events (SSE)."""
-    room = _owned(room_id, user)
-    lens = task or room["lens"]
+    room = await _owned_row(room_id, _uid(user))
+    lens = task or room.get("default_lens") or "cfo_review"
     if lens not in TASK_MATRIX:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail={"error": "unknown_task", "task": lens})
-    transcript = _transcript_text(room)
+    transcript = _transcript_text(room.get("transcript") or [])
     primary_user = transcript + (f"\n\nFocus question: {question}" if question else "")
     scenario = {
         "id": f"room:{room_id}",
