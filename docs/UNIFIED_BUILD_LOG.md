@@ -129,3 +129,12 @@ The books/ledger store the finance skills route into is now real.
 - **Routes** `winny_gateway/routes/vigil/finance.py` (`/v1/finance/*`, registered in app.py): accounts list/create; transactions list (status/category filters) / capture / patch (classify+reconcile) / delete; `GET /summary` → P&L rollup (income/expense/net, by_category, reconcile progress). All scoped via `db._USER_SCOPED_TABLES` (+= finance_accounts, finance_transactions).
 - **Client** `web/src/lib/vigil.ts` `finance.*` + FinanceAccount/FinanceTxn/FinanceSummary types.
 - **Verified:** router imports + routes intact; `tsc -b` exit 0; live capture→classify→reconcile round-trip via MCP (FK to account + updated_at trigger) with cleanup.
+
+### 2026-06-16 — CRM backend (contacts + deal pipeline)
+The contacts + pipeline store the `crm` skill routes into (sales_leads is only inbound-lead intake, so this is distinct).
+- **Migration** `012_crm.sql` (applied via MCP): `crm_contacts` (name/email/phone/company/title/tags[]/notes/metadata) + `crm_deals` (title, contact_id FK ON DELETE SET NULL, stage lead→qualified→proposal→negotiation→won/lost, value, currency, probability, expected_close). RLS-on, indexes, updated_at triggers.
+- **Routes** `winny_gateway/routes/vigil/crm.py` (`/v1/crm/*`, registered): contacts list/create/patch/delete; deals list(filter by stage)/create/patch(move stage)/delete; `GET /pipeline` → per-stage count/value/weighted (value×probability) + open & weighted-open value. Scoped via `db._USER_SCOPED_TABLES` (+= crm_contacts, crm_deals).
+- **Client** `web/src/lib/vigil.ts` `crm.*` + CrmContact/CrmDeal/CrmPipeline types + DEAL_STAGES.
+- **Verified:** crm router + full `winny_gateway.app` import; `tsc -b` exit 0; live contact→deal→stage-move→FK-set-null round-trip via MCP with cleanup.
+
+**Backends status:** Studio + Meeting Room persisted; Finance + CRM data layers live. Remaining: Mail (himalaya transport + triage) data layer, and frontend pages for Finance/CRM (backends are ready for wiring).

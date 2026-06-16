@@ -152,6 +152,42 @@ export interface FinanceSummary {
   reconcile_progress: number;
 }
 
+export interface CrmContact {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  company: string | null;
+  title: string | null;
+  tags: string[];
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CrmDeal {
+  id: string;
+  title: string;
+  contact_id: string | null;
+  stage: string;
+  value: number;
+  currency: string;
+  probability: number;
+  expected_close: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CrmPipeline {
+  stages: Record<string, { count: number; value: number; weighted: number }>;
+  open_value: number;
+  weighted_open_value: number;
+  deal_count: number;
+}
+
+export const DEAL_STAGES = ["lead", "qualified", "proposal", "negotiation", "won", "lost"] as const;
+
 export const vigil = {
   council: {
     tasks: () => vigilCall<{ tasks: Record<string, CouncilTaskInfo> }>("GET", "/v1/council/tasks"),
@@ -210,6 +246,22 @@ export const vigil = {
       vigilCall<FinanceTxn>("PATCH", `/v1/finance/transactions/${id}`, patch),
     removeTransaction: (id: string) => vigilCall("DELETE", `/v1/finance/transactions/${id}`),
     summary: () => vigilCall<FinanceSummary>("GET", "/v1/finance/summary"),
+  },
+  crm: {
+    contacts: () => vigilCall<{ contacts: CrmContact[] }>("GET", "/v1/crm/contacts"),
+    addContact: (input: Partial<Omit<CrmContact, "id" | "created_at" | "updated_at">> & { name: string }) =>
+      vigilCall<CrmContact>("POST", "/v1/crm/contacts", input),
+    updateContact: (id: string, patch: Partial<Omit<CrmContact, "id" | "created_at" | "updated_at">>) =>
+      vigilCall<CrmContact>("PATCH", `/v1/crm/contacts/${id}`, patch),
+    removeContact: (id: string) => vigilCall("DELETE", `/v1/crm/contacts/${id}`),
+    deals: (stage?: string) =>
+      vigilCall<{ deals: CrmDeal[] }>("GET", `/v1/crm/deals${stage ? `?stage=${encodeURIComponent(stage)}` : ""}`),
+    addDeal: (input: Partial<Omit<CrmDeal, "id" | "created_at" | "updated_at">> & { title: string }) =>
+      vigilCall<CrmDeal>("POST", "/v1/crm/deals", input),
+    updateDeal: (id: string, patch: Partial<Omit<CrmDeal, "id" | "created_at" | "updated_at">>) =>
+      vigilCall<CrmDeal>("PATCH", `/v1/crm/deals/${id}`, patch),
+    removeDeal: (id: string) => vigilCall("DELETE", `/v1/crm/deals/${id}`),
+    pipeline: () => vigilCall<CrmPipeline>("GET", "/v1/crm/pipeline"),
   },
 };
 
