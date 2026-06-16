@@ -15,6 +15,8 @@ filter on this table).
 
 from __future__ import annotations
 
+import json
+import os
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -354,6 +356,42 @@ async def public_meeting(share_token: str) -> dict[str, Any]:
             "has_live": bool(room.get("live_url")),
         },
     }
+
+
+# ── Bring the AI model INTO the live room (dispatch the livekit-agents worker) ──
+class BringAgentBody(BaseModel):
+    persona: str = Field(default="advisor", description="CFO | CTO | COO | CRM | CRO | advisor")
+    evidence: str | None = Field(default=None, description="Vault/source text to ground the agent in.")
+
+
+@router.post("/{room_id}/bring-agent")
+async def bring_agent(room_id: str, body: BringAgentBody, user: dict = Depends(get_current_user)) -> dict[str, Any]:
+    """Dispatch the VIGIL meeting agent (livekit-agents worker `vigil-advisor`)
+    into the room's live call as the chosen persona, grounded in evidence. The
+    agent then hears/sees the room and speaks via its avatar — a real participant."""
+    uid = _uid(user)
+    room = await _owned_row(room_id, uid)
+    url, key, secret = os.getenv("LIVEKIT_URL"), os.getenv("LIVEKIT_API_KEY"), os.getenv("LIVEKIT_API_SECRET")
+    if not (url and key and secret):
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail={"error": "livekit_not_configured"})
+    try:
+        from livekit import api as lkapi  # lazy: only needed for dispatch
+    except ImportError:
+        raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail={"error": "livekit_api_missing"})
+
+    evidence = body.evidence or _transcript_text(room.get("transcript") or [])
+    metadata = json.dumps({"persona": body.persona, "topic": room.get("title") or "", "evidence": evidence[:4000]})
+    client = lkapi.LiveKitAPI(url, key, secret)
+    try:
+        await client.agent_dispatch.create_dispatch(
+            lkapi.CreateAgentDispatchRequest(agent_name="vigil-advisor", room=f"vigil-{room_id}", metadata=metadata)
+        )
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("bring_agent.dispatch_failed room=%s: %s", room_id, exc)
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail={"error": "dispatch_failed", "message": str(exc)})
+    finally:
+        await client.aclose()
+    return {"ok": True, "data": {"dispatched": True, "persona": body.persona, "room": f"vigil-{room_id}"}}
 
 
 # ── Live room (LiveKit transport — Phase 1 of the live meeting) ──

@@ -42,6 +42,8 @@ export default function MeetingRoomPage() {
   const [inviteLink, setInviteLink] = useState<string>("");
   const [liveBusy, setLiveBusy] = useState(false);
   const [liveErr, setLiveErr] = useState<string>("");
+  const [agentBusy, setAgentBusy] = useState(false);
+  const [agentIn, setAgentIn] = useState(false);
   const [summary, setSummary] = useState<MeetingSummary | null>(null);
   const [summarizing, setSummarizing] = useState(false);
 
@@ -135,6 +137,7 @@ export default function MeetingRoomPage() {
     setInviteLink("");
     setLiveErr("");
     setSummary(null);
+    setAgentIn(false);
   }, [active?.id]);
 
   const summarizeMeeting = async () => {
@@ -167,6 +170,21 @@ export default function MeetingRoomPage() {
     }
   };
 
+  // Dispatch the AI model into the live call as a participant.
+  const bringAgentIn = async () => {
+    if (!active) return;
+    setAgentBusy(true);
+    try {
+      const evidence = active.transcript.map((m) => `${m.speaker}: ${m.text}`).join("\n");
+      await vigil.rooms.bringAgent(active.id, persona, evidence || undefined);
+      setAgentIn(true);
+    } catch (e) {
+      setLiveErr((e as Error).message);
+    } finally {
+      setAgentBusy(false);
+    }
+  };
+
   if (authError) {
     return (
       <Card>
@@ -183,6 +201,14 @@ export default function MeetingRoomPage() {
         <div className="flex items-center justify-between px-3 py-2" style={{ borderBottom: "1px solid #ffffff14", color: "#e7e9f3" }}>
           <span className="text-sm font-semibold">{active?.title || "Live meeting"}</span>
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => void bringAgentIn()}
+              disabled={agentBusy}
+              className="rounded px-2 py-1 text-xs font-semibold"
+              style={{ color: "#07080d", background: "linear-gradient(90deg,#7c5cff,#22d3ee)" }}
+            >
+              {agentBusy ? "Bringing in…" : agentIn ? `AI ${persona} in call` : `🎭 Bring in AI ${persona}`}
+            </button>
             {inviteLink && (
               <button
                 onClick={() => void navigator.clipboard?.writeText(inviteLink)}

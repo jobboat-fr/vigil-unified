@@ -255,6 +255,7 @@ product = [
   "stripe>=11.0",
   "pypdf>=4.0",
   "ccxt>=4.3",
+  "livekit-api>=0.8",  # dispatch the meeting agent into a LiveKit room
 ]
 # Heavy forecast stack — only on hosts that actually run mcp-timesfm.
 forecast = ["torch>=2.3", "transformers>=4.40", "timesfm>=1.0"]

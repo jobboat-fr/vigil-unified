@@ -343,6 +343,8 @@ export const vigil = {
     livekitToken: (id: string) => vigilCall<LiveKitJoin>("POST", `/v1/rooms/${id}/livekit-token`),
     share: (id: string) => vigilCall<{ share_token: string }>("POST", `/v1/rooms/${id}/share`),
     summarize: (id: string) => vigilCall<MeetingSummary>("POST", `/v1/rooms/${id}/summarize`, {}),
+    bringAgent: (id: string, persona: string, evidence?: string) =>
+      vigilCall<{ dispatched: boolean; persona: string; room: string }>("POST", `/v1/rooms/${id}/bring-agent`, { persona, evidence }),
   },
   studio: {
     brainstorm: (brief: string, kind: string, grounding?: string) =>
