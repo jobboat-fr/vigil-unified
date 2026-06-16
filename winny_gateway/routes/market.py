@@ -215,17 +215,26 @@ async def market_ohlcv(
     """
     import httpx
 
+    from winny_gateway.market_enrich import _cc_key
+
     base, quote = _split_symbol(symbol)
     endpoint = {
         "minute": "histominute",
         "hour": "histohour",
         "day": "histoday",
     }[timeframe]
+    # CryptoCompare (CoinDesk) now requires an API key even for history — the
+    # keyless endpoint 401s. Send it the same way the enrich path does.
+    headers = {}
+    key = _cc_key()
+    if key:
+        headers["authorization"] = f"Apikey {key}"
     try:
         async with httpx.AsyncClient(timeout=8.0) as client:
             r = await client.get(
                 f"https://min-api.cryptocompare.com/data/v2/{endpoint}",
                 params={"fsym": base, "tsym": quote, "limit": limit},
+                headers=headers,
             )
             r.raise_for_status()
             body = r.json()
