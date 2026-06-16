@@ -103,6 +103,6 @@ These are agentskills.io-format + mostly tool-agnostic, so adaptation = **keep t
 | mail/ | mailpile/Mailpile | 1 (triage intelligence over himalaya) |
 
 **Open follow-ups (recorded, not blocking):**
-1. **Global-persona wiring** — bake `verification-before-completion`, `systematic-debugging`, `receiving-code-review`, brainstorm-first into SOUL.md/AGENTS.md as always-on.
+1. ~~Global-persona wiring~~ ✅ **DONE** — `docker/SOUL.md` rewritten as the unified VIGIL × WinnyWoo persona with the four always-on principles baked in: **think-first (brainstorming HARD-GATE)**, **evidence-before-claims (verification)**, **root-cause-before-fixes (debugging)**, **technical-rigor-on-feedback (review reception)** — plus the domain capabilities, voice, and hard rules (approval gate, vault grounding, tenant scoping).
 2. **Backends** — finance books store + CRM tables/routes land in `winny/finance/` + `winny_gateway/routes/vigil/` (port plan Stage 5).
 3. **Feature wiring** — invoke each skill from its routed product flow as those flows are built (Studio→brainstorming, Mail→mail-triage, CRM→crm, Finance→cfo-*, etc.).
