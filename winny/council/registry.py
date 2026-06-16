@@ -14,36 +14,48 @@ from typing import Any
 
 
 def worker_registry() -> dict[str, dict[str, Any]]:
-    """Resolved at call time so env overrides (and tests) take effect."""
+    """Resolved at call time so env overrides (and tests) take effect.
+
+    Default provider is the HuggingFace Inference Router (HF_TOKEN), so the
+    council runs on one configured key instead of three separate Anthropic/
+    OpenAI/Google keys (ports the AZZCO OVH architecture). Set
+    ``COUNCIL_PROVIDER`` to ``anthropic``/``openai``/``google`` to revert; pin
+    models with ``COUNCIL_*_MODEL``. Diversity is kept within HF (gpt-oss-120b
+    for reasoning, gpt-oss-20b for the fast reviewer) to limit bias collapse
+    while staying on one provider/key.
+    """
+    fam = os.getenv("COUNCIL_PROVIDER", "huggingface").lower()
+    hf = fam in ("huggingface", "hf")
+    prov = "HuggingFace" if hf else fam.title()
     return {
         "primary": {
-            "provider": "Anthropic",
-            "model": os.getenv("COUNCIL_PRIMARY_MODEL") or os.getenv("ANTHROPIC_MODEL") or "claude-sonnet-4-5-20250929",
-            "family": "anthropic",
+            "provider": prov,
+            "model": os.getenv("COUNCIL_PRIMARY_MODEL") or ("openai/gpt-oss-120b" if hf else (os.getenv("ANTHROPIC_MODEL") or "claude-sonnet-4-5-20250929")),
+            "family": fam,
             "specialization": "ROLE_SPECIALIST",
             "voteWeight": 1.5,
             "enabled": True,
         },
         "reviewer_1": {
-            "provider": "OpenAI",
-            "model": os.getenv("COUNCIL_REVIEWER_1_MODEL") or "gpt-4o",
-            "family": "openai",
+            "provider": prov,
+            "model": os.getenv("COUNCIL_REVIEWER_1_MODEL") or ("openai/gpt-oss-120b" if hf else "gpt-4o"),
+            "family": fam,
             "specialization": "BALANCED_REVIEWER",
             "voteWeight": 1.3,
             "enabled": True,
         },
         "reviewer_2": {
-            "provider": "Google",
-            "model": os.getenv("COUNCIL_REVIEWER_2_MODEL") or os.getenv("GEMINI_MODEL") or "gemini-2.5-flash",
-            "family": "google",
+            "provider": prov,
+            "model": os.getenv("COUNCIL_REVIEWER_2_MODEL") or ("openai/gpt-oss-20b" if hf else (os.getenv("GEMINI_MODEL") or "gemini-2.5-flash")),
+            "family": fam,
             "specialization": "FAST_REVIEWER",
             "voteWeight": 1.2,
             "enabled": True,
         },
         "chairman": {
-            "provider": "Google",
-            "model": os.getenv("COUNCIL_CHAIRMAN_MODEL") or "gemini-2.5-flash",
-            "family": "google",
+            "provider": prov,
+            "model": os.getenv("COUNCIL_CHAIRMAN_MODEL") or ("openai/gpt-oss-120b" if hf else "gemini-2.5-flash"),
+            "family": fam,
             "specialization": "CHAIRMAN",
             "voteWeight": 2.0,
             "enabled": True,

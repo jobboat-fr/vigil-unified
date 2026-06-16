@@ -38,6 +38,11 @@ _PRICING: dict[str, tuple[float, float]] = {
     "gpt-4o-mini": (0.15, 0.6),
     "gemini-2.5-flash": (0.30, 2.5),
     "gemini-2.5-pro": (1.25, 10.0),
+    # HuggingFace router models (ports AZZCO's TOKEN_PRICES table)
+    "gpt-oss-120b": (0.15, 0.60),
+    "gpt-oss-20b": (0.05, 0.20),
+    "kimi-k2": (0.50, 2.80),
+    "qwen": (0.10, 0.15),
 }
 
 _OAI_COMPAT = {
@@ -58,6 +63,14 @@ def _price_key(model: str) -> str:
         return "gemini-2.5-pro"
     if "gemini-2.5-flash" in m:
         return "gemini-2.5-flash"
+    if "gpt-oss-120b" in m:
+        return "gpt-oss-120b"
+    if "gpt-oss-20b" in m:
+        return "gpt-oss-20b"
+    if "kimi" in m:
+        return "kimi-k2"
+    if "qwen" in m:
+        return "qwen"
     return m
 
 
@@ -113,6 +126,24 @@ async def ask(
             return await _call_openai(OPENAI_URL, os.getenv("OPENAI_API_KEY"), "OpenAI", model, messages, temperature, max_tokens, timeout)
         if family == "google":
             return await _call_gemini(model, messages, temperature, max_tokens, timeout)
+        if family in ("huggingface", "hf"):
+            # HuggingFace Inference Router — OpenAI-compatible. The x-hf-bill-to
+            # header routes inference cost to the configured org (ports AZZCO's
+            # HuggingFaceChatProvider). Token: HF_TOKEN; model slug as-is
+            # (e.g. "openai/gpt-oss-120b").
+            base = (os.getenv("HUGGINGFACE_CHAT_BASE") or "https://router.huggingface.co/v1").rstrip("/")
+            # Bill inference to the org that holds the credits. Defaults to
+            # "azzetco" (the real HF org for this token — the handoff's "jobboat"
+            # was a wrong guess and 403s); override via HF_BILL_TO.
+            extra: dict[str, str] = {
+                "x-hf-bill-to": os.getenv("HF_BILL_TO") or os.getenv("HUGGINGFACE_BILL_TO") or "azzetco"
+            }
+            return await _call_openai(
+                f"{base}/chat/completions",
+                os.getenv("HF_TOKEN") or os.getenv("HUGGINGFACE_API_TOKEN"),
+                "HuggingFace", model, messages, temperature, max_tokens, timeout,
+                extra_headers=extra,
+            )
         if family in _OAI_COMPAT:
             base_env, base_default, key_env = _OAI_COMPAT[family]
             base = (os.getenv(base_env) or base_default).rstrip("/")
@@ -166,7 +197,7 @@ async def _call_anthropic(model, messages, temperature, max_tokens, timeout) -> 
     }
 
 
-async def _call_openai(url, api_key, label, model, messages, temperature, max_tokens, timeout) -> dict[str, Any]:
+async def _call_openai(url, api_key, label, model, messages, temperature, max_tokens, timeout, extra_headers=None) -> dict[str, Any]:
     if not api_key:
         raise _MissingKey(f"{label} API key not set")
     body = {
@@ -175,9 +206,12 @@ async def _call_openai(url, api_key, label, model, messages, temperature, max_to
         "temperature": temperature,
         "max_tokens": max_tokens,
     }
+    headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+    if extra_headers:
+        headers.update(extra_headers)
     t0 = time.time()
     async with httpx.AsyncClient(timeout=timeout) as client:
-        resp = await client.post(url, headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}, json=body)
+        resp = await client.post(url, headers=headers, json=body)
     latency_ms = int((time.time() - t0) * 1000)
     resp.raise_for_status()
     data = resp.json()
