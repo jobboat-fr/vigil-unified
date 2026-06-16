@@ -48,6 +48,7 @@ from winny_gateway.routes import (
 )
 from winny_gateway.routes.vigil import council as vigil_council
 from winny_gateway.routes.vigil import rooms as vigil_rooms
+from winny_gateway.routes.vigil import studio as vigil_studio
 from winny_gateway.security import SecurityMiddleware
 
 logger = get_logger(__name__)
@@ -205,6 +206,8 @@ def create_app(config: GatewayConfig | None = None) -> FastAPI:
     # VIGIL meeting room + council — ported from VIGIL backendv2 (Node→Python).
     app.include_router(vigil_council.router)
     app.include_router(vigil_rooms.router)
+    # Studio — artifact drafting behind the brainstorm-first gate.
+    app.include_router(vigil_studio.router)
 
     @app.get("/health")
     async def health() -> dict[str, Any]:

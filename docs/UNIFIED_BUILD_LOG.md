@@ -106,3 +106,12 @@ These are agentskills.io-format + mostly tool-agnostic, so adaptation = **keep t
 1. ~~Global-persona wiring~~ ✅ **DONE** — `docker/SOUL.md` rewritten as the unified VIGIL × WinnyWoo persona with the four always-on principles baked in: **think-first (brainstorming HARD-GATE)**, **evidence-before-claims (verification)**, **root-cause-before-fixes (debugging)**, **technical-rigor-on-feedback (review reception)** — plus the domain capabilities, voice, and hard rules (approval gate, vault grounding, tenant scoping).
 2. **Backends** — finance books store + CRM tables/routes land in `winny/finance/` + `winny_gateway/routes/vigil/` (port plan Stage 5).
 3. **Feature wiring** — invoke each skill from its routed product flow as those flows are built (Studio→brainstorming, Mail→mail-triage, CRM→crm, Finance→cfo-*, etc.).
+
+### 2026-06-16 — First feature wiring: Studio → brainstorming → artifact (end-to-end proof)
+The `brainstorming` thinking skill is now wired to a real product surface as the proof that the agentic spine drives features, not just the persona.
+- **Backend** `winny_gateway/routes/vigil/studio.py` (registered in `app.py`) — two-stage flow enforcing the HARD-GATE:
+  1. `POST /v1/artifacts/brainstorm` → think-first: returns understanding + clarifying questions + 2-3 approaches with trade-offs + a recommended design. **No artifact produced.**
+  2. `POST /v1/artifacts` → drafts only against an approved approach. Plus `GET` (list/get), `DELETE`, `POST /{id}/refine` (Studio side-chat).
+  - LLM via the council provider `ask(worker_registry()["primary"], …)` — degrades to a deterministic stub when no API key, so the surface never crashes keyless. Storage in-memory, **scoped to the authenticated user** (same model as rooms).
+- **Frontend** `web/src/pages/StudioPage.tsx` (real, replaced scaffold) + `web/src/lib/vigil.ts` `studio.*` client + `Artifact`/`BrainstormPlan` types — composer → "Think it through" → approach cards (Recommended badge) → "Approve & draft" → artifact view + refine. Kind selector (proposal/brief/contract/memo/report), optional Vault grounding box.
+- **Verified:** `tsc -b` exit 0; backend imports + route signatures checked; functional smoke (brainstorm→create→list→refine) passes on the stub provider; **tenant scoping enforced** (other user → 404).

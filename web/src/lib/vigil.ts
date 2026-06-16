@@ -94,6 +94,33 @@ export interface SseEvent {
   data: Record<string, unknown>;
 }
 
+export interface BrainstormApproach {
+  name: string;
+  summary: string;
+  tradeoffs: string;
+  recommended: boolean;
+}
+
+export interface BrainstormPlan {
+  understanding: string;
+  clarifying_questions: string[];
+  approaches: BrainstormApproach[];
+  recommended_design: string;
+}
+
+export interface Artifact {
+  id: string;
+  title: string;
+  kind: string;
+  brief: string;
+  approach: string;
+  content: string;
+  stub: boolean;
+  revisions: number;
+  created_at: string;
+  updated_at: string;
+}
+
 export const vigil = {
   council: {
     tasks: () => vigilCall<{ tasks: Record<string, CouncilTaskInfo> }>("GET", "/v1/council/tasks"),
@@ -111,6 +138,21 @@ export const vigil = {
       vigilCall("POST", `/v1/rooms/${id}/messages`, { text, speaker }),
     transcript: (id: string) =>
       vigilCall<{ transcript: Room["transcript"] }>("GET", `/v1/rooms/${id}/transcript`),
+  },
+  studio: {
+    brainstorm: (brief: string, kind: string, grounding?: string) =>
+      vigilCall<{ kind: string; brief: string; stub: boolean; plan: BrainstormPlan }>(
+        "POST",
+        "/v1/artifacts/brainstorm",
+        { brief, kind, grounding },
+      ),
+    create: (input: { title: string; kind: string; brief: string; approach: string; grounding?: string }) =>
+      vigilCall<Artifact>("POST", "/v1/artifacts", input),
+    list: () => vigilCall<{ artifacts: Artifact[] }>("GET", "/v1/artifacts"),
+    get: (id: string) => vigilCall<Artifact>("GET", `/v1/artifacts/${id}`),
+    remove: (id: string) => vigilCall("DELETE", `/v1/artifacts/${id}`),
+    refine: (id: string, instruction: string) =>
+      vigilCall<Artifact>("POST", `/v1/artifacts/${id}/refine`, { instruction }),
   },
 };
 
