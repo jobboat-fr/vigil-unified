@@ -24,6 +24,7 @@ from pydantic import BaseModel, Field
 from winny.council import ROLE_SYSTEM_PROMPTS, REVIEWER_SYSTEM_PROMPT, TASK_MATRIX
 from winny.council.intervention import WEIGHT_DEFAULTS, check_intervention
 from winny_gateway import avatar as avatar_mod
+from winny_gateway import livekit as lk
 from winny_gateway.auth import get_current_user
 from winny_gateway.db import db_delete, db_insert, db_select, db_update
 from winny_gateway.logging import get_logger
@@ -320,3 +321,51 @@ async def end_avatar(room_id: str, user: dict = Depends(get_current_user)) -> di
     if session and session.get("provider") == "tavus" and session.get("conversation_id"):
         await avatar_mod.end_tavus_conversation(session["conversation_id"])
     return {"ok": True, "data": {"ended": room_id, "had_session": bool(session)}}
+
+
+# ── Live room (LiveKit transport — Phase 1 of the live meeting) ──
+@router.post("/{room_id}/livekit-token")
+async def livekit_token(room_id: str, user: dict = Depends(get_current_user)) -> dict[str, Any]:
+    """Mint a LiveKit join token for the room owner to join the live room."""
+    if not lk.livekit_configured():
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail={"error": "livekit_not_configured"})
+    uid = _uid(user)
+    room = await _owned_row(room_id, uid)
+    name = str(user.get("email") or "Host").split("@")[0]
+    return {"ok": True, "data": lk.join_payload(room=f"vigil-{room_id}", identity=uid, name=name, metadata="role=host")}
+
+
+@router.post("/{room_id}/share")
+async def make_share_link(room_id: str, user: dict = Depends(get_current_user)) -> dict[str, Any]:
+    """Generate (or return) a share token so external guests can join the room."""
+    uid = _uid(user)
+    room = await _owned_row(room_id, uid)
+    token = room.get("share_token") or lk.new_share_token()
+    if not room.get("share_token"):
+        await db_update("rooms", {"share_token": token}, filters={"id": room_id, "user_id": uid})
+    return {"ok": True, "data": {"share_token": token}}
+
+
+class GuestJoinBody(BaseModel):
+    name: str = Field(default="Guest", max_length=80)
+
+
+@router.post("/guest/{share_token}/join")
+async def guest_join(share_token: str, body: GuestJoinBody) -> dict[str, Any]:
+    """Public — an external (non-account) guest joins the live room via a share
+    link. No auth; the opaque share token is the capability."""
+    if not lk.livekit_configured():
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail={"error": "livekit_not_configured"})
+    rows = await db_select("rooms", filters={"share_token": share_token}, limit=1, allow_unscoped=True)
+    if not rows:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail={"error": "invalid_share_token"})
+    room = rows[0]
+    guest_id = f"guest-{lk.new_share_token()[:10]}"
+    return {
+        "ok": True,
+        "data": {
+            "room_title": room.get("title"),
+            **lk.join_payload(room=f"vigil-{room['id']}", identity=guest_id,
+                              name=body.name or "Guest", metadata="role=guest"),
+        },
+    }
