@@ -117,7 +117,7 @@ export const ww = {
     search: (q: string) => call("GET", `/v1/vault/search?q=${encodeURIComponent(q)}`),
   },
   market: {
-    overview: () => call("GET", "/api/v1/market/overview", undefined, { public: true }),
+    overview: () => call<MarketOverview>("GET", "/api/v1/market/overview", undefined, { public: true }),
     enrich: (symbol: string) =>
       call<EnrichData>("GET", `/api/v1/market/enrich/${encodeURIComponent(symbol)}`, undefined, { public: true }),
     ohlcv: (symbol: string, timeframe: "hour" | "minute" | "day" = "hour", limit = 168) =>
@@ -129,6 +129,18 @@ export const ww = {
       ),
   },
 };
+
+export interface MarketOverview {
+  btc_price?: string;
+  btc_24h_change?: string;
+  eth_price?: string;
+  eth_24h_change?: string;
+  btc_dominance_pct?: number;
+  btc_market_cap_usd?: number;
+  fear_greed_index?: number;
+  fear_greed_label?: string;
+  asof?: string;
+}
 
 export interface Candle { t: number; o: number; h: number; l: number; c: number; v: number }
 export interface OhlcvData { symbol: string; timeframe: string; candles: Candle[] }

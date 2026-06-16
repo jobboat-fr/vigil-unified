@@ -158,3 +158,11 @@ The three new backends now have UI (live `vigil.*` clients, same auth-gated patt
 - **Verified:** `tsc -b` exit 0 **and** full `vite build` succeeds (deploy build).
 
 **Status:** all 4 skill-domain backends + their pages live; Studio/Meeting-Room persisted. The unified workspace now surfaces: Meeting Room · Studio · Vault · Finance · CRM · Mail · Trade Desk · Signals · Positions · Orders · Audit.
+
+### 2026-06-16 — Public landing site + docs (logged-out experience)
+The app gated everything behind the auth form; there was no public face. Added a real marketing site for logged-out users.
+- **PublicSite** (`web/src/components/PublicSite.tsx`) — router shown by AuthGate when there's no session: `/` landing, `/docs`, `/login`, `/signup`, `/auth` (OAuth callback spinner), `*`→`/`. AuthGate now renders this instead of the bare auth form.
+- **LandingPage** (`web/src/pages/LandingPage.tsx`) — bold dedicated marketing look (violet→cyan gradients, animated): hero with a **live market pulse** (BTC/ETH/dominance/fear-greed from the public `/api/v1/market/overview`, refreshes 30s), two-pillar VIGIL×WinnyWoo explainer, 8-surface grid, how-it-works, principles (approval gate, your-keys, dissent, evidence), CTA, footer.
+- **DocsPage** (`web/src/pages/DocsPage.public.tsx`) — sidebar + sections: getting-started, the surfaces, connecting your broker, the approval gate, privacy & data, FAQ.
+- **AuthPage** gains `initialMode` (login/signup deep-links) + a home link; post-sign-in the app's `*` route redirects to `/sessions`.
+- **Verified:** `tsc -b` exit 0 + full `vite build` succeeds; routing edges checked (logged-out `*`→landing, logged-in `*`→/sessions). Live render verified against the deployed site (see below).

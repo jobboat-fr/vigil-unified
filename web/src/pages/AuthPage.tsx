@@ -1,12 +1,13 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Button } from "@nous-research/ui/ui/components/button";
 import { useAuth } from "@/context/AuthContext";
 
 type Mode = "signin" | "signup" | "reset";
 
-export default function AuthPage() {
+export default function AuthPage({ initialMode = "signin" }: { initialMode?: Mode }) {
   const { signIn, signUp, resetPassword, signInWithGoogle, signInWithApple, signInWithGithub, signInWithRailway, authError } = useAuth();
-  const [mode, setMode] = useState<Mode>("signin");
+  const [mode, setMode] = useState<Mode>(initialMode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -43,8 +44,10 @@ export default function AuthPage() {
     <div className="min-h-dvh flex items-center justify-center p-4">
       <div className="w-full max-w-sm flex flex-col gap-6">
         <div className="flex flex-col items-center gap-2">
-          <img src="/vigil-mark.svg" alt="VIGIL" width={48} height={48} />
-          <h1 className="text-lg font-bold tracking-[0.05em]">VIGIL × WinnyWoo</h1>
+          <Link to="/" className="flex flex-col items-center gap-2 hover:opacity-80">
+            <img src="/vigil-mark.svg" alt="VIGIL" width={48} height={48} />
+            <h1 className="text-lg font-bold tracking-[0.05em]">VIGIL × WinnyWoo</h1>
+          </Link>
           <p className="text-xs text-text-secondary">
             {mode === "signin" ? "Sign in to your workspace" : mode === "signup" ? "Create your account" : "Reset your password"}
           </p>

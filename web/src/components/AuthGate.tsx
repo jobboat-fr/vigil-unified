@@ -1,12 +1,14 @@
 import type { ReactNode } from "react";
 import { Spinner } from "@nous-research/ui/ui/components/spinner";
 import { useAuth } from "@/context/AuthContext";
-import AuthPage from "@/pages/AuthPage";
+import PublicSite from "@/components/PublicSite";
 
 /**
- * Gates the whole app behind the VIGIL Supabase session. When Supabase isn't
- * configured (no env — e.g. a pure-Hermes/local dashboard build) the gate is a
- * no-op so the dashboard still loads.
+ * Gates the whole app behind the VIGIL Supabase session. When there's no
+ * session, the logged-out experience is the public marketing site + docs +
+ * auth (PublicSite). When Supabase isn't configured (no env — e.g. a
+ * pure-Hermes/local dashboard build) the gate is a no-op so the dashboard
+ * still loads.
  */
 export function AuthGate({ children }: { children: ReactNode }) {
   const { configured, loading, session } = useAuth();
@@ -18,6 +20,6 @@ export function AuthGate({ children }: { children: ReactNode }) {
       </div>
     );
   }
-  if (!session) return <AuthPage />;
+  if (!session) return <PublicSite />;
   return <>{children}</>;
 }
