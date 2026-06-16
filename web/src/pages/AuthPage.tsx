@@ -5,7 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 type Mode = "signin" | "signup" | "reset";
 
 export default function AuthPage() {
-  const { signIn, signUp, resetPassword, signInWithGoogle, signInWithGithub, authError } = useAuth();
+  const { signIn, signUp, resetPassword, signInWithGoogle, signInWithApple, signInWithGithub, signInWithRailway, authError } = useAuth();
   const [mode, setMode] = useState<Mode>("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -78,7 +78,9 @@ export default function AuthPage() {
             </div>
             <div className="grid grid-cols-2 gap-2">
               <Button ghost className="w-full" onClick={() => void signInWithGoogle()}>Google</Button>
+              <Button ghost className="w-full" onClick={() => void signInWithApple()}>Apple</Button>
               <Button ghost className="w-full" onClick={() => void signInWithGithub()}>GitHub</Button>
+              <Button ghost className="w-full" onClick={() => void signInWithRailway()}>Railway</Button>
             </div>
           </div>
         )}

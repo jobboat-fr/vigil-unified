@@ -11,7 +11,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { Session, User } from "@supabase/supabase-js";
+import type { Provider, Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 
 interface AuthValue {
@@ -27,6 +27,7 @@ interface AuthValue {
   signInWithGoogle: () => Promise<void>;
   signInWithApple: () => Promise<void>;
   signInWithGithub: () => Promise<void>;
+  signInWithRailway: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthValue | null>(null);
@@ -102,11 +103,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signInWithGoogle: () => supabase!.auth.signInWithOAuth({ provider: "google", options: { redirectTo: redirect() } }).then(() => undefined),
         signInWithApple: () => supabase!.auth.signInWithOAuth({ provider: "apple", options: { redirectTo: redirect() } }).then(() => undefined),
         signInWithGithub: () => supabase!.auth.signInWithOAuth({ provider: "github", options: { redirectTo: redirect() } }).then(() => undefined),
+        // Railway is a Supabase custom OIDC provider (configured as "railwayoauth").
+        signInWithRailway: () => supabase!.auth.signInWithOAuth({ provider: "custom:railwayoauth" as Provider, options: { redirectTo: redirect() } }).then(() => undefined),
       }
     : {
         user: null, session: null, loading, authError: "", configured: false,
         signIn: noop, signUp: async () => ({ data: null, error: null }), signOut: async () => {},
-        resetPassword: noop, signInWithGoogle: async () => {}, signInWithApple: async () => {}, signInWithGithub: async () => {},
+        resetPassword: noop, signInWithGoogle: async () => {}, signInWithApple: async () => {}, signInWithGithub: async () => {}, signInWithRailway: async () => {},
       };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
