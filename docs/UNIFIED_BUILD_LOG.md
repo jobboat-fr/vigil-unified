@@ -54,4 +54,20 @@ Target skills (13 in source; curating to the ones that fit a product-building ag
 
 #### ✅ thinking/ COMPLETE — 8 of 8 curated done.
 **Global-persona wiring pending:** `verification-before-completion`, `systematic-debugging`, `receiving-code-review`, and brainstorm-first need to be baked into vigil-unified's SOUL.md/AGENTS.md as always-on behaviors (do this when we assemble the unified persona).
-- **Next domain → `finance/` (cfo-stack):** curating ~8 of 30 — `cfo` (router), `advisor`, `capture`, `classify`, `reconcile`, `monthly-close`, `quarterly-tax`/`tax-plan`, `report`. Adapt off Beancount-CLI specifics toward our vault + finance tools.
+### finance/ (from cfo-stack) — curating ~8 of 30
+Adapt off Beancount-CLI / plain-text-accounting + `/cfo-*` slash routing → keep the C.L.E.A.R. methodology + roles + constraints, ground in our **Vault**, route to Finance/Calculations/Studio/Trade-Desk.
+
+- [x] **cfo** (router) → `skills/finance/cfo/`. Finance front-door: minimum-questions routing across the curated set; strip references to non-curated sub-skills; ground in Vault; keep "never guess entity/jurisdiction" + "tax model ≠ compliance approval" constraints.
+  - **Routes to →** Finance entry point in Chat; Vault grounding; reports → Studio; reads Trade Desk positions.
+- [x] **cfo-advisor** → `skills/finance/cfo-advisor/`. Net worth / savings rate / FIRE / scenario modeling, data-driven, "information not advice" disclaimer kept. Pull figures from books + Vault + Trade Desk positions.
+  - **Routes to →** Finance/Calculations dashboard; Studio artifact; Vault + Trade Desk grounding.
+- [x] **cfo-capture** (C) → data clerk: inventory sources from the **Vault**, flag OCR-needed docs, dedupe, stage (never auto-commit), consolidate, archive. Generalized Beancount staging paths + the bank-import/receipt-scan/dedupe sub-skill chain into inline steps. **Routes to →** Vault → Finance capture; hands off to cfo-classify.
+- [x] **cfo-classify** (L) → staff accountant: rules → pattern → history → inference; confidence gates (HIGH/MED/LOW, never auto-apply); CA/US tax treatment + pass-through guardrail; learn-from-corrections (anonymized). **Routes to →** Finance classify; Vault-grounded; feeds reconcile/tax/report.
+- [x] **cfo-reconcile** (E) → controller: statement-vs-books deltas, investigate (missing/dup/timing/fees/FX), balance assertions, PASS/FAIL report. Kept "never fabricate to force a balance / never mark reconciled if delta≠0 / human approval." **Routes to →** Finance reconcile; Vault statements; precedes close.
+- [x] **cfo-monthly-close** (A) → orchestrates capture→classify→reconcile→report→validate + close packet; snapshot/tag the close. Generalized git commit/tag. **Routes to →** Finance close; close packet → Studio artifact.
+- [x] **cfo-tax-plan** (E) → tax strategist: verify jurisdiction source first (never fabricate rates), assess position, CA/US opportunities, scenarios with cited rates, deadlines, action items. Kept the CRITICAL "not tax advice" disclaimer. **Routes to →** Finance tax; Vault jurisdiction docs; report → Studio.
+- [x] **cfo-report** (R) → CFO: P&L + balance sheet (must balance) + cash flow + comparisons + one-paragraph health summary. Generalized Beancount/BQL + file paths. **Routes to →** Studio artifact; Finance/Calculations dashboards.
+
+#### ✅ finance/ COMPLETE — 8 of 8 curated (cfo, cfo-advisor, cfo-capture, cfo-classify, cfo-reconcile, cfo-monthly-close, cfo-tax-plan, cfo-report).
+> Note: the finance skills assume a books/ledger store + (eventually) `winny/finance/` per UNIFIED_PORT_PLAN Stage 5. The skills are the methodology layer; the data backend is wired when that stage lands.
+- **Next domain → `marketing/` (coreyhaines31/marketingskills):** curate ~8 of 40 — `product-marketing` (the shared-context foundation), `copywriting`, `cro`, `seo-audit`, `analytics`, `cold-email`, `launch`, `pricing`.
