@@ -201,7 +201,7 @@ export default function MeetingRoomPage() {
                 <div className="text-[10px] font-mono uppercase tracking-wide text-text-secondary mb-1.5">Convene council</div>
                 <div className="flex flex-wrap gap-2">
                   {LENSES.map((l) => (
-                    <Button key={l.key} size="sm" variant="outline" disabled={convening} onClick={() => void convene(l.key)}>
+                    <Button key={l.key} size="sm" disabled={convening} onClick={() => void convene(l.key)}>
                       {l.label} review
                     </Button>
                   ))}
