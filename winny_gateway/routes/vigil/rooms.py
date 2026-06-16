@@ -23,6 +23,7 @@ from pydantic import BaseModel, Field
 
 from winny.council import ROLE_SYSTEM_PROMPTS, REVIEWER_SYSTEM_PROMPT, TASK_MATRIX
 from winny.council.intervention import WEIGHT_DEFAULTS, check_intervention
+from winny_gateway import avatar as avatar_mod
 from winny_gateway.auth import get_current_user
 from winny_gateway.db import db_delete, db_insert, db_select, db_update
 from winny_gateway.logging import get_logger
@@ -265,3 +266,57 @@ async def get_weights(room_id: str, user: dict = Depends(get_current_user)) -> d
     uid = _uid(user)
     await _owned_row(room_id, uid)  # 404s if not owned
     return {"ok": True, "data": {"weights": await _load_weights(uid), "defaults": WEIGHT_DEFAULTS}}
+
+
+# ── AI avatar presence (Tavus primary → Beyond Presence fallback) ──
+# Active sessions in-process: room_id → normalized session (carries provider +
+# conversation_id so we can end it).
+_AVATAR_SESSIONS: dict[str, dict[str, Any]] = {}
+
+
+class AvatarBody(BaseModel):
+    persona: str = Field(default="advisor", description="CFO | CTO | COO | CRM | CRO | advisor")
+    language: str | None = Field(default=None)
+    greeting: str | None = Field(default=None)
+    evidence: str | None = Field(default=None, description="Vault/source text to ground the avatar in.")
+
+
+@router.get("/avatar/status")
+async def avatar_status(_user: dict = Depends(get_current_user)) -> dict[str, Any]:
+    """Which avatar providers are configured (Tavus / Beyond Presence)."""
+    return {"ok": True, "data": avatar_mod.avatar_status()}
+
+
+@router.post("/{room_id}/avatar-session")
+async def start_avatar(room_id: str, body: AvatarBody, user: dict = Depends(get_current_user)) -> dict[str, Any]:
+    """Spawn the AI avatar into the room as the chosen advisor persona, grounded
+    in the supplied evidence. Returns the embeddable join URL (Tavus CVI /
+    Beyond+LiveKit)."""
+    uid = _uid(user)
+    room = await _owned_row(room_id, uid)
+    advisors = [m.get("title") or m.get("id") for m in (room.get("members") or [])]
+    try:
+        session = await avatar_mod.create_avatar_session(
+            room_id=room_id,
+            persona=body.persona,
+            topic=room.get("title") or "",
+            advisors=[a for a in advisors if a] or None,
+            evidence=body.evidence,
+            language=body.language,
+            greeting=body.greeting,
+        )
+    except RuntimeError as exc:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail={"error": "avatar_unavailable", "message": str(exc)})
+    _AVATAR_SESSIONS[room_id] = session
+    return {"ok": True, "data": session}
+
+
+@router.delete("/{room_id}/avatar-session")
+async def end_avatar(room_id: str, user: dict = Depends(get_current_user)) -> dict[str, Any]:
+    """End the room's active avatar session."""
+    uid = _uid(user)
+    await _owned_row(room_id, uid)
+    session = _AVATAR_SESSIONS.pop(room_id, None)
+    if session and session.get("provider") == "tavus" and session.get("conversation_id"):
+        await avatar_mod.end_tavus_conversation(session["conversation_id"])
+    return {"ok": True, "data": {"ended": room_id, "had_session": bool(session)}}
