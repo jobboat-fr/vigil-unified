@@ -22,9 +22,13 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from winny.council import ROLE_SYSTEM_PROMPTS, REVIEWER_SYSTEM_PROMPT, TASK_MATRIX
+from winny.council.intervention import WEIGHT_DEFAULTS, check_intervention
 from winny_gateway.auth import get_current_user
 from winny_gateway.db import db_delete, db_insert, db_select, db_update
+from winny_gateway.logging import get_logger
 from winny_gateway.routes.vigil.council import _run_council_sse
+
+logger = get_logger(__name__)
 
 router = APIRouter(prefix="/v1/rooms", tags=["rooms"])
 
@@ -198,3 +202,66 @@ async def convene_stream(
         "reviewerSystemPrompt": REVIEWER_SYSTEM_PROMPT,
     }
     return StreamingResponse(_run_council_sse(lens, scenario), media_type="text/event-stream")
+
+
+# ── Live intervention (the "raise hand" brain — Phase 1 of the meeting-room port) ──
+async def _load_weights(uid: str) -> dict[str, float]:
+    """Per-tenant behavioral weights from pattern_weights (org_id = the user).
+    Falls back to defaults; never raises."""
+    weights = dict(WEIGHT_DEFAULTS)
+    try:
+        rows = await db_select("pattern_weights", filters={"org_id": uid}, allow_unscoped=True)
+        for r in rows:
+            name = r.get("pattern_id")
+            if name in WEIGHT_DEFAULTS and r.get("weight") is not None:
+                weights[name] = float(r["weight"])
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("intervention.load_weights_failed: %s", exc)
+    return weights
+
+
+class InterventionBody(BaseModel):
+    topic: str = Field(default="")
+    active_specialties: list[str] | None = Field(default=None, description="cfo|cto|legal|product")
+    window_size: int = Field(default=20, ge=4, le=60)
+
+
+@router.post("/{room_id}/intervention-check")
+async def intervention_check(room_id: str, body: InterventionBody, user: dict = Depends(get_current_user)) -> dict[str, Any]:
+    """Should the AI raise its hand right now? Runs the specialist fan-out → judge
+    → behavioral-overlay pipeline over the room's recent transcript and logs the
+    decision to ai_interventions. Poll this on a heartbeat while a meeting is live."""
+    uid = _uid(user)
+    room = await _owned_row(room_id, uid)
+    weights = await _load_weights(uid)
+    decision = await check_intervention(
+        transcript=list(room.get("transcript") or []),
+        topic=body.topic or room.get("title") or "",
+        weights=weights,
+        active_specialties=body.active_specialties,
+        window_size=body.window_size,
+    )
+    # Fire-and-forget audit log of the decision.
+    try:
+        await db_insert("ai_interventions", {
+            "room_id": room_id,
+            "user_id": uid,
+            "proposed_text": decision.get("message") or "",
+            "urgency": decision.get("urgency") or "normal",
+            "reason": decision.get("reason") or "",
+            "touched_specialties": decision.get("touched_specialties") or [],
+            "cost_usd": decision.get("cost_usd") or 0,
+            "decision": "speak" if decision.get("speak") else "silent",
+        })
+    except Exception as exc:  # noqa: BLE001
+        logger.debug("intervention.log_failed: %s", exc)
+    return {"ok": True, "data": decision}
+
+
+@router.get("/{room_id}/weights")
+async def get_weights(room_id: str, user: dict = Depends(get_current_user)) -> dict[str, Any]:
+    """The tenant's current behavioral weights (cooldown_turns, min_specialist_signals,
+    silence_bias) governing how readily the advisor speaks."""
+    uid = _uid(user)
+    await _owned_row(room_id, uid)  # 404s if not owned
+    return {"ok": True, "data": {"weights": await _load_weights(uid), "defaults": WEIGHT_DEFAULTS}}
