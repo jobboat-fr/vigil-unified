@@ -64,6 +64,7 @@ environments/benchmarks/evals/
 
 # Web UI build output
 hermes_cli/web_dist/
+web/dist/
 apps/desktop/build/
 apps/desktop/dist/
 apps/desktop/release/

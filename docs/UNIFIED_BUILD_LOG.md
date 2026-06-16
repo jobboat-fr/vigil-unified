@@ -148,3 +148,13 @@ The inbox-triage store the mail-triage skill routes into, fed by the himalaya tr
 - **Verified:** mail router + full app import; himalaya bridge degrades (available=false, no crash); `tsc -b` exit 0; live round-trip via MCP (manual ingest + idempotent external_id upsert + NULL-distinct + triage patch + draft approve) with cleanup.
 
 **✅ All four skill-domain backends live:** Finance · CRM · Mail data layers + Studio/Meeting-Room persistence. Remaining: Finance/CRM/Mail **frontend pages** (backends ready to wire).
+
+### 2026-06-16 — Finance / CRM / Mail frontend pages
+The three new backends now have UI (live `vigil.*` clients, same auth-gated pattern as Studio/MeetingRoom).
+- **FinancePage** (`/finance`, Receipt icon) — income/expense/net + reconcile-% stat cards, capture form (expense/income toggle), by-category breakdown, ledger list with click-to-toggle reconcile + delete.
+- **CrmPage** (`/crm`, Contact icon) — open/weighted pipeline stats, 6-column stage board (add deal, move stage via select, per-stage value), contacts list with add.
+- **MailPage** (`/mail`, Mail icon) — triage summary stats, "Sync mailbox" (himalaya; shows available/reason), manual ingest, inbox list with category select + **AI triage** (LLM classify) + status dot.
+- Registered in `App.tsx` BUILTIN_ROUTES_CORE + BUILTIN_NAV_REST (under the VIGIL workspace group). `web/dist/` added to .gitignore.
+- **Verified:** `tsc -b` exit 0 **and** full `vite build` succeeds (deploy build).
+
+**Status:** all 4 skill-domain backends + their pages live; Studio/Meeting-Room persisted. The unified workspace now surfaces: Meeting Room · Studio · Vault · Finance · CRM · Mail · Trade Desk · Signals · Positions · Orders · Audit.

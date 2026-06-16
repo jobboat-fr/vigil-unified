@@ -59,6 +59,9 @@ import {
   Wallet,
   ListOrdered,
   ScrollText,
+  Receipt,
+  Contact,
+  Mail,
 } from "lucide-react";
 import { Button } from "@nous-research/ui/ui/components/button";
 import { SelectionSwitcher } from "@nous-research/ui/ui/components/selection-switcher";
@@ -101,6 +104,9 @@ import ChatPage from "@/pages/ChatPage";
 import MeetingRoomPage from "@/pages/MeetingRoomPage";
 import StudioPage from "@/pages/StudioPage";
 import VaultPage from "@/pages/VaultPage";
+import FinancePage from "@/pages/FinancePage";
+import CrmPage from "@/pages/CrmPage";
+import MailPage from "@/pages/MailPage";
 import TradeDeskPage from "@/pages/TradeDeskPage";
 import SignalsPage from "@/pages/SignalsPage";
 import PositionsPage from "@/pages/PositionsPage";
@@ -152,6 +158,9 @@ const BUILTIN_ROUTES_CORE: Record<string, ComponentType> = {
   "/meeting-room": MeetingRoomPage,
   "/studio": StudioPage,
   "/vault": VaultPage,
+  "/finance": FinancePage,
+  "/crm": CrmPage,
+  "/mail": MailPage,
   // WinnyWoo workspace
   "/trade-desk": TradeDeskPage,
   "/signals": SignalsPage,
@@ -196,6 +205,9 @@ const BUILTIN_NAV_REST: NavItem[] = [
   { path: "/meeting-room", label: "Meeting Room", icon: Video },
   { path: "/studio", label: "Studio", icon: PenLine },
   { path: "/vault", label: "Vault", icon: Lock },
+  { path: "/finance", label: "Finance", icon: Receipt },
+  { path: "/crm", label: "CRM", icon: Contact },
+  { path: "/mail", label: "Mail", icon: Mail },
   // ── WinnyWoo workspace ──
   { path: "/trade-desk", label: "Trade Desk", icon: LineChart },
   { path: "/signals", label: "Signals", icon: TrendingUp },
