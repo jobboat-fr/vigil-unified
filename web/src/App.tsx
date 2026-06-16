@@ -124,7 +124,9 @@ import { api } from "@/lib/api";
 import type { StatusResponse } from "@/lib/api";
 
 function RootRedirect() {
-  return <Navigate to="/sessions" replace />;
+  // Land on a product surface (works against the Railway gateway), not the
+  // Hermes operator Sessions page (needs a Hermes backend not deployed here).
+  return <Navigate to="/meeting-room" replace />;
 }
 
 function UnknownRouteFallback({ pluginsLoading }: { pluginsLoading: boolean }) {
@@ -132,7 +134,7 @@ function UnknownRouteFallback({ pluginsLoading }: { pluginsLoading: boolean }) {
     // Render nothing during the plugin-load window — a spinner here would just flash.
     return null;
   }
-  return <Navigate to="/sessions" replace />;
+  return <Navigate to="/meeting-room" replace />;
 }
 
 const CHAT_NAV_ITEM: NavItem = {
