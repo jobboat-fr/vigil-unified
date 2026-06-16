@@ -70,4 +70,17 @@ Adapt off Beancount-CLI / plain-text-accounting + `/cfo-*` slash routing → kee
 
 #### ✅ finance/ COMPLETE — 8 of 8 curated (cfo, cfo-advisor, cfo-capture, cfo-classify, cfo-reconcile, cfo-monthly-close, cfo-tax-plan, cfo-report).
 > Note: the finance skills assume a books/ledger store + (eventually) `winny/finance/` per UNIFIED_PORT_PLAN Stage 5. The skills are the methodology layer; the data backend is wired when that stage lands.
-- **Next domain → `marketing/` (coreyhaines31/marketingskills):** curate ~8 of 40 — `product-marketing` (the shared-context foundation), `copywriting`, `cro`, `seo-audit`, `analytics`, `cold-email`, `launch`, `pricing`.
+### marketing/ (from coreyhaines31/marketingskills) — curated 8 of 40
+These are agentskills.io-format + mostly tool-agnostic, so adaptation = **keep the methodology bodies verbatim**, swap to our frontmatter (name/desc/version/author/license/hermes.tags/related), and append a routing note. The shared `.agents/product-marketing.md` context convention is kept (works in any repo).
+
+- [x] **product-marketing** (foundation context every other marketing skill reads first) → Studio positioning artifact; Council marketing lens.
+- [x] **copywriting** → Studio copy artifacts; landing pages; Mail email copy.
+- [x] **cro** → Studio + Calculations (experiment math); landing-page optimization.
+- [x] **seo-audit** → Studio audit report; site/page analysis.
+- [x] **analytics** → Calculations/dashboards; Studio report.
+- [x] **cold-email** → **Mail** + **CRM** (contacts/sequences); Studio templates.
+- [x] **launch** → Studio launch plan; Council launch review; Meeting Room.
+- [x] **pricing** → Studio; **Finance** (pricing→revenue); Council pricing review.
+
+#### ✅ marketing/ COMPLETE — 8 of 8 curated.
+- **Next (the heavier two) → `crm/` (frappe/crm) + `mail/` (Mailpile):** not skills repos — extract the **data model + lifecycle** (Lead/Deal/Contact/Org/Task/Call/Email) into a crm skill + (later) tables/tool; and the **triage intelligence** (spambayes/tagging) into a mail-triage skill over the existing `email/himalaya` transport.
