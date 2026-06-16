@@ -188,6 +188,50 @@ export interface CrmPipeline {
 
 export const DEAL_STAGES = ["lead", "qualified", "proposal", "negotiation", "won", "lost"] as const;
 
+export interface MailMessage {
+  id: string;
+  external_id: string | null;
+  thread_id: string | null;
+  folder: string;
+  from_addr: string | null;
+  from_name: string | null;
+  to_addrs: string[];
+  subject: string | null;
+  snippet: string | null;
+  body: string | null;
+  received_at: string | null;
+  category: string | null;
+  priority: string;
+  triage_score: number | null;
+  status: string;
+  tags: string[];
+  triaged: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MailDraft {
+  id: string;
+  in_reply_to: string | null;
+  to_addrs: string[];
+  subject: string | null;
+  body: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MailTriageSummary {
+  total: number;
+  unread: number;
+  triaged: number;
+  untriaged: number;
+  by_category: Record<string, number>;
+  by_priority: Record<string, number>;
+}
+
+export const MAIL_CATEGORIES = ["urgent", "respond", "fyi", "newsletter", "spam", "archive"] as const;
+
 export const vigil = {
   council: {
     tasks: () => vigilCall<{ tasks: Record<string, CouncilTaskInfo> }>("GET", "/v1/council/tasks"),
@@ -262,6 +306,39 @@ export const vigil = {
       vigilCall<CrmDeal>("PATCH", `/v1/crm/deals/${id}`, patch),
     removeDeal: (id: string) => vigilCall("DELETE", `/v1/crm/deals/${id}`),
     pipeline: () => vigilCall<CrmPipeline>("GET", "/v1/crm/pipeline"),
+  },
+  mail: {
+    messages: (params?: { category?: string; status?: string; folder?: string; limit?: number }) => {
+      const qs = new URLSearchParams();
+      if (params?.category) qs.set("category", params.category);
+      if (params?.status) qs.set("status", params.status);
+      if (params?.folder) qs.set("folder", params.folder);
+      if (params?.limit) qs.set("limit", String(params.limit));
+      const suffix = qs.toString() ? `?${qs.toString()}` : "";
+      return vigilCall<{ messages: MailMessage[] }>("GET", `/v1/mail/messages${suffix}`);
+    },
+    ingest: (input: Partial<Omit<MailMessage, "id" | "created_at" | "updated_at" | "triaged" | "triage_score">>) =>
+      vigilCall<MailMessage>("POST", "/v1/mail/messages", input),
+    sync: (folder = "INBOX", limit = 50) =>
+      vigilCall<{ available: boolean; reason: string | null; fetched: number; synced: number }>(
+        "POST",
+        `/v1/mail/sync?folder=${encodeURIComponent(folder)}&limit=${limit}`,
+      ),
+    update: (id: string, patch: { category?: string; priority?: string; status?: string; tags?: string[] }) =>
+      vigilCall<MailMessage>("PATCH", `/v1/mail/messages/${id}`, patch),
+    triage: (id: string) =>
+      vigilCall<{ message: MailMessage; classification: Record<string, unknown>; stub: boolean }>(
+        "POST",
+        `/v1/mail/messages/${id}/triage`,
+      ),
+    remove: (id: string) => vigilCall("DELETE", `/v1/mail/messages/${id}`),
+    summary: () => vigilCall<MailTriageSummary>("GET", "/v1/mail/triage/summary"),
+    drafts: () => vigilCall<{ drafts: MailDraft[] }>("GET", "/v1/mail/drafts"),
+    addDraft: (input: { to_addrs?: string[]; subject?: string; body?: string; in_reply_to?: string }) =>
+      vigilCall<MailDraft>("POST", "/v1/mail/drafts", input),
+    updateDraft: (id: string, patch: { to_addrs?: string[]; subject?: string; body?: string; status?: string }) =>
+      vigilCall<MailDraft>("PATCH", `/v1/mail/drafts/${id}`, patch),
+    removeDraft: (id: string) => vigilCall("DELETE", `/v1/mail/drafts/${id}`),
   },
 };
 

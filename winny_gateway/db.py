@@ -106,6 +106,8 @@ _USER_SCOPED_TABLES = frozenset({
     "finance_transactions",
     "crm_contacts",
     "crm_deals",
+    "mail_messages",
+    "mail_drafts",
 })
 
 

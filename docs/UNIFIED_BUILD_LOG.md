@@ -138,3 +138,13 @@ The contacts + pipeline store the `crm` skill routes into (sales_leads is only i
 - **Verified:** crm router + full `winny_gateway.app` import; `tsc -b` exit 0; live contact→deal→stage-move→FK-set-null round-trip via MCP with cleanup.
 
 **Backends status:** Studio + Meeting Room persisted; Finance + CRM data layers live. Remaining: Mail (himalaya transport + triage) data layer, and frontend pages for Finance/CRM (backends are ready for wiring).
+
+### 2026-06-16 — Mail backend (himalaya transport + triage store) — 4th/4 domain backend
+The inbox-triage store the mail-triage skill routes into, fed by the himalaya transport when configured.
+- **Migration** `013_mail.sql` (applied via MCP): `mail_messages` (external_id, from/to, subject/snippet/body, received_at, category urgent|respond|fyi|newsletter|spam|archive, priority, triage_score, status, tags[], triaged; UNIQUE(user_id, external_id) so re-sync upserts, NULLs distinct so manual never collide) + `mail_drafts` (review-then-send: status draft|approved|sent). RLS-on, indexes, triggers.
+- **Transport** `winny_gateway/mail_bridge.py` — shells out to `himalaya envelope list -o json` when the binary is present (`WINNY_HIMALAYA_BIN`/`_ACCOUNT`), maps envelopes to the ingest shape, and **degrades** to `{available:false}` otherwise (read-only; never sends).
+- **Routes** `winny_gateway/routes/vigil/mail.py` (`/v1/mail/*`): messages list(filter)/ingest/patch/delete; `POST /sync` (himalaya→upsert); `POST /messages/{id}/triage` (LLM classify→category+priority+action, stub-degrades); `GET /triage/summary`; drafts CRUD with **send blocked here** (approve only; sending is a separate gated action — persona hard rule). Scoped via `db._USER_SCOPED_TABLES`.
+- **Client** `web/src/lib/vigil.ts` `mail.*` + MailMessage/MailDraft/MailTriageSummary types + MAIL_CATEGORIES.
+- **Verified:** mail router + full app import; himalaya bridge degrades (available=false, no crash); `tsc -b` exit 0; live round-trip via MCP (manual ingest + idempotent external_id upsert + NULL-distinct + triage patch + draft approve) with cleanup.
+
+**✅ All four skill-domain backends live:** Finance · CRM · Mail data layers + Studio/Meeting-Room persistence. Remaining: Finance/CRM/Mail **frontend pages** (backends ready to wire).
