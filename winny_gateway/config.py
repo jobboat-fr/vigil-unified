@@ -17,6 +17,13 @@ class GatewayConfig:
 
     # CORS
     cors_origins: list[str] = field(default_factory=lambda: ["http://localhost:5173", "http://localhost:3000"])
+    # Regex allowlist (in addition to cors_origins) so any vigil-ai.xyz subdomain
+    # (dev./demo./apex) and the project's Vercel preview URLs are accepted without
+    # having to enumerate each in WW_CORS_ORIGINS. Specific, not a wildcard, so it
+    # stays compatible with credentialed requests.
+    cors_origin_regex: str = (
+        r"https://([a-z0-9-]+\.)?vigil-ai\.xyz|https://vigil-unified-[a-z0-9-]+\.vercel\.app"
+    )
 
     # Supabase
     supabase_url: str = ""
@@ -51,6 +58,10 @@ class GatewayConfig:
             port=int(os.getenv("PORT", os.getenv("WW_PORT", "8400"))),
             debug=os.getenv("WW_DEBUG", "").lower() in ("1", "true", "yes"),
             cors_origins=os.getenv("WW_CORS_ORIGINS", "http://localhost:5173,http://localhost:3000").split(","),
+            cors_origin_regex=os.getenv(
+                "WW_CORS_ORIGIN_REGEX",
+                r"https://([a-z0-9-]+\.)?vigil-ai\.xyz|https://vigil-unified-[a-z0-9-]+\.vercel\.app",
+            ),
             supabase_url=os.getenv("SUPABASE_URL", ""),
             supabase_anon_key=os.getenv("SUPABASE_ANON_KEY", ""),
             supabase_service_role_key=os.getenv("SUPABASE_SERVICE_ROLE_KEY", ""),

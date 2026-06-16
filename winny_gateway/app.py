@@ -159,6 +159,10 @@ def create_app(config: GatewayConfig | None = None) -> FastAPI:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=config.cors_origins,
+        # Also accept any vigil-ai.xyz subdomain (dev./demo./apex) + Vercel
+        # previews via regex, so a new frontend host works without editing
+        # WW_CORS_ORIGINS. Skipped under a "*" config (credentials already off).
+        allow_origin_regex=None if cors_wildcard else (config.cors_origin_regex or None),
         allow_credentials=not cors_wildcard,
         allow_methods=["*"],
         allow_headers=["*"],
