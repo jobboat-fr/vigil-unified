@@ -88,7 +88,26 @@ export interface AvatarSession {
   livekit_url?: string | null;
   persona?: string;
   status?: string;
+  share_token?: string;
   fallback_chain?: unknown[];
+}
+
+export interface PublicMeeting {
+  room_title: string | null;
+  live_url: string | null;
+  provider: string | null;
+  persona: string | null;
+  has_live: boolean;
+}
+
+/** Resolve a share token → the live meeting (no auth — for external guests). */
+export async function resolvePublicMeeting(shareToken: string): Promise<PublicMeeting> {
+  const res = await fetch(`${WW_BASE}/v1/rooms/meeting/${encodeURIComponent(shareToken)}`, {
+    headers: { accept: "application/json" },
+  });
+  const payload = (await res.json().catch(() => ({}))) as { ok?: boolean; data?: PublicMeeting; error?: string };
+  if (!res.ok || payload.ok === false) throw new GatewayError(payload.error || `HTTP ${res.status}`, "HTTP_ERROR", res.status);
+  return payload.data as PublicMeeting;
 }
 
 export interface LiveKitJoin {

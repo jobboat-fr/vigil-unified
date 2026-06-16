@@ -310,7 +310,16 @@ async def start_avatar(room_id: str, body: AvatarBody, user: dict = Depends(get_
     except RuntimeError as exc:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail={"error": "avatar_unavailable", "message": str(exc)})
     _AVATAR_SESSIONS[room_id] = session
-    return {"ok": True, "data": session}
+    # Persist the live room URL + a share token so external guests can resolve
+    # and join the SAME room via a public link.
+    share_token = room.get("share_token") or lk.new_share_token()
+    await db_update("rooms", {
+        "live_url": session.get("conversation_url"),
+        "live_provider": session.get("provider"),
+        "live_persona": body.persona,
+        "share_token": share_token,
+    }, filters={"id": room_id, "user_id": uid})
+    return {"ok": True, "data": {**session, "share_token": share_token}}
 
 
 @router.delete("/{room_id}/avatar-session")
@@ -321,7 +330,30 @@ async def end_avatar(room_id: str, user: dict = Depends(get_current_user)) -> di
     session = _AVATAR_SESSIONS.pop(room_id, None)
     if session and session.get("provider") == "tavus" and session.get("conversation_id"):
         await avatar_mod.end_tavus_conversation(session["conversation_id"])
+    await db_update("rooms", {"live_url": None, "live_provider": None, "live_persona": None},
+                    filters={"id": room_id, "user_id": uid})
     return {"ok": True, "data": {"ended": room_id, "had_session": bool(session)}}
+
+
+@router.get("/meeting/{share_token}")
+async def public_meeting(share_token: str) -> dict[str, Any]:
+    """PUBLIC — resolve a share token to the live meeting an external guest joins.
+    No auth; the opaque token is the capability. Returns the embeddable room URL
+    (the same room the AI avatar + host are in)."""
+    rows = await db_select("rooms", filters={"share_token": share_token}, limit=1, allow_unscoped=True)
+    if not rows:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail={"error": "invalid_share_token"})
+    room = rows[0]
+    return {
+        "ok": True,
+        "data": {
+            "room_title": room.get("title"),
+            "live_url": room.get("live_url"),
+            "provider": room.get("live_provider"),
+            "persona": room.get("live_persona"),
+            "has_live": bool(room.get("live_url")),
+        },
+    }
 
 
 # ── Live room (LiveKit transport — Phase 1 of the live meeting) ──

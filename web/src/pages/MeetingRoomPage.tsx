@@ -172,10 +172,10 @@ export default function MeetingRoomPage() {
     setAvatarSession(null);
   };
 
-  // Guests join the SAME room as the avatar — Tavus brings its own room, so the
-  // guest link is the conversation_url.
+  // Guests join the SAME room as the avatar via a branded public page that
+  // resolves the share token → the live room URL.
   const makeShare = () => {
-    if (avatarSession?.conversation_url) setShareLink(avatarSession.conversation_url);
+    if (avatarSession?.share_token) setShareLink(`${window.location.origin}/join/${avatarSession.share_token}`);
     else setAvatarErr("Bring in the AI advisor first, then share the meeting link.");
   };
 
