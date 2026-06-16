@@ -80,6 +80,16 @@ export interface RoomMember {
   status?: string;
 }
 
+export interface LiveIntervention {
+  speak: boolean;
+  message?: string;
+  urgency?: "low" | "normal" | "high";
+  reason?: string;
+  touched_specialties?: string[];
+  cost_usd?: number;
+  stub?: boolean;
+}
+
 export interface Room {
   id: string;
   title: string;
@@ -249,6 +259,13 @@ export const vigil = {
       vigilCall("POST", `/v1/rooms/${id}/messages`, { text, speaker }),
     transcript: (id: string) =>
       vigilCall<{ transcript: Room["transcript"] }>("GET", `/v1/rooms/${id}/transcript`),
+    interventionCheck: (id: string, topic?: string, activeSpecialties?: string[]) =>
+      vigilCall<LiveIntervention>("POST", `/v1/rooms/${id}/intervention-check`, {
+        topic,
+        active_specialties: activeSpecialties,
+      }),
+    weights: (id: string) =>
+      vigilCall<{ weights: Record<string, number>; defaults: Record<string, number> }>("GET", `/v1/rooms/${id}/weights`),
   },
   studio: {
     brainstorm: (brief: string, kind: string, grounding?: string) =>

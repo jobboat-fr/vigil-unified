@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/components/card";
 import { Button } from "@nous-research/ui/ui/components/button";
-import { vigil, streamRoomCouncil, type Room, type CouncilRecord, type SseEvent } from "@/lib/vigil";
+import { vigil, streamRoomCouncil, type Room, type CouncilRecord, type SseEvent, type LiveIntervention } from "@/lib/vigil";
 import { GatewayError } from "@/lib/ww";
 
 // The 4 council lenses, aligned with the Deal Board advisor templates.
@@ -32,6 +32,8 @@ export default function MeetingRoomPage() {
   const [convening, setConvening] = useState(false);
   const [events, setEvents] = useState<SseEvent[]>([]);
   const [record, setRecord] = useState<CouncilRecord | null>(null);
+  const [liveAdvisor, setLiveAdvisor] = useState(false);
+  const [suggestion, setSuggestion] = useState<LiveIntervention | null>(null);
 
   const refresh = useCallback(async () => {
     try {
@@ -91,6 +93,30 @@ export default function MeetingRoomPage() {
     } finally {
       setConvening(false);
     }
+  };
+
+  // Live Advisor: heartbeat-poll the intervention engine while a meeting is live.
+  useEffect(() => {
+    if (!liveAdvisor || !active) return;
+    let on = true;
+    const tick = async () => {
+      try {
+        const d = await vigil.rooms.interventionCheck(active.id, active.title);
+        if (on && d.speak) setSuggestion(d);
+      } catch {
+        /* transient — keep polling */
+      }
+    };
+    void tick();
+    const id = setInterval(() => void tick(), 12_000);
+    return () => { on = false; clearInterval(id); };
+  }, [liveAdvisor, active]);
+
+  const acceptSuggestion = async () => {
+    if (!active || !suggestion?.message) return;
+    await vigil.rooms.postMessage(active.id, suggestion.message, "VIGIL");
+    setSuggestion(null);
+    await reloadActive(active.id);
   };
 
   if (authError) {
@@ -206,6 +232,44 @@ export default function MeetingRoomPage() {
                     </Button>
                   ))}
                 </div>
+              </div>
+
+              {/* Live Advisor — the AI raises its hand on a heartbeat */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-[10px] font-mono uppercase tracking-wide text-text-secondary">Live advisor</span>
+                  <button
+                    onClick={() => { setLiveAdvisor((v) => !v); setSuggestion(null); }}
+                    className="text-xs px-2.5 py-1 rounded-full border"
+                    style={{
+                      borderColor: liveAdvisor ? "#00ff8866" : "currentColor",
+                      color: liveAdvisor ? "#00ff88" : undefined,
+                      background: liveAdvisor ? "#00ff881a" : "transparent",
+                    }}
+                  >
+                    {liveAdvisor ? "● Listening" : "○ Off"}
+                  </button>
+                </div>
+                {liveAdvisor && !suggestion && (
+                  <p className="text-text-secondary text-xs">Listening to the transcript — the advisor will raise its hand only when it has something worth saying.</p>
+                )}
+                {suggestion?.speak && (
+                  <div className="rounded-lg border p-3 space-y-2" style={{ borderColor: "#7c5cff66", background: "#7c5cff14" }}>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm">✋</span>
+                      <span className="text-[10px] font-mono uppercase tracking-wide" style={{ color: "#7c5cff" }}>Advisor wants to speak</span>
+                      {suggestion.urgency && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ color: suggestion.urgency === "high" ? "#ff3366" : "#f59e0b", border: "1px solid currentColor" }}>{suggestion.urgency}</span>
+                      )}
+                    </div>
+                    <p className="text-sm text-foreground/90">{suggestion.message}</p>
+                    {suggestion.reason && <p className="text-xs text-text-secondary">{suggestion.reason}{suggestion.touched_specialties?.length ? ` · ${suggestion.touched_specialties.join(", ")}` : ""}</p>}
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={() => void acceptSuggestion()}>Add to transcript</Button>
+                      <button className="text-xs text-text-secondary hover:text-foreground" onClick={() => setSuggestion(null)}>Dismiss</button>
+                    </div>
+                  </div>
+                )}
               </div>
             </>
           )}
