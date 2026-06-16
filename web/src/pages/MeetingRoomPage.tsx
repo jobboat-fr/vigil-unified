@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/components/card";
 import { Button } from "@nous-research/ui/ui/components/button";
-import { vigil, streamRoomCouncil, type Room, type CouncilRecord, type SseEvent, type LiveIntervention, type AvatarSession } from "@/lib/vigil";
+import { vigil, streamRoomCouncil, type Room, type CouncilRecord, type SseEvent, type LiveIntervention, type AvatarSession, type MeetingSummary } from "@/lib/vigil";
 
 const PERSONAS = ["CFO", "CTO", "COO", "CRM", "CRO", "advisor"] as const;
 import { GatewayError } from "@/lib/ww";
@@ -41,6 +41,8 @@ export default function MeetingRoomPage() {
   const [avatarBusy, setAvatarBusy] = useState(false);
   const [shareLink, setShareLink] = useState<string>("");
   const [avatarErr, setAvatarErr] = useState<string>("");
+  const [summary, setSummary] = useState<MeetingSummary | null>(null);
+  const [summarizing, setSummarizing] = useState(false);
 
   const refresh = useCallback(async () => {
     try {
@@ -126,12 +128,25 @@ export default function MeetingRoomPage() {
     await reloadActive(active.id);
   };
 
-  // Reset avatar/share state when switching to a different room.
+  // Reset avatar/share/summary state when switching to a different room.
   useEffect(() => {
     setAvatarSession(null);
     setShareLink("");
     setAvatarErr("");
+    setSummary(null);
   }, [active?.id]);
+
+  const summarizeMeeting = async () => {
+    if (!active) return;
+    setSummarizing(true);
+    try {
+      setSummary(await vigil.rooms.summarize(active.id));
+    } catch (e) {
+      setAvatarErr((e as Error).message);
+    } finally {
+      setSummarizing(false);
+    }
+  };
 
   const bringAvatar = async () => {
     if (!active) return;
@@ -369,6 +384,34 @@ export default function MeetingRoomPage() {
                       </div>
                     )}
                     {avatarErr && <p className="text-xs" style={{ color: "#ff3366" }}>{avatarErr}</p>}
+                  </div>
+                )}
+              </div>
+
+              {/* Post-meeting: summarize → artifact + commitments + guest onboarding */}
+              <div>
+                <div className="text-[10px] font-mono uppercase tracking-wide text-text-secondary mb-1.5">Close the meeting</div>
+                <Button size="sm" disabled={summarizing || active.transcript.length === 0} onClick={() => void summarizeMeeting()}>
+                  {summarizing ? "Summarizing…" : "Summarize & close"}
+                </Button>
+                {summary && (
+                  <div className="mt-2 rounded-lg border border-current/15 p-3 space-y-2 text-sm">
+                    <div className="flex flex-wrap gap-3 text-xs text-text-secondary">
+                      {summary.artifact_id && <span>✓ Saved to Studio</span>}
+                      <span>{summary.commitments_saved} commitments</span>
+                      <span>{summary.contacts_saved} guests → CRM</span>
+                    </div>
+                    {summary.summary_markdown && (
+                      <pre className="max-h-48 overflow-auto whitespace-pre-wrap rounded bg-current/5 p-2 text-xs leading-relaxed">{summary.summary_markdown}</pre>
+                    )}
+                    {summary.commitments.length > 0 && (
+                      <div className="text-xs">
+                        <span className="text-text-secondary">Action items:</span>
+                        <ul className="list-disc pl-4">
+                          {summary.commitments.map((c, i) => <li key={i}>{c.text}{c.owner ? ` — ${c.owner}` : ""}</li>)}
+                        </ul>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

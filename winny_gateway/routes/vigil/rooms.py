@@ -23,6 +23,7 @@ from pydantic import BaseModel, Field
 
 from winny.council import ROLE_SYSTEM_PROMPTS, REVIEWER_SYSTEM_PROMPT, TASK_MATRIX
 from winny.council.intervention import WEIGHT_DEFAULTS, check_intervention
+from winny.council.summarizer import summarize_meeting
 from winny_gateway import avatar as avatar_mod
 from winny_gateway import livekit as lk
 from winny_gateway.auth import get_current_user
@@ -367,5 +368,95 @@ async def guest_join(share_token: str, body: GuestJoinBody) -> dict[str, Any]:
             "room_title": room.get("title"),
             **lk.join_payload(room=f"vigil-{room['id']}", identity=guest_id,
                               name=body.name or "Guest", metadata="role=guest"),
+        },
+    }
+
+
+# ── Post-meeting: summary → Studio artifact + commitments + guest onboarding (Phase 3) ──
+class SummarizeBody(BaseModel):
+    create_artifact: bool = Field(default=True)
+    extract_commitments: bool = Field(default=True)
+    onboard_guests: bool = Field(default=True)
+
+
+@router.post("/{room_id}/summarize")
+async def summarize_room(room_id: str, body: SummarizeBody, user: dict = Depends(get_current_user)) -> dict[str, Any]:
+    """Close the meeting: summarize the transcript → a Studio artifact, extract
+    commitments (action items), and onboard guest follow-ups into the CRM."""
+    uid = _uid(user)
+    room = await _owned_row(room_id, uid)
+    transcript_text = _transcript_text(room.get("transcript") or [])
+    result = await summarize_meeting(transcript_text=transcript_text, topic=room.get("title") or "")
+    if result.get("empty"):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail={"error": "empty_transcript"})
+
+    artifact_id = None
+    if body.create_artifact and result["summary_markdown"]:
+        parts = [result["summary_markdown"]]
+        if result["decisions"]:
+            parts.append("## Decisions\n" + "\n".join(f"- {d}" for d in result["decisions"]))
+        if result["next_steps"]:
+            parts.append("## Next steps\n" + "\n".join(f"- {s}" for s in result["next_steps"]))
+        if result["commitments"]:
+            parts.append("## Commitments\n" + "\n".join(
+                f"- {c.get('text','')}" + (f" — {c.get('owner')}" if c.get('owner') else "") + (f" (due {c.get('due')})" if c.get('due') else "")
+                for c in result["commitments"]))
+        row = await db_insert("artifacts", {
+            "user_id": uid,
+            "title": f"Meeting summary — {room.get('title') or room_id}"[:120],
+            "kind": "report",
+            "brief": f"Summary of meeting: {room.get('title') or room_id}",
+            "text_dump": "\n\n".join(parts),
+            "stub": bool(result.get("stub")),
+            "status": "draft",
+            "version": 1,
+        })
+        artifact_id = (row or {}).get("id")
+
+    commitments_n = 0
+    if body.extract_commitments:
+        for c in result["commitments"]:
+            text = str(c.get("text") or "").strip()
+            if not text:
+                continue
+            r = await db_insert("commitments", {
+                "org_id": uid,
+                "room_id": room_id,
+                "speaker_name": c.get("owner") or None,
+                "text": text + (f" (due {c.get('due')})" if c.get("due") else ""),
+                "kind": "action",
+                "status": "open",
+            })
+            if r:
+                commitments_n += 1
+
+    contacts_n = 0
+    if body.onboard_guests:
+        for f in result["follow_ups"]:
+            name = str(f.get("name") or "").strip()
+            if not name:
+                continue
+            r = await db_insert("crm_contacts", {
+                "user_id": uid,
+                "name": name,
+                "company": f.get("company") or None,
+                "notes": f.get("next_step") or None,
+                "tags": ["meeting-guest"],
+            })
+            if r:
+                contacts_n += 1
+
+    return {
+        "ok": True,
+        "data": {
+            "summary_markdown": result["summary_markdown"],
+            "decisions": result["decisions"],
+            "next_steps": result["next_steps"],
+            "commitments": result["commitments"],
+            "follow_ups": result["follow_ups"],
+            "artifact_id": artifact_id,
+            "commitments_saved": commitments_n,
+            "contacts_saved": contacts_n,
+            "stub": result.get("stub"),
         },
     }

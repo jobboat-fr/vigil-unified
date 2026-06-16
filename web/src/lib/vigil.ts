@@ -98,6 +98,18 @@ export interface LiveKitJoin {
   identity: string;
 }
 
+export interface MeetingSummary {
+  summary_markdown: string;
+  decisions: string[];
+  next_steps: string[];
+  commitments: { text: string; owner?: string; due?: string }[];
+  follow_ups: { name: string; company?: string; next_step?: string }[];
+  artifact_id: string | null;
+  commitments_saved: number;
+  contacts_saved: number;
+  stub: boolean;
+}
+
 export interface LiveIntervention {
   speak: boolean;
   message?: string;
@@ -291,6 +303,7 @@ export const vigil = {
     endAvatar: (id: string) => vigilCall("DELETE", `/v1/rooms/${id}/avatar-session`),
     livekitToken: (id: string) => vigilCall<LiveKitJoin>("POST", `/v1/rooms/${id}/livekit-token`),
     share: (id: string) => vigilCall<{ share_token: string }>("POST", `/v1/rooms/${id}/share`),
+    summarize: (id: string) => vigilCall<MeetingSummary>("POST", `/v1/rooms/${id}/summarize`, {}),
   },
   studio: {
     brainstorm: (brief: string, kind: string, grounding?: string) =>
