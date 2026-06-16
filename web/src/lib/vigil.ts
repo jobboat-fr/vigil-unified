@@ -80,6 +80,24 @@ export interface RoomMember {
   status?: string;
 }
 
+export interface AvatarSession {
+  provider: string;
+  provider_session_id?: string;
+  conversation_id?: string;
+  conversation_url?: string | null;
+  livekit_url?: string | null;
+  persona?: string;
+  status?: string;
+  fallback_chain?: unknown[];
+}
+
+export interface LiveKitJoin {
+  token: string;
+  url: string | null;
+  room: string;
+  identity: string;
+}
+
 export interface LiveIntervention {
   speak: boolean;
   message?: string;
@@ -266,6 +284,13 @@ export const vigil = {
       }),
     weights: (id: string) =>
       vigilCall<{ weights: Record<string, number>; defaults: Record<string, number> }>("GET", `/v1/rooms/${id}/weights`),
+    avatarStatus: () =>
+      vigilCall<{ provider_order: string[]; tavus: { configured: boolean }; beyond_presence: { configured: boolean } }>("GET", "/v1/rooms/avatar/status"),
+    startAvatar: (id: string, input: { persona: string; language?: string; greeting?: string; evidence?: string }) =>
+      vigilCall<AvatarSession>("POST", `/v1/rooms/${id}/avatar-session`, input),
+    endAvatar: (id: string) => vigilCall("DELETE", `/v1/rooms/${id}/avatar-session`),
+    livekitToken: (id: string) => vigilCall<LiveKitJoin>("POST", `/v1/rooms/${id}/livekit-token`),
+    share: (id: string) => vigilCall<{ share_token: string }>("POST", `/v1/rooms/${id}/share`),
   },
   studio: {
     brainstorm: (brief: string, kind: string, grounding?: string) =>
