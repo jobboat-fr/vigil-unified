@@ -118,12 +118,15 @@ export const ww = {
   },
   market: {
     overview: () => call<MarketOverview>("GET", "/api/v1/market/overview", undefined, { public: true }),
+    // Normalise the pair separator to "-" so the path never carries an encoded
+    // slash (%2F) — proxies decode it to "/", adding a path segment that 404s
+    // the single-segment route. The gateway's _split_symbol maps "-" back.
     enrich: (symbol: string) =>
-      call<EnrichData>("GET", `/api/v1/market/enrich/${encodeURIComponent(symbol)}`, undefined, { public: true }),
+      call<EnrichData>("GET", `/api/v1/market/enrich/${encodeURIComponent(symbol.replace(/\//g, "-"))}`, undefined, { public: true }),
     ohlcv: (symbol: string, timeframe: "hour" | "minute" | "day" = "hour", limit = 168) =>
       call<OhlcvData>(
         "GET",
-        `/api/v1/market/ohlcv/${encodeURIComponent(symbol)}?timeframe=${timeframe}&limit=${limit}`,
+        `/api/v1/market/ohlcv/${encodeURIComponent(symbol.replace(/\//g, "-"))}?timeframe=${timeframe}&limit=${limit}`,
         undefined,
         { public: true },
       ),

@@ -202,7 +202,7 @@ def _split_symbol(symbol: str) -> tuple[str, str]:
     return base, quote
 
 
-@router.get("/ohlcv/{symbol}")
+@router.get("/ohlcv/{symbol:path}")
 async def market_ohlcv(
     symbol: str,
     timeframe: str = Query(default="hour", pattern="^(hour|minute|day)$"),
@@ -256,7 +256,7 @@ async def market_ohlcv(
     }
 
 
-@router.get("/enrich/{symbol}")
+@router.get("/enrich/{symbol:path}")
 async def market_enrich(symbol: str) -> dict[str, Any]:
     """Live cross-source enrichment for one pair (trade-desk drill-down).
 
