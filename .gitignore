@@ -136,3 +136,6 @@ RELEASE_v*.md
 # Desktop demo-run scratch output (hermes writes demo/*.txt during recorded
 # walkthroughs). Throwaway artifacts, never part of the app.
 apps/desktop/demo/
+
+# Local MCP/debug scratch output
+mcp_pipe_out.txt

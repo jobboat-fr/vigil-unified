@@ -1,0 +1,11 @@
+name: winnywoo
+version: 1.0.0
+description: "VIGIL × WinnyWoo trading-desk tools — lets the agent observe the live desk (market overview/news/OHLCV, live signals + risk, portfolio snapshot/positions/trades, pending approvals, audit chain) by calling the in-tree winny_gateway (default http://127.0.0.1:8400). Read-only by design: order execution stays behind the human approval gate. Authed endpoints use WW_SERVICE_TOKEN (or WW_ALLOW_DEV_AUTH on the gateway)."
+author: "VIGIL × WinnyWoo"
+kind: backend
+provides_tools:
+  - ww_market
+  - ww_signals
+  - ww_portfolio
+  - ww_approvals
+  - ww_audit

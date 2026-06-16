@@ -239,6 +239,25 @@ youtube = [
 # starlette==1.0.1 pinned for CVE-2026-48710 (BadHost) — fastapi pulls Starlette
 # transitively and pre-1.0.1 is the vulnerable range. See the mcp extra above.
 web = ["fastapi==0.133.1", "uvicorn[standard]==0.41.0", "starlette==1.0.1"]
+# VIGIL × WinnyWoo product backend (vendored winny/ engine + winny_gateway/ API).
+# Ranges (not exact pins) are acceptable here because this is an opt-in extra,
+# not a core dep on every session's path. Heavy ML (torch/timesfm) lives in the
+# separate `forecast` extra so the gateway can run with MCP timesfm in stub mode.
+product = [
+  "structlog>=24.1",
+  "typer>=0.12,<1.0",
+  "polars>=1.0",
+  "duckdb>=1.0",
+  "pyarrow>=16.0",
+  "keyring>=25.0",
+  "python-ulid>=2.4",
+  "supabase>=2.0",
+  "stripe>=11.0",
+  "pypdf>=4.0",
+  "ccxt>=4.3",
+]
+# Heavy forecast stack — only on hosts that actually run mcp-timesfm.
+forecast = ["torch>=2.3", "transformers>=4.40", "timesfm>=1.0"]
 all = [
   # Policy (2026-05-12): `[all]` includes only extras that genuinely
   # CAN'T be lazy-installed via `tools/lazy_deps.py` — i.e. things every
@@ -277,6 +296,15 @@ all = [
 hermes = "hermes_cli.main:main"
 hermes-agent = "run_agent:main"
 hermes-acp = "acp_adapter.entry:main"
+# WinnyWoo trading MCP servers (vendored under winny/). The product gateway
+# (winny_gateway) spawns these by command name over stdio; registering them
+# here puts the executables on the venv PATH. They degrade to stub mode if a
+# heavy optional dep (e.g. torch for timesfm) is absent — see mcp_bridge.py.
+mcp-timesfm = "winny.mcp.timesfm.server:main"
+mcp-tradingagents = "winny.mcp.tradingagents.server:main"
+mcp-algo = "winny.mcp.algo.server:main"
+mcp-approval = "winny.mcp.approval.server:main"
+mcp-winnywoo = "winny.mcp.winnywoo.server:main"
 
 [tool.setuptools]
 py-modules = ["run_agent", "model_tools", "toolsets", "batch_runner", "trajectory_compressor", "toolset_distributions", "cli", "hermes_bootstrap", "hermes_constants", "hermes_state", "hermes_time", "hermes_logging", "utils", "mcp_serve"]
@@ -323,7 +351,7 @@ plugins = [
 ]
 
 [tool.setuptools.packages.find]
-include = ["agent", "agent.*", "tools", "tools.*", "hermes_cli", "hermes_cli.*", "gateway", "gateway.*", "tui_gateway", "tui_gateway.*", "cron", "cron.*", "acp_adapter", "plugins", "plugins.*", "providers", "providers.*"]
+include = ["agent", "agent.*", "tools", "tools.*", "hermes_cli", "hermes_cli.*", "gateway", "gateway.*", "tui_gateway", "tui_gateway.*", "cron", "cron.*", "acp_adapter", "plugins", "plugins.*", "providers", "providers.*", "winny", "winny.*", "winny_gateway", "winny_gateway.*", "services", "services.*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

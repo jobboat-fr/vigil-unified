@@ -1,0 +1,30 @@
+# Railway build for the VIGIL × WinnyWoo product gateway (winny_gateway).
+#
+# This builds ONLY the FastAPI product backend (signals, broker, vault, audit,
+# council, rooms, market, …) — NOT the Hermes agent/dashboard image (that's the
+# repo-root Dockerfile). Point the Railway service at this file (railway.json
+# does it automatically). GatewayConfig.from_env() binds 0.0.0.0:$PORT, so it's
+# Railway-native with no extra start flags.
+FROM python:3.12-slim
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends build-essential curl \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+COPY . /app
+
+# Install the vendored product backend: winny/ (engine + MCP servers) +
+# winny_gateway/ (API) + services/. The base Hermes deps come along (the repo
+# is one package), but the heavy ML stack (torch/timesfm/transformers) is in
+# the separate [forecast] extra and is intentionally NOT installed here — the
+# gateway runs mcp-timesfm/tradingagents in stub mode.
+RUN pip install --upgrade pip && pip install -e ".[product]"
+
+EXPOSE 8400
+CMD ["python", "-m", "winny_gateway"]

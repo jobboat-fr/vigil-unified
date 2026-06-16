@@ -7,13 +7,16 @@
 // instead of crashing.
 import { getAccessToken } from "./supabase";
 
-const RAILWAY_DEFAULT = "https://winnywoo-production.up.railway.app";
+// Full native port (UNIFIED_PORT_PLAN): the WinnyWoo gateway is vendored into
+// vigil-unified (winny_gateway) and runs locally on :8400 — no Railway. An
+// explicit VITE_WW_GATEWAY_URL always wins (for a hosted deploy); otherwise we
+// default to the local gateway in every environment.
+const LOCAL_DEFAULT = "http://127.0.0.1:8400";
 
 function resolveBase(): string {
   const configured = (import.meta.env.VITE_WW_GATEWAY_URL as string | undefined)?.trim();
-  const isLoopback = configured ? /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])/i.test(configured) : false;
-  if (configured && !(import.meta.env.PROD && isLoopback)) return configured.replace(/\/$/, "");
-  return RAILWAY_DEFAULT;
+  if (configured) return configured.replace(/\/$/, "");
+  return LOCAL_DEFAULT;
 }
 
 export const WW_BASE = resolveBase();
