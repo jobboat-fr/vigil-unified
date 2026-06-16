@@ -100,6 +100,26 @@ export interface PublicMeeting {
   has_live: boolean;
 }
 
+export interface GuestRoomJoin {
+  room_title: string | null;
+  token: string;
+  url: string | null;
+  room: string;
+  identity: string;
+}
+
+/** External (non-account) guest joins the shared LiveKit room via a share token. */
+export async function joinGuestRoom(shareToken: string, name: string): Promise<GuestRoomJoin> {
+  const res = await fetch(`${WW_BASE}/v1/rooms/guest/${encodeURIComponent(shareToken)}/join`, {
+    method: "POST",
+    headers: { "content-type": "application/json", accept: "application/json" },
+    body: JSON.stringify({ name }),
+  });
+  const payload = (await res.json().catch(() => ({}))) as { ok?: boolean; data?: GuestRoomJoin; error?: string };
+  if (!res.ok || payload.ok === false) throw new GatewayError(payload.error || `HTTP ${res.status}`, "HTTP_ERROR", res.status);
+  return payload.data as GuestRoomJoin;
+}
+
 /** Resolve a share token → the live meeting (no auth — for external guests). */
 export async function resolvePublicMeeting(shareToken: string): Promise<PublicMeeting> {
   const res = await fetch(`${WW_BASE}/v1/rooms/meeting/${encodeURIComponent(shareToken)}`, {

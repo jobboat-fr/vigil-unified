@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/components/card";
 import { Button } from "@nous-research/ui/ui/components/button";
-import { vigil, streamRoomCouncil, type Room, type CouncilRecord, type SseEvent, type LiveIntervention, type AvatarSession, type MeetingSummary } from "@/lib/vigil";
+import { vigil, streamRoomCouncil, type Room, type CouncilRecord, type SseEvent, type LiveIntervention, type MeetingSummary } from "@/lib/vigil";
+import { LiveRoom } from "@/components/LiveRoom";
 
 const PERSONAS = ["CFO", "CTO", "COO", "CRM", "CRO", "advisor"] as const;
 import { GatewayError } from "@/lib/ww";
@@ -36,11 +37,11 @@ export default function MeetingRoomPage() {
   const [record, setRecord] = useState<CouncilRecord | null>(null);
   const [liveAdvisor, setLiveAdvisor] = useState(false);
   const [suggestion, setSuggestion] = useState<LiveIntervention | null>(null);
-  const [avatarSession, setAvatarSession] = useState<AvatarSession | null>(null);
   const [persona, setPersona] = useState<string>("CFO");
-  const [avatarBusy, setAvatarBusy] = useState(false);
-  const [shareLink, setShareLink] = useState<string>("");
-  const [avatarErr, setAvatarErr] = useState<string>("");
+  const [liveJoin, setLiveJoin] = useState<{ token: string; url: string } | null>(null);
+  const [inviteLink, setInviteLink] = useState<string>("");
+  const [liveBusy, setLiveBusy] = useState(false);
+  const [liveErr, setLiveErr] = useState<string>("");
   const [summary, setSummary] = useState<MeetingSummary | null>(null);
   const [summarizing, setSummarizing] = useState(false);
 
@@ -128,11 +129,11 @@ export default function MeetingRoomPage() {
     await reloadActive(active.id);
   };
 
-  // Reset avatar/share/summary state when switching to a different room.
+  // Reset live-meeting/summary state when switching to a different room.
   useEffect(() => {
-    setAvatarSession(null);
-    setShareLink("");
-    setAvatarErr("");
+    setLiveJoin(null);
+    setInviteLink("");
+    setLiveErr("");
     setSummary(null);
   }, [active?.id]);
 
@@ -142,41 +143,28 @@ export default function MeetingRoomPage() {
     try {
       setSummary(await vigil.rooms.summarize(active.id));
     } catch (e) {
-      setAvatarErr((e as Error).message);
+      setLiveErr((e as Error).message);
     } finally {
       setSummarizing(false);
     }
   };
 
-  const bringAvatar = async () => {
+  // Start the shared live room: mint the host's LiveKit token + an invite link,
+  // then drop the host into the same room everyone (and, next, the agent) joins.
+  const startLiveMeeting = async () => {
     if (!active) return;
-    setAvatarBusy(true);
-    setAvatarErr("");
+    setLiveBusy(true);
+    setLiveErr("");
     try {
-      const transcript = active.transcript.map((m) => `${m.speaker}: ${m.text}`).join("\n");
-      const session = await vigil.rooms.startAvatar(active.id, {
-        persona,
-        evidence: transcript || undefined,
-      });
-      setAvatarSession(session);
+      const [t, s] = await Promise.all([vigil.rooms.livekitToken(active.id), vigil.rooms.share(active.id)]);
+      if (!t.url) throw new Error("LiveKit isn't configured on the gateway.");
+      setLiveJoin({ token: t.token, url: t.url });
+      setInviteLink(`${window.location.origin}/join/${s.share_token}`);
     } catch (e) {
-      setAvatarErr((e as Error).message);
+      setLiveErr((e as Error).message);
     } finally {
-      setAvatarBusy(false);
+      setLiveBusy(false);
     }
-  };
-
-  const endAvatarSession = async () => {
-    if (!active) return;
-    try { await vigil.rooms.endAvatar(active.id); } catch { /* ignore */ }
-    setAvatarSession(null);
-  };
-
-  // Guests join the SAME room as the avatar via a branded public page that
-  // resolves the share token → the live room URL.
-  const makeShare = () => {
-    if (avatarSession?.share_token) setShareLink(`${window.location.origin}/join/${avatarSession.share_token}`);
-    else setAvatarErr("Bring in the AI advisor first, then share the meeting link.");
   };
 
   if (authError) {
@@ -185,6 +173,33 @@ export default function MeetingRoomPage() {
         <CardHeader><CardTitle>Meeting Room</CardTitle></CardHeader>
         <CardContent><p className="text-text-secondary text-sm py-6 text-center">{authError}</p></CardContent>
       </Card>
+    );
+  }
+
+  // Full-screen shared live room (the "Zoom") — host + human guests + (next) the agent.
+  if (liveJoin) {
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col" style={{ background: "#07080d" }}>
+        <div className="flex items-center justify-between px-3 py-2" style={{ borderBottom: "1px solid #ffffff14", color: "#e7e9f3" }}>
+          <span className="text-sm font-semibold">{active?.title || "Live meeting"}</span>
+          <div className="flex items-center gap-2">
+            {inviteLink && (
+              <button
+                onClick={() => void navigator.clipboard?.writeText(inviteLink)}
+                className="rounded px-2 py-1 text-xs"
+                style={{ border: "1px solid #ffffff33" }}
+                title={inviteLink}
+              >
+                Copy invite link
+              </button>
+            )}
+            <button onClick={() => setLiveJoin(null)} className="rounded px-2 py-1 text-xs" style={{ color: "#fb7185", border: "1px solid #fb7185" }}>Leave</button>
+          </div>
+        </div>
+        <div className="flex-1 min-h-0">
+          <LiveRoom token={liveJoin.token} url={liveJoin.url} onLeave={() => setLiveJoin(null)} />
+        </div>
+      </div>
     );
   }
 
@@ -332,60 +347,35 @@ export default function MeetingRoomPage() {
                 )}
               </div>
 
-              {/* AI advisor video avatar (Tavus → Beyond) */}
+              {/* Live meeting — one shared room (host + human guests + the AI agent) */}
               <div>
-                <div className="text-[10px] font-mono uppercase tracking-wide text-text-secondary mb-1.5">AI advisor · video</div>
-                {!avatarSession ? (
-                  <div className="space-y-2">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-xs text-text-secondary">Persona:</span>
-                      {PERSONAS.map((p) => (
-                        <button
-                          key={p}
-                          onClick={() => setPersona(p)}
-                          className="text-xs px-2 py-0.5 rounded-full border"
-                          style={{ borderColor: "currentColor", opacity: persona === p ? 1 : 0.4 }}
-                        >
-                          {p}
-                        </button>
-                      ))}
-                    </div>
-                    <Button size="sm" disabled={avatarBusy} onClick={() => void bringAvatar()}>
-                      {avatarBusy ? "Bringing in…" : `Bring in AI ${persona}`}
-                    </Button>
-                    {avatarErr && <p className="text-xs" style={{ color: "#ff3366" }}>{avatarErr}</p>}
+                <div className="text-[10px] font-mono uppercase tracking-wide text-text-secondary mb-1.5">Live meeting</div>
+                <div className="space-y-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-xs text-text-secondary">AI seat:</span>
+                    {PERSONAS.map((p) => (
+                      <button
+                        key={p}
+                        onClick={() => setPersona(p)}
+                        className="text-xs px-2 py-0.5 rounded-full border"
+                        style={{ borderColor: "currentColor", opacity: persona === p ? 1 : 0.4 }}
+                      >
+                        {p}
+                      </button>
+                    ))}
                   </div>
-                ) : (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-text-secondary">
-                        {avatarSession.persona} · {avatarSession.provider} · {avatarSession.status}
-                      </span>
-                      <button className="text-xs text-text-secondary hover:text-foreground" onClick={() => void endAvatarSession()}>End</button>
+                  <Button size="sm" disabled={liveBusy} onClick={() => void startLiveMeeting()}>
+                    {liveBusy ? "Starting…" : "🎥 Start live meeting"}
+                  </Button>
+                  <p className="text-text-secondary text-[11px]">Opens a shared video room. Invite humans with the link; your AI {persona} joins the same call.</p>
+                  {inviteLink && (
+                    <div className="flex items-center gap-2 text-xs">
+                      <input readOnly value={inviteLink} className="flex-1 rounded border border-current/20 bg-transparent px-2 py-1 font-mono" onFocus={(e) => e.currentTarget.select()} />
+                      <button className="text-text-secondary hover:text-foreground" onClick={() => void navigator.clipboard?.writeText(inviteLink)}>Copy</button>
                     </div>
-                    {avatarSession.conversation_url ? (
-                      <iframe
-                        title="AI advisor"
-                        src={avatarSession.conversation_url}
-                        allow="camera; microphone; autoplay; display-capture; fullscreen"
-                        className="w-full rounded-lg border border-current/15"
-                        style={{ aspectRatio: "16/9", minHeight: 240 }}
-                      />
-                    ) : (
-                      <p className="text-text-secondary text-xs">Session started ({avatarSession.provider}) — no embeddable URL returned.</p>
-                    )}
-                    <div className="flex items-center gap-2">
-                      <Button size="sm" onClick={makeShare}>Copy meeting link for guests</Button>
-                    </div>
-                    {shareLink && (
-                      <div className="flex items-center gap-2 text-xs">
-                        <input readOnly value={shareLink} className="flex-1 rounded border border-current/20 bg-transparent px-2 py-1 font-mono" onFocus={(e) => e.currentTarget.select()} />
-                        <button className="text-text-secondary hover:text-foreground" onClick={() => void navigator.clipboard?.writeText(shareLink)}>Copy</button>
-                      </div>
-                    )}
-                    {avatarErr && <p className="text-xs" style={{ color: "#ff3366" }}>{avatarErr}</p>}
-                  </div>
-                )}
+                  )}
+                  {liveErr && <p className="text-xs" style={{ color: "#ff3366" }}>{liveErr}</p>}
+                </div>
               </div>
 
               {/* Post-meeting: summarize → artifact + commitments + guest onboarding */}
