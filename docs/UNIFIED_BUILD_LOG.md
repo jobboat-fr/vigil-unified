@@ -83,4 +83,26 @@ These are agentskills.io-format + mostly tool-agnostic, so adaptation = **keep t
 - [x] **pricing** → Studio; **Finance** (pricing→revenue); Council pricing review.
 
 #### ✅ marketing/ COMPLETE — 8 of 8 curated.
-- **Next (the heavier two) → `crm/` (frappe/crm) + `mail/` (Mailpile):** not skills repos — extract the **data model + lifecycle** (Lead/Deal/Contact/Org/Task/Call/Email) into a crm skill + (later) tables/tool; and the **triage intelligence** (spambayes/tagging) into a mail-triage skill over the existing `email/himalaya` transport.
+### crm/ (extracted from frappe/crm — app, not a skills repo)
+- [x] **crm** → `skills/crm/crm/`. **Extracted the data model + lifecycle**, rebuilt as our own skill (not a Frappe copy): Lead → qualify/convert → Deal → Won/Lost, with Contact/Organization/Task/Call-Log/Note/Communication + statuses/sources/SLA. Encodes the agent operations (capture+dedupe, qualify, convert, advance, log, report pipeline) + constraints (no duplicate contacts, no auto-send, lost_reason required, tenant-scoped). Backend (tables + `winny_gateway/routes/vigil/`) lands in the port plan; this is the methodology layer.
+  - **Routes to →** CRM surface; **Mail** (+ cold-email) for outbound; **Council** deal reviews; **Finance/Calculations** pipeline value; **Studio** account briefs.
+
+### mail/ (extracted from Mailpile — app, not a skills repo)
+- [x] **mail-triage** → `skills/mail/mail-triage/`. Put Mailpile's **triage intelligence** (Bayesian spambayes/chi2 spam scoring + auto-tagging + filters) over the existing **`email/himalaya`** transport. Fetch → classify (spam/ham, category, priority) → propose tags/actions (review-gated) → learn from corrections → summarize. Constraints: never auto-delete (quarantine), never auto-send, never act on payment requests without confirmation.
+  - **Routes to →** Mail over himalaya; client mail → **CRM**; receipts/invoices → **Vault** + cfo-capture; reply drafts → review-then-send; tasks.
+
+---
+
+## ✅ SKILL MINING COMPLETE — 26 skills across 5 domains
+| Domain | Source | Skills |
+|---|---|---|
+| thinking/ | obra/superpowers | 8 (brainstorm/plan/execute/subagent/debug/verify/review×2) |
+| finance/ | MikeChongCan/cfo-stack | 8 (cfo router + advisor + capture/classify/reconcile/close/tax/report) |
+| marketing/ | coreyhaines31/marketingskills | 8 (product-marketing + copy/cro/seo/analytics/cold-email/launch/pricing) |
+| crm/ | frappe/crm | 1 (model + lifecycle, extracted) |
+| mail/ | mailpile/Mailpile | 1 (triage intelligence over himalaya) |
+
+**Open follow-ups (recorded, not blocking):**
+1. **Global-persona wiring** — bake `verification-before-completion`, `systematic-debugging`, `receiving-code-review`, brainstorm-first into SOUL.md/AGENTS.md as always-on.
+2. **Backends** — finance books store + CRM tables/routes land in `winny/finance/` + `winny_gateway/routes/vigil/` (port plan Stage 5).
+3. **Feature wiring** — invoke each skill from its routed product flow as those flows are built (Studio→brainstorming, Mail→mail-triage, CRM→crm, Finance→cfo-*, etc.).
