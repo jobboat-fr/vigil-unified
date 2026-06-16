@@ -208,23 +208,65 @@ async def market_ohlcv(
     timeframe: str = Query(default="hour", pattern="^(hour|minute|day)$"),
     limit: int = Query(default=168, ge=10, le=2000),
 ) -> dict[str, Any]:
-    """Public OHLCV candles for the Trade Desk chart (CryptoCompare, keyless).
+    """Public OHLCV candles for the Trade Desk chart.
 
-    Returns newest-last candles [{t, o, h, l, c, v}] where t is a UNIX seconds
-    timestamp. No account data; safe to render on a public chart.
+    Coinbase Exchange is the primary source (keyless, reliable); CryptoCompare
+    (with key) is the fallback for pairs Coinbase doesn't list. Returns
+    oldest-last candles [{t, o, h, l, c, v}], t = UNIX seconds. Public; no
+    account data.
     """
+    import httpx
+
+    base, quote = _split_symbol(symbol)
+    candles = await _coinbase_candles(base, quote, timeframe, limit)
+    if not candles:
+        candles = await _cryptocompare_candles(base, quote, timeframe, limit)
+
+    return {
+        "ok": True,
+        "data": {
+            "symbol": f"{base}/{quote}",
+            "timeframe": timeframe,
+            "candles": candles[-limit:],
+        },
+    }
+
+
+async def _coinbase_candles(base: str, quote: str, timeframe: str, limit: int) -> list[dict[str, Any]]:
+    """Coinbase Exchange candles (keyless). Array rows: [time, low, high, open,
+    close, volume], newest-first; we sort oldest-last. Max ~300 per call."""
+    import httpx
+
+    gran = {"minute": 60, "hour": 3600, "day": 86400}[timeframe]
+    product = f"{base}-{quote}"
+    try:
+        async with httpx.AsyncClient(timeout=8.0) as client:
+            r = await client.get(
+                f"https://api.exchange.coinbase.com/products/{product}/candles",
+                params={"granularity": gran},
+                headers={"User-Agent": "vigil-winnywoo/1.0", "Accept": "application/json"},
+            )
+            r.raise_for_status()
+            rows = r.json()
+        if not isinstance(rows, list):
+            return []
+        rows = sorted((c for c in rows if isinstance(c, list) and len(c) >= 6), key=lambda c: c[0])
+        return [
+            {"t": int(c[0]), "o": float(c[3]), "h": float(c[2]), "l": float(c[1]), "c": float(c[4]), "v": float(c[5])}
+            for c in rows
+        ]
+    except Exception as e:  # noqa: BLE001
+        logger.warning("coinbase ohlcv failed %s-%s: %s", base, quote, e)
+        return []
+
+
+async def _cryptocompare_candles(base: str, quote: str, timeframe: str, limit: int) -> list[dict[str, Any]]:
+    """CryptoCompare fallback (needs an API key — the keyless endpoint 401s)."""
     import httpx
 
     from winny_gateway.market_enrich import _cc_key
 
-    base, quote = _split_symbol(symbol)
-    endpoint = {
-        "minute": "histominute",
-        "hour": "histohour",
-        "day": "histoday",
-    }[timeframe]
-    # CryptoCompare (CoinDesk) now requires an API key even for history — the
-    # keyless endpoint 401s. Send it the same way the enrich path does.
+    endpoint = {"minute": "histominute", "hour": "histohour", "day": "histoday"}[timeframe]
     headers = {}
     key = _cc_key()
     if key:
@@ -233,36 +275,20 @@ async def market_ohlcv(
         async with httpx.AsyncClient(timeout=8.0) as client:
             r = await client.get(
                 f"https://min-api.cryptocompare.com/data/v2/{endpoint}",
-                params={"fsym": base, "tsym": quote, "limit": limit},
+                params={"fsym": base, "tsym": quote, "limit": min(limit, 2000)},
                 headers=headers,
             )
             r.raise_for_status()
             body = r.json()
         rows = ((body.get("Data") or {}).get("Data")) or []
-        candles = [
-            {
-                "t": int(c["time"]),
-                "o": float(c["open"]),
-                "h": float(c["high"]),
-                "l": float(c["low"]),
-                "c": float(c["close"]),
-                "v": float(c.get("volumefrom", 0) or 0),
-            }
-            for c in rows
-            if c.get("close")
+        return [
+            {"t": int(c["time"]), "o": float(c["open"]), "h": float(c["high"]),
+             "l": float(c["low"]), "c": float(c["close"]), "v": float(c.get("volumefrom", 0) or 0)}
+            for c in rows if c.get("close")
         ]
     except Exception as e:  # noqa: BLE001
-        logger.warning("market ohlcv fetch failed for %s: %s", symbol, e)
-        candles = []
-
-    return {
-        "ok": True,
-        "data": {
-            "symbol": f"{base}/{quote}",
-            "timeframe": timeframe,
-            "candles": candles,
-        },
-    }
+        logger.warning("cryptocompare ohlcv failed %s-%s: %s", base, quote, e)
+        return []
 
 
 @router.get("/enrich/{symbol:path}")
