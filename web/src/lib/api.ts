@@ -18,6 +18,7 @@ export const HERMES_BASE_PATH = readBasePath();
 const BASE = HERMES_BASE_PATH;
 
 import type { DashboardTheme } from "@/themes/types";
+import { getAccessToken } from "./supabase";
 
 // Ephemeral session token for protected endpoints.
 // Injected into index.html by the server — never fetched via API.
@@ -97,6 +98,15 @@ export async function fetchJSON<T>(
   const token = window.__HERMES_SESSION_TOKEN__;
   if (token) {
     setSessionHeader(headers, token);
+  }
+  // When the dashboard API is reached through the Vercel operator proxy
+  // (web/api/[...path].js), there is no server-injected session token; the
+  // proxy authorizes the call with the caller's Supabase product session
+  // instead. Attach it as a Bearer so a single product login covers every
+  // operator page. No-op when logged out or when an explicit auth is set.
+  if (!headers.has("authorization")) {
+    const sbToken = await getAccessToken();
+    if (sbToken) headers.set("authorization", `Bearer ${sbToken}`);
   }
   const res = await fetch(`${BASE}${url}`, {
     ...init,

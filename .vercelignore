@@ -1,0 +1,9 @@
+.venv
+node_modules
+**/node_modules
+.git
+*.tar
+*.log
+hermes-*
+.plans
+tests

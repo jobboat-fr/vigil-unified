@@ -14,6 +14,16 @@ import { AuthGate } from "./components/AuthGate";
 // can access React, components, etc. immediately.
 exposePluginSDK();
 
+// On Vercel the operator API is reached through the Supabase-gated proxy
+// (web/api/[...path].js), not the dashboard's own loopback HTML — so there is
+// no server-injected session token to refresh by reloading. Declaring the gate
+// "engaged" makes api.ts treat a 401 as a session-expiry (full-page navigate to
+// the proxy's login_url) instead of triggering the loopback token-reload loop.
+// Respect an explicit value if the dashboard itself ever serves this build.
+if (window.__HERMES_AUTH_REQUIRED__ === undefined) {
+  window.__HERMES_AUTH_REQUIRED__ = true;
+}
+
 createRoot(document.getElementById("root")!).render(
   <BrowserRouter basename={HERMES_BASE_PATH || undefined}>
     <I18nProvider>
