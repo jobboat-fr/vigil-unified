@@ -283,11 +283,12 @@ def _start_realtime_speaker(
     the null-sink; on macOS the caller is expected to have the BlackHole
     device selected as default input.
     """
+    # Voice provider: OpenAI Realtime (default) or ElevenLabs. Both expose the
+    # same speak()/connect() surface and emit 24 kHz s16le mono PCM, so the
+    # RealtimeSpeaker queue wrapper and the paplay pump below are unchanged.
+    voice_provider = os.environ.get("HERMES_MEET_VOICE_PROVIDER", "openai").strip().lower()
     try:
-        from plugins.google_meet.realtime.openai_client import (
-            RealtimeSession,
-            RealtimeSpeaker,
-        )
+        from plugins.google_meet.realtime.openai_client import RealtimeSpeaker
     except Exception as e:
         state.set(error=f"realtime import failed: {e}")
         return
@@ -302,14 +303,29 @@ def _start_realtime_speaker(
     queue_path.touch()
 
     try:
-        session = RealtimeSession(
-            api_key=api_key,
-            model=model,
-            voice=voice,
-            instructions=instructions,
-            audio_sink_path=pcm_path,
-            sample_rate=24000,
-        )
+        if voice_provider == "elevenlabs":
+            from plugins.google_meet.realtime.elevenlabs_client import ElevenLabsSession
+
+            session = ElevenLabsSession(
+                api_key=os.environ.get("ELEVENLABS_API_KEY")
+                or os.environ.get("ELEVEN_API_KEY"),
+                voice_id=os.environ.get("ELEVENLABS_VOICE_ID"),
+                audio_sink_path=pcm_path,
+                sample_rate=24000,
+                model_id=os.environ.get("HERMES_MEET_ELEVEN_MODEL"),
+                instructions=instructions,
+            )
+        else:
+            from plugins.google_meet.realtime.openai_client import RealtimeSession
+
+            session = RealtimeSession(
+                api_key=api_key,
+                model=model,
+                voice=voice,
+                instructions=instructions,
+                audio_sink_path=pcm_path,
+                sample_rate=24000,
+            )
         session.connect()
     except Exception as e:
         state.set(error=f"realtime connect failed: {e}")
