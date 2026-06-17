@@ -1,4 +1,5 @@
 livekit-agents>=1.6,<2
-livekit-plugins-openai>=1.6,<2
+livekit-plugins-groq>=1.6,<2
+livekit-plugins-elevenlabs>=1.6,<2
 livekit-plugins-silero>=1.6,<2
 livekit-plugins-tavus>=1.6,<2
