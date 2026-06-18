@@ -438,6 +438,54 @@ export const vigil = {
   },
 };
 
+// ── Google Meet bot ─────────────────────────────────────────────────────────
+// Unlike the rest of this file, these call /api/plugins/google_meet/* — the
+// dashboard plugin API on the OVH Hermes — through the Supabase-gated ops
+// proxy (web/api/ops.js), NOT the gateway. That's where the Playwright Meet
+// bot actually runs. One product login covers it (the proxy injects the
+// dashboard session token).
+export interface MeetBotStatus {
+  success?: boolean;
+  ok?: boolean;
+  state?: string;
+  url?: string;
+  mode?: string;
+  reason?: string;
+  error?: string;
+  [k: string]: unknown;
+}
+
+async function meetCall<T = MeetBotStatus>(method: string, path: string, body?: unknown): Promise<T> {
+  const token = await getAccessToken();
+  if (!token) throw new GatewayError("not signed in", "NO_SESSION");
+  const res = await fetch(`/api/plugins/google_meet/${path}`, {
+    method,
+    headers: {
+      authorization: `Bearer ${token}`,
+      ...(body != null ? { "content-type": "application/json" } : {}),
+    },
+    body: body != null ? JSON.stringify(body) : undefined,
+  });
+  if (!res.ok) {
+    const txt = await res.text().catch(() => res.statusText);
+    throw new GatewayError(`meet ${path}: HTTP ${res.status} ${txt}`, "HTTP_ERROR", res.status);
+  }
+  return res.json();
+}
+
+export const googleMeet = {
+  join: (url: string, persona: string, mode: "transcribe" | "realtime" = "transcribe") =>
+    meetCall("POST", "join", { url, mode, guest_name: `VIGIL ${persona}` }),
+  status: () => meetCall("GET", "status"),
+  transcript: (last?: number) =>
+    meetCall<{ transcript?: string; lines?: string[] } & MeetBotStatus>(
+      "GET",
+      last ? `transcript?last=${last}` : "transcript",
+    ),
+  say: (text: string) => meetCall("POST", "say", { text }),
+  leave: () => meetCall("POST", "leave"),
+};
+
 // ── SSE helpers (fetch-based so we can send the bearer token) ───────────────
 async function* sseStream(
   path: string,

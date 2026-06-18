@@ -1,0 +1,6 @@
+{
+  "name": "google_meet",
+  "version": "0.2.0",
+  "description": "Backend API for dispatching the Meet bot from the VIGIL Meeting Room (join/status/transcript/say/leave). Mounted at /api/plugins/google_meet/.",
+  "api": "plugin_api.py"
+}

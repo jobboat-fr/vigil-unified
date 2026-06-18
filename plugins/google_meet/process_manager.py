@@ -133,6 +133,27 @@ def start(
                 pass
 
     env = os.environ.copy()
+    # Make the spawned bot self-sufficient regardless of how the parent process
+    # was launched (e.g. the dashboard, which may not carry these in its env):
+    # pull HERMES_HOME/.env (ELEVENLABS_API_KEY, HERMES_MEET_VOICE_PROVIDER, …)
+    # and default PLAYWRIGHT_BROWSERS_PATH to a Chromium installed under the
+    # data dir. Real process env always wins over the .env file.
+    _hermes_home = os.environ.get("HERMES_HOME") or os.path.expanduser("~/.hermes")
+    _dotenv = os.path.join(_hermes_home, ".env")
+    try:
+        if os.path.isfile(_dotenv):
+            for _line in open(_dotenv, encoding="utf-8"):
+                _line = _line.strip()
+                if not _line or _line.startswith("#") or "=" not in _line:
+                    continue
+                _k, _, _v = _line.partition("=")
+                env.setdefault(_k.strip(), _v.strip().strip('"').strip("'"))
+    except OSError:
+        pass
+    if "PLAYWRIGHT_BROWSERS_PATH" not in env:
+        _pw = os.path.join(_hermes_home, "ms-playwright")
+        if os.path.isdir(_pw):
+            env["PLAYWRIGHT_BROWSERS_PATH"] = _pw
     env["HERMES_MEET_URL"] = url
     env["HERMES_MEET_OUT_DIR"] = str(out)
     env["HERMES_MEET_GUEST_NAME"] = guest_name

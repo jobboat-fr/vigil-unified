@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/components/card";
 import { Button } from "@nous-research/ui/ui/components/button";
-import { vigil, streamRoomCouncil, type Room, type CouncilRecord, type SseEvent, type LiveIntervention, type MeetingSummary } from "@/lib/vigil";
+import { vigil, googleMeet, streamRoomCouncil, type Room, type CouncilRecord, type SseEvent, type LiveIntervention, type MeetingSummary, type MeetBotStatus } from "@/lib/vigil";
 import { LiveRoom } from "@/components/LiveRoom";
 
 const PERSONAS = ["CFO", "CTO", "COO", "CRM", "CRO", "advisor"] as const;
@@ -46,6 +46,63 @@ export default function MeetingRoomPage() {
   const [agentIn, setAgentIn] = useState(false);
   const [summary, setSummary] = useState<MeetingSummary | null>(null);
   const [summarizing, setSummarizing] = useState(false);
+  // Real Google Meet bot (Playwright on OVH, via the ops proxy).
+  const [meetUrl, setMeetUrl] = useState("");
+  const [meetMode, setMeetMode] = useState<"transcribe" | "realtime">("realtime");
+  const [meetStatus, setMeetStatus] = useState<MeetBotStatus | null>(null);
+  const [meetBusy, setMeetBusy] = useState(false);
+  const [meetErr, setMeetErr] = useState("");
+  const [sayText, setSayText] = useState("");
+
+  const sendToMeet = async () => {
+    const url = meetUrl.trim();
+    if (!/^https:\/\/meet\.google\.com\//.test(url)) {
+      setMeetErr("Enter a valid https://meet.google.com/… link");
+      return;
+    }
+    setMeetBusy(true);
+    setMeetErr("");
+    try {
+      const res = await googleMeet.join(url, persona, meetMode);
+      setMeetStatus(res);
+      if (res.success === false || res.error) setMeetErr(res.error || "join failed");
+    } catch (e) {
+      setMeetErr((e as Error).message);
+    } finally {
+      setMeetBusy(false);
+    }
+  };
+  const refreshMeetStatus = async () => {
+    try {
+      setMeetStatus(await googleMeet.status());
+    } catch (e) {
+      setMeetErr((e as Error).message);
+    }
+  };
+  const sayInMeet = async () => {
+    const t = sayText.trim();
+    if (!t) return;
+    setMeetBusy(true);
+    try {
+      await googleMeet.say(t);
+      setSayText("");
+    } catch (e) {
+      setMeetErr((e as Error).message);
+    } finally {
+      setMeetBusy(false);
+    }
+  };
+  const leaveMeet = async () => {
+    setMeetBusy(true);
+    try {
+      await googleMeet.leave();
+      setMeetStatus(null);
+    } catch (e) {
+      setMeetErr((e as Error).message);
+    } finally {
+      setMeetBusy(false);
+    }
+  };
 
   const refresh = useCallback(async () => {
     try {
@@ -401,6 +458,58 @@ export default function MeetingRoomPage() {
                     </div>
                   )}
                   {liveErr && <p className="text-xs" style={{ color: "#ff3366" }}>{liveErr}</p>}
+                </div>
+              </div>
+
+              {/* Send the agent into a REAL Google Meet (Playwright bot on OVH) */}
+              <div>
+                <div className="text-[10px] font-mono uppercase tracking-wide text-text-secondary mb-1.5">Join a Google Meet</div>
+                <div className="space-y-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <input
+                      value={meetUrl}
+                      onChange={(e) => setMeetUrl(e.target.value)}
+                      placeholder="https://meet.google.com/abc-defg-hij"
+                      className="flex-1 min-w-[220px] rounded border border-current/20 bg-transparent px-2 py-1 text-xs font-mono"
+                    />
+                    <label className="flex items-center gap-1 text-xs text-text-secondary">
+                      <input
+                        type="checkbox"
+                        checked={meetMode === "realtime"}
+                        onChange={(e) => setMeetMode(e.target.checked ? "realtime" : "transcribe")}
+                      />
+                      speak
+                    </label>
+                    <Button size="sm" disabled={meetBusy} onClick={() => void sendToMeet()}>
+                      {meetBusy ? "Sending…" : `Send ${persona} to Meet`}
+                    </Button>
+                  </div>
+                  <p className="text-text-secondary text-[11px]">
+                    A VIGIL bot joins your Google Meet as a guest — admit it from the lobby.{" "}
+                    {meetMode === "realtime" ? "It speaks with your ElevenLabs voice." : "It transcribes the call."}
+                  </p>
+                  {meetStatus && (
+                    <div className="flex flex-wrap items-center gap-2 text-xs">
+                      <span className="rounded-full border border-current/20 px-2 py-0.5">
+                        {meetStatus.state || (meetStatus.ok ? "in call" : meetStatus.reason || "—")}
+                      </span>
+                      <button className="text-text-secondary hover:text-foreground" onClick={() => void refreshMeetStatus()}>Refresh</button>
+                      <button className="text-text-secondary hover:text-foreground" onClick={() => void leaveMeet()}>Leave</button>
+                    </div>
+                  )}
+                  {meetMode === "realtime" && meetStatus && (
+                    <div className="flex items-center gap-2 text-xs">
+                      <input
+                        value={sayText}
+                        onChange={(e) => setSayText(e.target.value)}
+                        placeholder={`Make ${persona} say…`}
+                        onKeyDown={(e) => { if (e.key === "Enter") void sayInMeet(); }}
+                        className="flex-1 rounded border border-current/20 bg-transparent px-2 py-1"
+                      />
+                      <button className="text-text-secondary hover:text-foreground" onClick={() => void sayInMeet()}>Say</button>
+                    </div>
+                  )}
+                  {meetErr && <p className="text-xs" style={{ color: "#ff3366" }}>{meetErr}</p>}
                 </div>
               </div>
 
