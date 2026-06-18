@@ -576,7 +576,12 @@ def run_bot() -> int:  # noqa: C901 — orchestration, explicit branches
             page = context.new_page()
 
             try:
-                page.goto(url, wait_until="domcontentloaded", timeout=30_000)
+                # Force the Meet UI to English (?hl=en) so our English button
+                # and status-text selectors match regardless of the signed-in
+                # account's locale (e.g. a French account renders "Participer"
+                # instead of "Join now", which we'd otherwise never click).
+                nav_url = url + ("&hl=en" if "?" in url else "?hl=en")
+                page.goto(nav_url, wait_until="domcontentloaded", timeout=30_000)
             except Exception as e:
                 state.set(error=f"navigate failed: {e}", exited=True)
                 return 4
@@ -661,6 +666,18 @@ def run_bot() -> int:  # noqa: C901 — orchestration, explicit branches
                         )
                         break
                     elif _detect_denied(page):
+                        # Debug: capture exactly what Meet is showing so we can
+                        # tell a real host-deny from a Google bot-block / timeout.
+                        try:
+                            _od = os.environ.get("HERMES_MEET_OUT_DIR", "/tmp")
+                            page.screenshot(path=os.path.join(_od, "denied.png"))
+                            _b = page.evaluate(
+                                "() => (document.body && document.body.innerText || '').slice(0,800)"
+                            )
+                            with open(os.path.join(_od, "denied.txt"), "w", encoding="utf-8") as _f:
+                                _f.write(str(_b))
+                        except Exception:
+                            pass
                         state.set(
                             error="host denied admission",
                             leave_reason="denied",
@@ -751,14 +768,50 @@ def run_bot() -> int:  # noqa: C901 — orchestration, explicit branches
 
 
 def _try_guest_name(page, guest_name: str) -> None:
-    """If Meet is showing a guest-name input, type *guest_name* into it."""
-    try:
-        # Meet's guest name input has placeholder "Your name".
-        locator = page.locator('input[aria-label*="name" i]').first
-        if locator.count() and locator.is_visible():
-            locator.fill(guest_name, timeout=2_000)
-    except Exception:
-        pass
+    """If Meet is showing a guest-name input, dismiss any onboarding popover
+    and type *guest_name* into it.
+
+    Meet renders the name field a beat after navigation, and sometimes behind a
+    "Sign in with your Google account / Got it" popover that swallows the first
+    interaction — so we dismiss that, then poll the input for a few seconds and
+    verify the value took. Without a name, Meet keeps "Ask to join" disabled and
+    the bot waits in the pre-join screen forever.
+    """
+    # Dismiss the sign-in / onboarding popover if present.
+    for sel in (
+        'button:has-text("Got it")',
+        'button:has-text("Dismiss")',
+        'button:has-text("No thanks")',
+    ):
+        try:
+            b = page.locator(sel).first
+            if b.count() and b.is_visible():
+                b.click(timeout=1_500)
+                break
+        except Exception:
+            pass
+    selectors = (
+        'input[aria-label*="name" i]',
+        'input[placeholder*="name" i]',
+        'input[jsname][type="text"]',
+        'input[type="text"]',
+    )
+    deadline = time.monotonic() + 12.0
+    while time.monotonic() < deadline:
+        for sel in selectors:
+            try:
+                loc = page.locator(sel).first
+                if loc.count() and loc.is_visible():
+                    loc.click(timeout=1_500)
+                    loc.fill(guest_name, timeout=2_000)
+                    if (loc.input_value() or "").strip():
+                        return
+            except Exception:
+                pass
+        try:
+            page.wait_for_timeout(500)
+        except Exception:
+            time.sleep(0.5)
 
 
 def _detect_admission(page) -> bool:
@@ -841,16 +894,29 @@ def _click_join(page, state: _BotState) -> None:
     Flags ``lobby_waiting`` when we hit the "waiting for host to admit you"
     state so the agent can surface that in status.
     """
-    for label in ("Join now", "Ask to join"):
+    # Poll for an ENABLED join button — after the name is filled it can take a
+    # moment to enable, and clicking a disabled button is a silent no-op.
+    # Labels across the locales we're likely to hit (the signed-in account's
+    # language wins over ?hl=en sometimes). "ask to join" variants set
+    # lobby_waiting; the rest are direct-join.
+    join_now = ("Join now", "Participer", "Rejoindre", "Unirse ahora", "Jetzt teilnehmen")
+    ask_join = ("Ask to join", "Demander à participer", "Solicitar unirse", "Um Teilnahme bitten")
+    deadline = time.monotonic() + 10.0
+    while time.monotonic() < deadline:
+        for label in (*join_now, *ask_join):
+            try:
+                btn = page.get_by_role("button", name=label, exact=False).first
+                if btn.count() and btn.is_visible() and btn.is_enabled():
+                    btn.click(timeout=3_000)
+                    if label in ask_join:
+                        state.set(lobby_waiting=True)
+                    return
+            except Exception:
+                continue
         try:
-            btn = page.get_by_role("button", name=label, exact=False).first
-            if btn.count() and btn.is_visible():
-                btn.click(timeout=3_000)
-                if label == "Ask to join":
-                    state.set(lobby_waiting=True)
-                break
+            page.wait_for_timeout(500)
         except Exception:
-            continue
+            time.sleep(0.5)
 
 
 def _parse_duration(raw: str) -> Optional[float]:
