@@ -67,6 +67,8 @@ def _public(row: dict[str, Any]) -> dict[str, Any]:
         "brief": row.get("brief") or "",
         "approach": row.get("approach") or "",
         "content": row.get("text_dump") or "",
+        "canvas": row.get("canvas") or None,
+        "tldraw": row.get("tldraw") or None,
         "stub": bool(row.get("stub", False)),
         "revisions": max(int(row.get("version") or 1) - 1, 0),
         "created_at": row.get("created_at"),
@@ -220,6 +222,26 @@ async def delete_artifact(artifact_id: str, user: dict = Depends(get_current_use
     await _owned_row(artifact_id, uid)  # 404s if not owned
     await db_delete(_TABLE, filters={"id": artifact_id, "user_id": uid})
     return {"ok": True, "data": {"deleted": artifact_id}}
+
+
+class CanvasSaveBody(BaseModel):
+    tldraw: dict[str, Any] | None = Field(default=None, description="The tldraw editor document.")
+    canvas: dict[str, Any] | None = Field(default=None, description="The {nodes,edges,table} structure.")
+
+
+@router.patch("/{artifact_id}/canvas")
+async def save_canvas(artifact_id: str, body: CanvasSaveBody, user: dict = Depends(get_current_user)) -> dict[str, Any]:
+    """Persist the user's edits to the artifact canvas (tldraw doc + structure)."""
+    uid = _uid(user)
+    await _owned_row(artifact_id, uid)  # 404s if not owned
+    patch: dict[str, Any] = {}
+    if body.tldraw is not None:
+        patch["tldraw"] = body.tldraw
+    if body.canvas is not None:
+        patch["canvas"] = body.canvas
+    if patch:
+        await db_update(_TABLE, patch, filters={"id": artifact_id, "user_id": uid})
+    return {"ok": True, "data": {"saved": artifact_id}}
 
 
 class RefineBody(BaseModel):

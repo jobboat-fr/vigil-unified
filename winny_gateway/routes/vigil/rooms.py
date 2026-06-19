@@ -26,6 +26,7 @@ from pydantic import BaseModel, Field
 from winny.council import ROLE_SYSTEM_PROMPTS, REVIEWER_SYSTEM_PROMPT, TASK_MATRIX
 from winny.council.intervention import WEIGHT_DEFAULTS, check_intervention
 from winny.council.summarizer import summarize_meeting
+from winny.council.structurer import structure_meeting
 from winny_gateway import avatar as avatar_mod
 from winny_gateway import livekit as lk
 from winny_gateway.auth import get_current_user
@@ -460,6 +461,15 @@ async def summarize_room(room_id: str, body: SummarizeBody, user: dict = Depends
     if result.get("empty"):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail={"error": "empty_transcript"})
 
+    # Phase 4: structure the close into the canvas (decision-flow + action table)
+    # so the wrap-up can redirect to the editable artifact page.
+    canvas = await structure_meeting(
+        summary_markdown=result["summary_markdown"],
+        decisions=result["decisions"],
+        commitments=result["commitments"],
+        topic=room.get("title") or "",
+    )
+
     artifact_id = None
     if body.create_artifact and result["summary_markdown"]:
         parts = [result["summary_markdown"]]
@@ -477,6 +487,7 @@ async def summarize_room(room_id: str, body: SummarizeBody, user: dict = Depends
             "kind": "report",
             "brief": f"Summary of meeting: {room.get('title') or room_id}",
             "text_dump": "\n\n".join(parts),
+            "canvas": canvas,
             "stub": bool(result.get("stub")),
             "status": "draft",
             "version": 1,
@@ -525,6 +536,7 @@ async def summarize_room(room_id: str, body: SummarizeBody, user: dict = Depends
             "commitments": result["commitments"],
             "follow_ups": result["follow_ups"],
             "artifact_id": artifact_id,
+            "canvas": canvas,
             "commitments_saved": commitments_n,
             "contacts_saved": contacts_n,
             "stub": result.get("stub"),

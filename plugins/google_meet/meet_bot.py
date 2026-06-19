@@ -626,6 +626,29 @@ def run_bot() -> int:  # noqa: C901 — orchestration, explicit branches
                 if rt["session"] is not None:
                     state.set(realtime_ready=True)
 
+            # Brain loop: when realtime speech is on and the auto-advisor is
+            # enabled, let the agent decide on its own when to chime in
+            # (transcript → HF council brain → say-queue → ElevenLabs).
+            if rt["enabled"] and os.environ.get("HERMES_MEET_AUTO_ADVISOR", "").strip() in ("1", "true", "on"):
+                try:
+                    from plugins.google_meet.auto_advisor import start_auto_advisor_thread
+
+                    _persona = os.environ.get("HERMES_MEET_PERSONA", "").strip()
+                    if not _persona and guest_name.upper().startswith("VIGIL "):
+                        _persona = guest_name.split(" ", 1)[1].strip()
+                    start_auto_advisor_thread(
+                        out_dir=out_dir,
+                        persona=_persona or "advisor",
+                        topic=os.environ.get("HERMES_MEET_TOPIC", ""),
+                        evidence=os.environ.get("HERMES_MEET_EVIDENCE", ""),
+                        stop_flag=stop_flag,
+                        is_in_call=lambda: bool(state.in_call),
+                        logger=lambda m: print(f"[auto-advisor] {m}", flush=True),
+                    )
+                    state.set(auto_advisor=True)
+                except Exception as e:  # noqa: BLE001
+                    state.set(error=f"auto-advisor failed to start: {e}")
+
             # Admission + drain loop. Runs until SIGTERM, duration expiry,
             # or the page detects "You were removed / you left the
             # meeting". Responsible for:
