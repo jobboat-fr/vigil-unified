@@ -140,3 +140,7 @@ apps/desktop/demo/
 
 # Local MCP/debug scratch output
 mcp_pipe_out.txt
+.vercel
+graphify-out/
+meet-debug*.png
+meet_auth_state.json

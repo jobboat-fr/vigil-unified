@@ -3,6 +3,7 @@ graphify-out
 node_modules
 **/node_modules
 .git
+web
 *.tar
 *.log
 hermes-*
