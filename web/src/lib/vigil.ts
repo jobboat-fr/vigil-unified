@@ -137,6 +137,19 @@ export interface LiveKitJoin {
   identity: string;
 }
 
+export interface MeetingCanvasNode {
+  id: string;
+  label: string;
+  kind: "problem" | "decision" | "outcome" | string;
+  x: number;
+  y: number;
+}
+export interface MeetingCanvas {
+  nodes: MeetingCanvasNode[];
+  edges: { from: string; to: string }[];
+  table: { columns: string[]; rows: string[][] };
+}
+
 export interface MeetingSummary {
   summary_markdown: string;
   decisions: string[];
@@ -144,6 +157,7 @@ export interface MeetingSummary {
   commitments: { text: string; owner?: string; due?: string }[];
   follow_ups: { name: string; company?: string; next_step?: string }[];
   artifact_id: string | null;
+  canvas: MeetingCanvas | null;
   commitments_saved: number;
   contacts_saved: number;
   stub: boolean;
@@ -194,6 +208,8 @@ export interface Artifact {
   brief: string;
   approach: string;
   content: string;
+  canvas: MeetingCanvas | null;
+  tldraw: unknown | null;
   stub: boolean;
   revisions: number;
   created_at: string;
@@ -360,6 +376,8 @@ export const vigil = {
     remove: (id: string) => vigilCall("DELETE", `/v1/artifacts/${id}`),
     refine: (id: string, instruction: string) =>
       vigilCall<Artifact>("POST", `/v1/artifacts/${id}/refine`, { instruction }),
+    saveCanvas: (id: string, patch: { canvas?: MeetingCanvas; tldraw?: unknown }) =>
+      vigilCall<{ saved: string }>("PATCH", `/v1/artifacts/${id}/canvas`, patch),
   },
   finance: {
     accounts: () => vigilCall<{ accounts: FinanceAccount[] }>("GET", "/v1/finance/accounts"),

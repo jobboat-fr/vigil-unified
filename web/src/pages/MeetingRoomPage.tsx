@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/components/card";
 import { Button } from "@nous-research/ui/ui/components/button";
 import { vigil, googleMeet, streamRoomCouncil, type Room, type CouncilRecord, type SseEvent, type LiveIntervention, type MeetingSummary, type MeetBotStatus } from "@/lib/vigil";
@@ -27,6 +28,7 @@ const STAGE_LABEL: Record<string, string> = {
 };
 
 export default function MeetingRoomPage() {
+  const navigate = useNavigate();
   const [rooms, setRooms] = useState<Room[]>([]);
   const [active, setActive] = useState<Room | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
@@ -201,7 +203,10 @@ export default function MeetingRoomPage() {
     if (!active) return;
     setSummarizing(true);
     try {
-      setSummary(await vigil.rooms.summarize(active.id));
+      const s = await vigil.rooms.summarize(active.id);
+      setSummary(s);
+      // Phase 4: drop the host straight onto the editable artifact canvas.
+      if (s.artifact_id) navigate(`/studio?artifact=${s.artifact_id}`);
     } catch (e) {
       setLiveErr((e as Error).message);
     } finally {
