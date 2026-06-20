@@ -98,3 +98,32 @@ async def structure_meeting(
         ])
         edges = []
     return {"nodes": nodes, "edges": edges, "table": table}
+
+
+async def diagram_from_prompt(*, prompt: str, context: str = "", topic: str = "") -> dict[str, Any]:
+    """On-demand diagram for the canvas: turn a prompt (+ board context) into an
+    auto-laid-out node/edge graph the user can then edit. Returns {nodes, edges}."""
+    basis = prompt.strip()
+    if context.strip():
+        basis += "\n\nExisting board:\n" + context.strip()[:3000]
+    if not basis:
+        return {"nodes": [], "edges": []}
+    try:
+        worker = worker_registry()["primary"]
+        result = await ask(
+            worker,
+            f"Topic: {topic or 'unspecified'}\n\n{basis[:5000]}\n\nProduce the diagram JSON.",
+            system=_FLOW_SYSTEM,
+            temperature=0.4,
+            max_tokens=900,
+        )
+        parsed = _parse_json(result.get("output", "")) or {}
+        raw_nodes = [n for n in (parsed.get("nodes") or []) if isinstance(n, dict) and n.get("id")]
+        edges = [
+            {"from": str(e.get("from")), "to": str(e.get("to"))}
+            for e in (parsed.get("edges") or [])
+            if isinstance(e, dict) and e.get("from") and e.get("to")
+        ]
+        return {"nodes": _layout(raw_nodes), "edges": edges}
+    except Exception:  # noqa: BLE001
+        return {"nodes": [], "edges": []}

@@ -33,6 +33,7 @@ from pydantic import BaseModel, Field
 from winny.council.providers import ask
 from winny.council.registry import worker_registry
 from winny.council.canvas_brainstorm import brainstorm_board
+from winny.council.structurer import diagram_from_prompt
 from winny_gateway.auth import get_current_user
 from winny_gateway.db import db_delete, db_insert, db_select, db_update
 from winny_gateway.logging import get_logger
@@ -259,6 +260,40 @@ async def canvas_brainstorm(body: CanvasBrainstormBody, _user: dict = Depends(ge
     res = await brainstorm_board(
         prompt=body.prompt, board_text=body.board_text, lens=body.lens, topic=body.topic
     )
+    return {"ok": True, "data": res}
+
+
+class BlankCanvasBody(BaseModel):
+    title: str = Field(default="New board")
+
+
+@router.post("/blank-canvas")
+async def create_blank_canvas(body: BlankCanvasBody, user: dict = Depends(get_current_user)) -> dict[str, Any]:
+    """Create an empty canvas artifact so the user can jump straight onto a board."""
+    row = await db_insert("artifacts", {
+        "user_id": _uid(user),
+        "title": (body.title or "New board")[:120],
+        "kind": "report",
+        "brief": "Brainstorming board",
+        "text_dump": "",
+        "canvas": {"nodes": [], "edges": [], "table": {"columns": ["Action item", "Owner", "Due"], "rows": []}},
+        "status": "draft",
+        "version": 1,
+    })
+    return {"ok": True, "data": _public(row or {})}
+
+
+class CanvasDiagramBody(BaseModel):
+    prompt: str = Field(description="What to diagram, e.g. 'our onboarding flow'.")
+    board_text: str = Field(default="")
+    topic: str = Field(default="")
+
+
+@router.post("/canvas-diagram")
+async def canvas_diagram(body: CanvasDiagramBody, _user: dict = Depends(get_current_user)) -> dict[str, Any]:
+    """Agent draws a diagram on demand: prompt -> auto-laid-out {nodes, edges}
+    the user can drop onto the board and edit."""
+    res = await diagram_from_prompt(prompt=body.prompt, context=body.board_text, topic=body.topic)
     return {"ok": True, "data": res}
 
 

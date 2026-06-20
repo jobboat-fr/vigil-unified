@@ -99,6 +99,32 @@ export function ArtifactCanvasTldraw({ artifact }: { artifact: Artifact }) {
     }
   };
 
+  const diagram = async () => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    setBusy(true);
+    setErr("");
+    try {
+      const board = editor
+        .getCurrentPageShapes()
+        .map((s) => richTextToString((s.props as { richText?: unknown }).richText))
+        .filter(Boolean)
+        .map((l) => `- ${l}`)
+        .join("\n");
+      const res = await vigil.studio.canvasDiagram({
+        prompt: prompt || "Diagram the key flow on this board",
+        board_text: board,
+        topic: artifact.title,
+      });
+      placeDiagram(editor, res.nodes || [], res.edges || []);
+      setPrompt("");
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <div style={{ position: "relative", width: "100%", height: "70vh", borderRadius: 12, overflow: "hidden" }}>
       <Tldraw assetUrls={assetUrls} onMount={onMount} />
@@ -139,9 +165,17 @@ export function ArtifactCanvasTldraw({ artifact }: { artifact: Artifact }) {
               {l.label}
             </button>
           ))}
+          <button
+            disabled={busy}
+            onClick={() => void diagram()}
+            title="Agent draws an editable diagram (uses the prompt above)"
+            style={{ fontSize: 11, padding: "4px 9px", borderRadius: 999, border: "1px solid var(--color-text-info, #4a90d9)", background: "transparent", color: "var(--color-text-info, #4a90d9)", opacity: busy ? 0.5 : 1 }}
+          >
+            ◇ Diagram
+          </button>
         </div>
         <div style={{ fontSize: 10, color: "var(--color-text-tertiary, #999)", marginTop: 7 }}>
-          Select blocks to brainstorm on just those.
+          Select blocks to brainstorm on just those · type a prompt then ◇ Diagram.
         </div>
         {err && <div style={{ fontSize: 11, color: "#ff3366", marginTop: 4 }}>{err}</div>}
       </div>
@@ -170,6 +204,44 @@ function placeBlocks(editor: Editor, blocks: CanvasBlock[]) {
     });
   });
   if (created.length) editor.setSelectedShapes(created);
+}
+
+function placeDiagram(
+  editor: Editor,
+  nodes: { id: string; label: string; kind: string; x: number; y: number }[],
+  edges: { from: string; to: string }[],
+) {
+  if (!nodes.length) return;
+  const vb = editor.getViewportPageBounds();
+  const ox = vb.minX + 40;
+  const oy = vb.minY + 40;
+  const idMap = new Map<string, TLShapeId>();
+  for (const n of nodes) {
+    const id = createShapeId();
+    idMap.set(n.id, id);
+    editor.createShape({
+      id,
+      type: "geo",
+      x: ox + (n.x ?? 0),
+      y: oy + (n.y ?? 0),
+      props: { geo: "rectangle", w: 170, h: 64, color: KIND_COLOR[n.kind] ?? "black", richText: toRichText(n.label || "") },
+    });
+  }
+  for (const e of edges) {
+    const a = idMap.get(e.from);
+    const b = idMap.get(e.to);
+    if (!a || !b) continue;
+    const sa = editor.getShape(a) as { x: number; y: number } | undefined;
+    const sb = editor.getShape(b) as { x: number; y: number } | undefined;
+    if (sa && sb) {
+      try {
+        editor.createShape({ type: "arrow", props: { start: { x: sa.x + 170, y: sa.y + 32 }, end: { x: sb.x, y: sb.y + 32 } } });
+      } catch {
+        /* best-effort */
+      }
+    }
+  }
+  editor.setSelectedShapes([...idMap.values()]);
 }
 
 function seedFromCanvas(editor: Editor, canvas: MeetingCanvas | null) {

@@ -392,6 +392,13 @@ export const vigil = {
       vigilCall<{ saved: string }>("PATCH", `/v1/artifacts/${id}/canvas`, patch),
     canvasBrainstorm: (input: { prompt?: string; board_text?: string; lens?: string; topic?: string }) =>
       vigilCall<CanvasBrainstormResult>("POST", "/v1/artifacts/canvas-brainstorm", input),
+    blankCanvas: (title?: string) => vigilCall<Artifact>("POST", "/v1/artifacts/blank-canvas", { title }),
+    canvasDiagram: (input: { prompt: string; board_text?: string; topic?: string }) =>
+      vigilCall<{ nodes: MeetingCanvasNode[]; edges: { from: string; to: string }[] }>(
+        "POST",
+        "/v1/artifacts/canvas-diagram",
+        input,
+      ),
   },
   finance: {
     accounts: () => vigilCall<{ accounts: FinanceAccount[] }>("GET", "/v1/finance/accounts"),

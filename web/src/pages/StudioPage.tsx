@@ -119,15 +119,28 @@ export default function StudioPage() {
     }
   };
 
+  const newBoard = async () => {
+    try {
+      const art = await vigil.studio.blankCanvas("New board");
+      setActive(art);
+      await refresh();
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  };
+
   const inputCls = "w-full rounded-md border border-current/20 bg-transparent px-3 py-2 text-sm outline-none focus:border-current/50";
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
-      <header className="flex flex-col gap-1">
-        <h1 className="text-xl font-bold tracking-tight">Studio</h1>
-        <p className="text-sm text-text-secondary">
-          Draft, refine, and crystallize artifacts — the agent <em>thinks first</em> (proposes approaches), then drafts only what you approve.
-        </p>
+      <header className="flex items-start justify-between gap-3">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-xl font-bold tracking-tight">Studio</h1>
+          <p className="text-sm text-text-secondary">
+            Draft, refine, and crystallize artifacts — or open an <em>infinite brainstorming board</em> and think with the agent.
+          </p>
+        </div>
+        <Button onClick={() => void newBoard()}>+ New board</Button>
       </header>
 
       {authError && (
@@ -249,7 +262,7 @@ export default function StudioPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="flex flex-col gap-4">
-                {active.canvas && (((active.canvas.nodes?.length ?? 0) > 0) || ((active.canvas.table?.rows?.length ?? 0) > 0)) ? (
+                {active.canvas ? (
                   <Suspense fallback={<div className="p-6 text-center text-sm text-text-secondary">Loading canvas…</div>}>
                     <ArtifactCanvasTldraw artifact={active} />
                   </Suspense>
