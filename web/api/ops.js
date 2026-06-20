@@ -82,10 +82,13 @@ export default async function handler(req, res) {
   const userToken = authz.startsWith("Bearer ") ? authz.slice(7) : "";
   if (!(await verifySupabase(userToken))) {
     // Shape matches the dashboard's gated 401 envelope so the SPA's 401
-    // handler full-page-navigates to the product login.
+    // handler full-page-navigates to the product login. NOTE: the Supabase
+    // sign-in FORM lives at /login; /auth is only the OAuth callback (a
+    // spinner that needs a ?code=). Sending an expired session to /auth
+    // strands the user on that spinner — so point at /login.
     res
       .status(401)
-      .json({ error: "unauthenticated", detail: "Unauthorized", login_url: "/auth" });
+      .json({ error: "unauthenticated", detail: "Unauthorized", login_url: "/login" });
     return;
   }
 
