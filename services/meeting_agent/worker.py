@@ -66,12 +66,16 @@ async def entrypoint(ctx: JobContext) -> None:
     instructions = build_instructions(persona, meta.get("topic", ""), meta.get("evidence", ""))
     logger.info("vigil-agent joining room=%s persona=%s", ctx.room.name, persona)
 
-    # Brain + ears on Groq (fast, has quota); voice on ElevenLabs (reads
-    # ELEVENLABS_API_KEY + ELEVENLABS_VOICE_ID — works once the real key is set).
+    # Brain + ears on Groq (fast, has quota); voice on ElevenLabs. The plugin
+    # reads ELEVEN_API_KEY, so we pass our ELEVENLABS_API_KEY explicitly. A bad/
+    # missing TTS key must not crash the join — the agent still joins, hears,
+    # thinks, and shows its avatar; it just stays silent until a real key is set.
+    el_key = os.getenv("ELEVENLABS_API_KEY") or os.getenv("ELEVEN_API_KEY") or "missing"
+    tts = elevenlabs.TTS(voice_id=os.getenv("ELEVENLABS_VOICE_ID", "pFZP5JQG7iQjIQuC4Bku"), api_key=el_key)
     session = AgentSession(
         stt=groq.STT(model=os.getenv("VIGIL_AGENT_STT", "whisper-large-v3-turbo")),
         llm=groq.LLM(model=os.getenv("VIGIL_AGENT_LLM", "llama-3.3-70b-versatile")),
-        tts=elevenlabs.TTS(voice_id=os.getenv("ELEVENLABS_VOICE_ID", "pFZP5JQG7iQjIQuC4Bku")),
+        tts=tts,
         vad=silero.VAD.load(),
     )
 

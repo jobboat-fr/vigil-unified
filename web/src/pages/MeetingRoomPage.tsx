@@ -54,6 +54,7 @@ export default function MeetingRoomPage() {
   const [meetStatus, setMeetStatus] = useState<MeetBotStatus | null>(null);
   const [meetBusy, setMeetBusy] = useState(false);
   const [meetErr, setMeetErr] = useState("");
+  const [meetImported, setMeetImported] = useState<number | null>(null);
   const [sayText, setSayText] = useState("");
 
   const sendToMeet = async () => {
@@ -94,9 +95,43 @@ export default function MeetingRoomPage() {
       setMeetBusy(false);
     }
   };
+  // Bridge the Google Meet bot's captions into the active room's transcript
+  // (deduped server-side) so the SAME summarize→artifact flow covers Meet too.
+  const pullMeetIntoRoom = async (roomId: string): Promise<number> => {
+    try {
+      const t = await googleMeet.transcript();
+      const lines = (t.lines as string[] | undefined) || [];
+      if (!lines.length) return 0;
+      const res = await vigil.rooms.importTranscript(roomId, lines, "Meet");
+      return res.imported;
+    } catch {
+      return 0; // best-effort — never block close/leave on the bridge
+    }
+  };
+
+  const pullMeetNow = async () => {
+    if (!active) return;
+    setMeetBusy(true);
+    try {
+      const n = await pullMeetIntoRoom(active.id);
+      setMeetImported(n);
+      await reloadActive(active.id);
+    } catch (e) {
+      setMeetErr((e as Error).message);
+    } finally {
+      setMeetBusy(false);
+    }
+  };
+
   const leaveMeet = async () => {
     setMeetBusy(true);
     try {
+      // Capture the transcript into the room BEFORE leaving — once the bot
+      // leaves, its transcript is gone.
+      if (active) {
+        const n = await pullMeetIntoRoom(active.id);
+        if (n) { setMeetImported(n); await reloadActive(active.id); }
+      }
       await googleMeet.leave();
       setMeetStatus(null);
     } catch (e) {
@@ -203,6 +238,9 @@ export default function MeetingRoomPage() {
     if (!active) return;
     setSummarizing(true);
     try {
+      // Fold in any live Google Meet captions first, so closing the meeting
+      // produces the summary artifact whether the call ran in-app or on Meet.
+      await pullMeetIntoRoom(active.id);
       const s = await vigil.rooms.summarize(active.id);
       setSummary(s);
       // Phase 4: drop the host straight onto the editable artifact canvas.
@@ -499,7 +537,9 @@ export default function MeetingRoomPage() {
                         {meetStatus.state || (meetStatus.ok ? "in call" : meetStatus.reason || "—")}
                       </span>
                       <button className="text-text-secondary hover:text-foreground" onClick={() => void refreshMeetStatus()}>Refresh</button>
+                      <button className="text-text-secondary hover:text-foreground" disabled={meetBusy} onClick={() => void pullMeetNow()}>Pull transcript</button>
                       <button className="text-text-secondary hover:text-foreground" onClick={() => void leaveMeet()}>Leave</button>
+                      {meetImported !== null && <span className="text-text-secondary">+{meetImported} lines → room</span>}
                     </div>
                   )}
                   {meetMode === "realtime" && meetStatus && (
@@ -521,9 +561,10 @@ export default function MeetingRoomPage() {
               {/* Post-meeting: summarize → artifact + commitments + guest onboarding */}
               <div>
                 <div className="text-[10px] font-mono uppercase tracking-wide text-text-secondary mb-1.5">Close the meeting</div>
-                <Button size="sm" disabled={summarizing || active.transcript.length === 0} onClick={() => void summarizeMeeting()}>
+                <Button size="sm" disabled={summarizing || (active.transcript.length === 0 && !meetStatus)} onClick={() => void summarizeMeeting()}>
                   {summarizing ? "Summarizing…" : "Summarize & close"}
                 </Button>
+                <p className="text-text-secondary text-[11px] mt-1">Works for both the in-app room and a Google Meet — it pulls the bot's captions in first, then writes the summary artifact + canvas.</p>
                 {summary && (
                   <div className="mt-2 rounded-lg border border-current/15 p-3 space-y-2 text-sm">
                     <div className="flex flex-wrap gap-3 text-xs text-text-secondary">

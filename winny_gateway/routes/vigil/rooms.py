@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -177,6 +178,49 @@ async def post_message(room_id: str, body: MessageBody, user: dict = Depends(get
 async def get_transcript(room_id: str, user: dict = Depends(get_current_user)) -> dict[str, Any]:
     room = await _owned_row(room_id, _uid(user))
     return {"ok": True, "data": {"transcript": room.get("transcript") or []}}
+
+
+# Caption lines from the Google Meet bot look like "[ts] Speaker: text".
+_MEET_LINE = re.compile(r"^\[(?P<ts>[^\]]*)\]\s*(?P<speaker>[^:]{1,60}?):\s*(?P<text>.+)$")
+
+
+class ImportTranscriptBody(BaseModel):
+    lines: list[str] = Field(default_factory=list, description="Raw caption lines, e.g. '[ts] Speaker: text'.")
+    source: str = Field(default="Meet", description="Fallback speaker label when a line has no name.")
+
+
+@router.post("/{room_id}/import-transcript")
+async def import_transcript(room_id: str, body: ImportTranscriptBody, user: dict = Depends(get_current_user)) -> dict[str, Any]:
+    """Fold an external transcript (e.g. the Google Meet bot's captions) into the
+    room transcript — deduped — so 'Summarize & close' produces the meeting
+    artifact for the Google Meet path exactly as it does for the in-app room."""
+    from datetime import UTC, datetime
+
+    uid = _uid(user)
+    room = await _owned_row(room_id, uid)
+    existing = list(room.get("transcript") or [])
+    seen = {(str(m.get("speaker")), str(m.get("text"))) for m in existing}
+    added: list[dict[str, Any]] = []
+    for raw in body.lines:
+        raw = (raw or "").strip()
+        if not raw:
+            continue
+        m = _MEET_LINE.match(raw)
+        if m:
+            speaker = (m.group("speaker") or "").strip() or body.source
+            text = (m.group("text") or "").strip()
+        else:
+            speaker, text = body.source, raw
+        if not text:
+            continue
+        key = (speaker, text)
+        if key in seen:
+            continue
+        seen.add(key)
+        added.append({"speaker": speaker, "text": text, "ts": datetime.now(UTC).isoformat()})
+    if added:
+        await db_update(_TABLE, {"transcript": existing + added}, filters={"id": room_id, "user_id": uid})
+    return {"ok": True, "data": {"imported": len(added), "transcript": existing + added}}
 
 
 def _transcript_text(transcript: list[dict[str, Any]]) -> str:

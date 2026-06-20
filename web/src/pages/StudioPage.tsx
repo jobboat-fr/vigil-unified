@@ -2,8 +2,8 @@ import { useCallback, useEffect, useState, lazy, Suspense } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/components/card";
 import { Button } from "@nous-research/ui/ui/components/button";
 import { vigil, type Artifact, type BrainstormPlan } from "@/lib/vigil";
-const ArtifactCanvasTldraw = lazy(() =>
-  import("@/components/ArtifactCanvasTldraw").then((m) => ({ default: m.ArtifactCanvasTldraw })),
+const ArtifactCanvas = lazy(() =>
+  import("@/components/ArtifactCanvas").then((m) => ({ default: m.ArtifactCanvas })),
 );
 import { useSearchParams } from "react-router-dom";
 import { GatewayError } from "@/lib/ww";
@@ -262,9 +262,9 @@ export default function StudioPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="flex flex-col gap-4">
-                {active.canvas ? (
+                {active.canvas || active.tldraw ? (
                   <Suspense fallback={<div className="p-6 text-center text-sm text-text-secondary">Loading canvas…</div>}>
-                    <ArtifactCanvasTldraw artifact={active} />
+                    <ArtifactCanvas artifact={active} />
                   </Suspense>
                 ) : (
                   <pre className="max-h-[55vh] overflow-auto whitespace-pre-wrap rounded-md border border-current/10 bg-current/5 p-3 text-sm leading-relaxed">{active.content}</pre>

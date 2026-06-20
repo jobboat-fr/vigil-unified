@@ -356,6 +356,12 @@ export const vigil = {
       vigilCall("POST", `/v1/rooms/${id}/messages`, { text, speaker }),
     transcript: (id: string) =>
       vigilCall<{ transcript: Room["transcript"] }>("GET", `/v1/rooms/${id}/transcript`),
+    importTranscript: (id: string, lines: string[], source = "Meet") =>
+      vigilCall<{ imported: number; transcript: Room["transcript"] }>(
+        "POST",
+        `/v1/rooms/${id}/import-transcript`,
+        { lines, source },
+      ),
     interventionCheck: (id: string, topic?: string, activeSpecialties?: string[]) =>
       vigilCall<LiveIntervention>("POST", `/v1/rooms/${id}/intervention-check`, {
         topic,

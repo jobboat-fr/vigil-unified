@@ -192,6 +192,34 @@ code { font-size: 0.875rem; }
   --radius-xl: calc(var(--theme-radius) + 4px);
 }
 
+/* ------------------------------------------------------------------ */
+/* VIGIL canvas palette — the infinite brainstorming board (React Flow  */
+/* + VigilNode) is ported from the original VIGIL `frntendv2` and is    */
+/* styled against these `dark-*` / `cyan-electric` / `vigil-*` tokens.  */
+/* Registered here (non-inline @theme) so Tailwind v4 generates the     */
+/* `bg-dark-900`, `text-cyan-electric`, `border-dark-…/[opacity]` etc.  */
+/* utilities the canvas components rely on. Scoped purely to the board. */
+/* ------------------------------------------------------------------ */
+@theme {
+  --color-dark-50: #f2f2f7;
+  --color-dark-100: #9898a8;
+  --color-dark-200: #5e5e6e;
+  --color-dark-300: #32323e;
+  --color-dark-400: #25252e;
+  --color-dark-500: #1e1e26;
+  --color-dark-600: #17171d;
+  --color-dark-700: #111116;
+  --color-dark-800: #0d0d11;
+  --color-dark-900: #08080a;
+  --color-dark-950: #050507;
+
+  --color-cyan-electric: #00e5ff;
+
+  --color-vigil-400: #f5c855;
+  --color-vigil-500: #e8b544;
+  --color-vigil-600: #c99a2e;
+}
+
 
 /* Collapsed sidebar tooltip entrance — skipped when moving between items. */
 @keyframes sidebar-tooltip-in {
