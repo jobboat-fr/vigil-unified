@@ -32,6 +32,7 @@ from pydantic import BaseModel, Field
 
 from winny.council.providers import ask
 from winny.council.registry import worker_registry
+from winny.council.canvas_brainstorm import brainstorm_board
 from winny_gateway.auth import get_current_user
 from winny_gateway.db import db_delete, db_insert, db_select, db_update
 from winny_gateway.logging import get_logger
@@ -242,6 +243,23 @@ async def save_canvas(artifact_id: str, body: CanvasSaveBody, user: dict = Depen
     if patch:
         await db_update(_TABLE, patch, filters={"id": artifact_id, "user_id": uid})
     return {"ok": True, "data": {"saved": artifact_id}}
+
+
+class CanvasBrainstormBody(BaseModel):
+    prompt: str = Field(default="", description="Free-text brainstorm prompt.")
+    board_text: str = Field(default="", description="Text of the current canvas blocks, for context.")
+    lens: str = Field(default="ideas", description="ideas|expand|risks|missing|next_steps|critique|summarize|council")
+    topic: str = Field(default="")
+
+
+@router.post("/canvas-brainstorm")
+async def canvas_brainstorm(body: CanvasBrainstormBody, _user: dict = Depends(get_current_user)) -> dict[str, Any]:
+    """Brainstorm on the canvas: the council returns blocks (ideas/risks/takes)
+    to drop onto the tldraw board, given the board context + a prompt or lens."""
+    res = await brainstorm_board(
+        prompt=body.prompt, board_text=body.board_text, lens=body.lens, topic=body.topic
+    )
+    return {"ok": True, "data": res}
 
 
 class RefineBody(BaseModel):

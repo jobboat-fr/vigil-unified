@@ -150,6 +150,18 @@ export interface MeetingCanvas {
   table: { columns: string[]; rows: string[][] };
 }
 
+export interface CanvasBlock {
+  text: string;
+  kind: string;
+  color: string;
+  lens?: string | null;
+}
+export interface CanvasBrainstormResult {
+  blocks: CanvasBlock[];
+  lens: string;
+  stub: boolean;
+}
+
 export interface MeetingSummary {
   summary_markdown: string;
   decisions: string[];
@@ -378,6 +390,8 @@ export const vigil = {
       vigilCall<Artifact>("POST", `/v1/artifacts/${id}/refine`, { instruction }),
     saveCanvas: (id: string, patch: { canvas?: MeetingCanvas; tldraw?: unknown }) =>
       vigilCall<{ saved: string }>("PATCH", `/v1/artifacts/${id}/canvas`, patch),
+    canvasBrainstorm: (input: { prompt?: string; board_text?: string; lens?: string; topic?: string }) =>
+      vigilCall<CanvasBrainstormResult>("POST", "/v1/artifacts/canvas-brainstorm", input),
   },
   finance: {
     accounts: () => vigilCall<{ accounts: FinanceAccount[] }>("GET", "/v1/finance/accounts"),
