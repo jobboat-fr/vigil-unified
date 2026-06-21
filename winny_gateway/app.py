@@ -52,6 +52,7 @@ from winny_gateway.routes.vigil import studio as vigil_studio
 from winny_gateway.routes.vigil import finance as vigil_finance
 from winny_gateway.routes.vigil import crm as vigil_crm
 from winny_gateway.routes.vigil import mail as vigil_mail
+from winny_gateway.routes.vigil import ops as vigil_ops
 from winny_gateway.security import SecurityMiddleware
 
 logger = get_logger(__name__)
@@ -221,6 +222,8 @@ def create_app(config: GatewayConfig | None = None) -> FastAPI:
     app.include_router(vigil_crm.router)
     # Mail — inbox triage store (himalaya transport) the mail-triage skill uses.
     app.include_router(vigil_mail.router)
+    # Ops Team — agentic-company departments (on-demand runs + effectiveness gate).
+    app.include_router(vigil_ops.router)
 
     @app.get("/health")
     async def health() -> dict[str, Any]:

@@ -339,7 +339,72 @@ export interface MailTriageSummary {
 
 export const MAIL_CATEGORIES = ["urgent", "respond", "fyi", "newsletter", "spam", "archive"] as const;
 
+// ── Ops Team (agentic company) ──────────────────────────────────────────────
+export interface OpsHealth {
+  success_rate: number | null;
+  avg_cost_usd: number;
+  p50_ms: number;
+  last_result: string | null;
+  last_run_at?: string;
+  runs: number;
+}
+export interface Department {
+  id: string;
+  slug: string;
+  name: string;
+  head_lens: string | null;
+  mandate: string;
+  kpis: { key: string; label: string; target: string }[];
+  status: "provisioning" | "live" | "failing";
+  paused: boolean;
+  guardrails: Record<string, unknown>;
+  health: OpsHealth | Record<string, never>;
+  created_at: string;
+  updated_at: string;
+}
+export interface OpsTask {
+  id: string;
+  department_id: string;
+  job: string;
+  trigger: string;
+  title: string | null;
+  status: "queued" | "working" | "done" | "blocked" | "halted";
+  accepted: boolean | null;
+  cost_usd: number;
+  wall_ms: number;
+  tool_calls: number;
+  output_artifact_id: string | null;
+  error: string | null;
+  created_at: string;
+  reason?: string;
+}
+export interface OpsEvent {
+  id: string;
+  department_id: string | null;
+  task_id: string | null;
+  kind: string;
+  summary: string;
+  ts: string;
+}
+
 export const vigil = {
+  ops: {
+    departments: () => vigilCall<{ departments: Department[] }>("GET", "/v1/ops/departments"),
+    department: (id: string) => vigilCall<Department>("GET", `/v1/ops/departments/${id}`),
+    run: (id: string, input?: Record<string, unknown>) =>
+      vigilCall<{ task: OpsTask }>("POST", `/v1/ops/departments/${id}/run`, input ? { input } : {}),
+    selftest: (id: string) => vigilCall<{ task: OpsTask }>("POST", `/v1/ops/departments/${id}/selftest`),
+    health: (id: string) => vigilCall<{ health: OpsHealth }>("GET", `/v1/ops/departments/${id}/health`),
+    tasks: (departmentId?: string, limit = 50) => {
+      const qs = new URLSearchParams();
+      if (departmentId) qs.set("department", departmentId);
+      qs.set("limit", String(limit));
+      return vigilCall<{ tasks: OpsTask[] }>("GET", `/v1/ops/tasks?${qs.toString()}`);
+    },
+    feed: (limit = 30) => vigilCall<{ events: OpsEvent[] }>("GET", `/v1/ops/feed?limit=${limit}`),
+    pauseAll: () => vigilCall<{ paused: number }>("POST", "/v1/ops/pause-all"),
+    resumeAll: () => vigilCall<{ resumed: number }>("POST", "/v1/ops/resume-all"),
+  },
   council: {
     tasks: () => vigilCall<{ tasks: Record<string, CouncilTaskInfo> }>("GET", "/v1/council/tasks"),
     orchestrate: (task: string, transcript: string, question?: string) =>

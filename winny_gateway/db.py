@@ -109,6 +109,10 @@ _USER_SCOPED_TABLES = frozenset({
     "mail_messages",
     "mail_drafts",
     "ai_interventions",
+    "departments",
+    "ops_jobs",
+    "ops_tasks",
+    "ops_events",
 })
 
 
