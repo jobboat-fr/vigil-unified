@@ -43,6 +43,7 @@ export default function StudioPage() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot load on mount
     void refresh();
   }, [refresh]);
 

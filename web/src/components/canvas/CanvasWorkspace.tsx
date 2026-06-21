@@ -22,7 +22,8 @@ import {
   Square, Diamond, StickyNote, Circle, Minus, Star,
   Grid3X3, Spline, Minus as LineIcon, CornerDownRight, Sparkles, GitBranch,
 } from 'lucide-react';
-import { VigilNode, type VigilNodeData, type BlockShape, PALETTE } from './VigilNode';
+import { VigilNode, type VigilNodeData, type BlockShape } from './VigilNode';
+import { PALETTE } from './constants';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -149,7 +150,6 @@ function CanvasInner({ initialNodes = [], initialEdges = [], onCanvasChange, col
       saveTimer.current = null;
       onChangeRef.current?.({ nodes, edges });
     }, 600);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nodes, edges]);
 
   // Flush on unmount (Close / navigation) and when the tab is hidden.

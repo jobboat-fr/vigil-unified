@@ -153,6 +153,7 @@ export default function MeetingRoomPage() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot load on mount
     void refresh();
   }, [refresh]);
 
@@ -227,6 +228,7 @@ export default function MeetingRoomPage() {
 
   // Reset live-meeting/summary state when switching to a different room.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- deliberate reset on room change
     setLiveJoin(null);
     setInviteLink("");
     setLiveErr("");

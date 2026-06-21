@@ -4,6 +4,7 @@ import {
   Square, Diamond, StickyNote, Circle, Minus, Star,
   Copy, Trash2, AlignLeft, Check,
 } from 'lucide-react';
+import { PALETTE } from './constants';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -18,8 +19,6 @@ export type VigilNodeData = {
 };
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-
-export const PALETTE = ['#00e5ff', '#a78bfa', '#34d399', '#fbbf24', '#f87171', '#e8b544'];
 
 const KIND_DEFAULTS: Record<string, { color: string; shape: BlockShape }> = {
   decision:  { color: '#a78bfa', shape: 'decision'  },
@@ -249,7 +248,11 @@ function VigilNodeComponent({ id, data, selected }: NodeProps) {
   const [descDraft, setDescDraft]     = useState(d.description || '');
   const descRef = useRef<HTMLTextAreaElement>(null);
 
+  // Sync the editable drafts when the node's data changes from outside (AI
+  // edits, undo, collaborative updates). Intentional prop→draft mirroring.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setLabelDraft(d.label); }, [d.label]);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setDescDraft(d.description || ''); }, [d.description]);
 
   // Helpers
