@@ -244,6 +244,10 @@ failing acceptance — so "is this department actually working" is answerable at
 not a vibe. A department that fails acceptance or blows budget on its selftest cannot be
 marked live and cannot be dispatched until fixed.
 
+---
+
+## 7. Frontend — `OpsTeamPage`
+
 The mockup already shown is the target. Components:
 - **Org board** — responsive grid of department cards (status badge, current task,
   KPI chip, next run, quick actions). Status colors encode meaning (working=blue,
