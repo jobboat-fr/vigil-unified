@@ -359,6 +359,8 @@ export interface Department {
   paused: boolean;
   guardrails: Record<string, unknown>;
   health: OpsHealth | Record<string, never>;
+  jobs: string[];
+  primary_job: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -420,8 +422,11 @@ export const vigil = {
   ops: {
     departments: () => vigilCall<{ departments: Department[] }>("GET", "/v1/ops/departments"),
     department: (id: string) => vigilCall<Department>("GET", `/v1/ops/departments/${id}`),
-    run: (id: string, input?: Record<string, unknown>) =>
-      vigilCall<{ task: OpsTask }>("POST", `/v1/ops/departments/${id}/run`, input ? { input } : {}),
+    run: (id: string, job?: string, input?: Record<string, unknown>) =>
+      vigilCall<{ task: OpsTask }>("POST", `/v1/ops/departments/${id}/run`, {
+        ...(job ? { job } : {}),
+        ...(input ? { input } : {}),
+      }),
     selftest: (id: string) => vigilCall<{ task: OpsTask }>("POST", `/v1/ops/departments/${id}/selftest`),
     health: (id: string) => vigilCall<{ health: OpsHealth }>("GET", `/v1/ops/departments/${id}/health`),
     tasks: (departmentId?: string, limit = 50) => {

@@ -46,10 +46,10 @@ export default function OpsTeamPage() {
     void refresh();
   }, [refresh]);
 
-  const act = async (d: Department, kind: "run" | "selftest") => {
-    setBusy((b) => ({ ...b, [d.id]: kind }));
+  const act = async (d: Department, action: string) => {
+    setBusy((b) => ({ ...b, [d.id]: action }));
     try {
-      const { task } = kind === "run" ? await vigil.ops.run(d.id) : await vigil.ops.selftest(d.id);
+      const { task } = action === "selftest" ? await vigil.ops.selftest(d.id) : await vigil.ops.run(d.id, action);
       setResult((r) => ({ ...r, [d.id]: task }));
       await refresh();
     } catch (e) {
@@ -143,11 +143,13 @@ export default function OpsTeamPage() {
                     {r.reason ? ` (${r.reason})` : ""} · ${Number(r.cost_usd).toFixed(3)} · {r.wall_ms}ms
                   </p>
                 )}
-                <div className="flex gap-2">
-                  <Button onClick={() => void act(d, "run")} disabled={!!b || d.paused} className="flex-1">
-                    {b === "run" ? "Running…" : "Run"}
-                  </Button>
-                  <Button ghost onClick={() => void act(d, "selftest")} disabled={!!b || d.paused} className="flex-1">
+                <div className="flex flex-wrap gap-2">
+                  {(d.jobs.length ? d.jobs : ["run"]).map((job) => (
+                    <Button key={job} onClick={() => void act(d, job)} disabled={!!b || d.paused} className="capitalize">
+                      {b === job ? "Running…" : job.replace(/_/g, " ")}
+                    </Button>
+                  ))}
+                  <Button ghost onClick={() => void act(d, "selftest")} disabled={!!b || d.paused}>
                     {b === "selftest" ? "Testing…" : "Self-test"}
                   </Button>
                 </div>

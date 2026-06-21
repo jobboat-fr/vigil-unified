@@ -21,6 +21,8 @@ from winny_gateway.ops.engine import (
     GuardrailError,
     compute_health,
     department_seed_row,
+    department_spec,
+    primary_job,
     run_job,
 )
 
@@ -38,6 +40,8 @@ def _uid(user: dict[str, Any]) -> str:
 
 
 def _public(row: dict[str, Any]) -> dict[str, Any]:
+    spec = department_spec(row.get("slug") or "")
+    jobs = [j for j in (spec["jobs"] if spec else {}) if j != "selftest"]
     return {
         "id": row.get("id"),
         "slug": row.get("slug"),
@@ -49,6 +53,8 @@ def _public(row: dict[str, Any]) -> dict[str, Any]:
         "paused": bool(row.get("paused")),
         "guardrails": row.get("guardrails") or {},
         "health": row.get("health") or {},
+        "jobs": jobs,
+        "primary_job": primary_job(spec) if spec else None,
         "created_at": row.get("created_at"),
         "updated_at": row.get("updated_at"),
     }
@@ -97,7 +103,7 @@ async def department_health(dept_id: str, user: dict = Depends(get_current_user)
 
 # ── On-demand dispatch ────────────────────────────────────────────────────────
 class RunBody(BaseModel):
-    job: str = Field(default="triage", description="Job name in the department's contract.")
+    job: str | None = Field(default=None, description="Job name; null runs the department's primary job.")
     input: dict[str, Any] = Field(default_factory=dict)
 
 
