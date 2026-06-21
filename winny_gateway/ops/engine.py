@@ -16,7 +16,7 @@ from typing import Any, Awaitable, Callable
 
 from winny_gateway.db import db_insert, db_select, db_update
 from winny_gateway.logging import get_logger
-from winny_gateway.ops import support
+from winny_gateway.ops import finance, revenue, support
 
 logger = get_logger(__name__)
 
@@ -52,6 +52,46 @@ DEPARTMENTS: dict[str, dict[str, Any]] = {
                 "default_input": {"folder": "INBOX", "limit": 5},
                 "is_selftest": True,
             },
+        },
+    },
+    "finance": {
+        "slug": "finance",
+        "name": "Finance",
+        "head_lens": "cfo_review",
+        "mandate": "Reconcile the ledger — pull bank data, categorise every transaction, and flag anomalies for review.",
+        "kpis": [{"key": "reconciled", "label": "Ledger reconciled", "target": "100%"}],
+        "guardrails": {
+            "per_run_spend_cap_usd": 1.00,
+            "daily_run_cap": 50,
+            "allowed_tools": ["finance_transactions", "finance_connections"],
+            "max_wall_ms": 120_000,
+            "irreversible_requires_owner": True,
+        },
+        "jobs": {
+            "reconcile": {"handler": finance.run, "acceptance": finance.acceptance,
+                          "default_input": {"limit": 50}, "is_selftest": False},
+            "selftest": {"handler": finance.run, "acceptance": finance.acceptance,
+                         "default_input": {"limit": 5}, "is_selftest": True},
+        },
+    },
+    "revenue": {
+        "slug": "revenue",
+        "name": "Revenue",
+        "head_lens": "cro",
+        "mandate": "Keep the pipeline warm — draft follow-ups for every deal stalled in proposal or negotiation.",
+        "kpis": [{"key": "followups", "label": "Stalled deals followed up", "target": "100%"}],
+        "guardrails": {
+            "per_run_spend_cap_usd": 1.00,
+            "daily_run_cap": 50,
+            "allowed_tools": ["crm_deals", "crm_contacts", "mail_drafts"],
+            "max_wall_ms": 120_000,
+            "irreversible_requires_owner": True,
+        },
+        "jobs": {
+            "follow_up": {"handler": revenue.run, "acceptance": revenue.acceptance,
+                          "default_input": {"limit": 25}, "is_selftest": False},
+            "selftest": {"handler": revenue.run, "acceptance": revenue.acceptance,
+                         "default_input": {"limit": 5}, "is_selftest": True},
         },
     },
 }

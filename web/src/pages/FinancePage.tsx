@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/components/card";
 import { Button } from "@nous-research/ui/ui/components/button";
-import { vigil, type FinanceTxn, type FinanceSummary } from "@/lib/vigil";
+import { vigil, type FinanceTxn, type FinanceSummary, type FinanceConnectStatus } from "@/lib/vigil";
 import { GatewayError } from "@/lib/ww";
 
 const money = (n: number, ccy = "USD") =>
@@ -33,6 +33,7 @@ export default function FinancePage() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot load on mount
     void refresh();
   }, [refresh]);
 
@@ -88,6 +89,8 @@ export default function FinancePage() {
         </div>
       )}
 
+      <ConnectPanel onSynced={() => void refresh()} />
+
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
         <div className="flex flex-col gap-4">
           <Card>
@@ -142,6 +145,100 @@ export default function FinancePage() {
         </Card>
       </div>
     </div>
+  );
+}
+
+function ConnectPanel({ onSynced }: { onSynced: () => void }) {
+  const [status, setStatus] = useState<FinanceConnectStatus | null>(null);
+  const [busy, setBusy] = useState("");
+  const [msg, setMsg] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    try {
+      setStatus(await vigil.finance.connect.status());
+    } catch (e) {
+      if (!(e instanceof GatewayError && e.code === "NO_SESSION")) setErr((e as Error).message);
+    }
+  }, []);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot load on mount
+    void load();
+  }, [load]);
+
+  const plaid = status?.providers.find((p) => p.id === "plaid");
+  const canSandbox = !!plaid?.configured && status?.plaid_env === "sandbox";
+
+  const wrap = async (key: string, fn: () => Promise<string>) => {
+    setBusy(key); setErr(null); setMsg(null);
+    try { setMsg(await fn()); await load(); onSynced(); }
+    catch (e) { setErr((e as Error).message); }
+    finally { setBusy(""); }
+  };
+
+  return (
+    <Card>
+      <CardHeader><CardTitle>Bank &amp; accounting</CardTitle></CardHeader>
+      <CardContent className="flex flex-col gap-3">
+        <p className="text-sm text-text-secondary">
+          Connect a bank (Plaid) or accounting platform to sync transactions into the ledger. The Finance
+          department reconciles whatever lands here.
+        </p>
+
+        {/* Providers + their platform keys (keys management) */}
+        <div className="flex flex-col gap-2">
+          {status?.providers.map((p) => (
+            <div key={p.id} className="rounded-md border border-current/10 px-3 py-2">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm font-medium">{p.name}</span>
+                <span className="rounded px-2 py-0.5 text-[10px] uppercase" style={{ color: p.configured ? "#059669" : "#f59e0b", border: "1px solid currentColor" }}>
+                  {p.configured ? "configured" : p.implemented ? "keys needed" : "coming soon"}
+                </span>
+              </div>
+              <div className="mt-1 flex flex-wrap gap-1.5">
+                {p.required_keys.map((k) => (
+                  <span key={k.name} className="rounded px-1.5 py-0.5 text-[10px] font-mono" style={{ color: k.set ? "#059669" : "#9ca3af", border: "1px solid currentColor" }} title={k.set ? "set" : "not set"}>
+                    {k.set ? "✓ " : "○ "}{k.name}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Connections */}
+        {status && status.connections.length > 0 && (
+          <div className="flex flex-col gap-1.5">
+            {status.connections.map((c) => (
+              <div key={c.id} className="flex items-center gap-2 rounded-md border border-current/10 px-3 py-2 text-sm">
+                <span className="flex-1 truncate">{c.institution || c.provider} · <span className="text-text-secondary">{c.accounts_count} accts · {c.token_masked}</span></span>
+                <span className="text-[10px] uppercase" style={{ color: c.status === "active" ? "#059669" : "#ef4444" }}>{c.status}</span>
+                <button type="button" className="text-xs text-text-secondary hover:text-foreground" onClick={() => void wrap("dc" + c.id, async () => { await vigil.finance.connect.disconnect(c.id); return "Disconnected."; })}>✕</button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="flex flex-wrap gap-2">
+          {canSandbox && (
+            <Button disabled={!!busy} onClick={() => void wrap("sandbox", async () => { const r = await vigil.finance.connect.sandbox(); return `Connected ${r.connection.institution || "bank"}.`; })}>
+              {busy === "sandbox" ? "Connecting…" : "Connect sandbox bank"}
+            </Button>
+          )}
+          <Button ghost disabled={!!busy || !status?.connections.length} onClick={() => void wrap("sync", async () => { const r = await vigil.finance.connect.sync(); return `Synced ${r.transactions_added} transactions from ${r.connections} connection(s).`; })}>
+            {busy === "sync" ? "Syncing…" : "Sync now"}
+          </Button>
+        </div>
+
+        {plaid && !plaid.configured && (
+          <p className="text-xs text-text-secondary">
+            Set <code>PLAID_CLIENT_ID</code>, <code>PLAID_SECRET</code> and <code>PLAID_ENV</code> on the gateway to enable bank connections.
+          </p>
+        )}
+        {msg && <p className="text-xs" style={{ color: "#059669" }}>{msg}</p>}
+        {err && <p className="text-xs" style={{ color: "#ff3366" }}>{err}</p>}
+      </CardContent>
+    </Card>
   );
 }
 

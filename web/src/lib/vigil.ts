@@ -387,6 +387,35 @@ export interface OpsEvent {
   ts: string;
 }
 
+// ── Finance connector (bank / accounting via API) ───────────────────────────
+export interface ProviderKey {
+  name: string;
+  set: boolean;
+}
+export interface ProviderStatus {
+  id: string;
+  name: string;
+  kind: "bank" | "accounting" | string;
+  implemented: boolean;
+  configured: boolean;
+  required_keys: ProviderKey[];
+}
+export interface FinanceConnection {
+  id: string;
+  provider: string;
+  institution: string | null;
+  status: string;
+  accounts_count: number;
+  last_synced_at: string | null;
+  token_masked: string;
+  created_at: string;
+}
+export interface FinanceConnectStatus {
+  providers: ProviderStatus[];
+  connections: FinanceConnection[];
+  plaid_env: string;
+}
+
 export const vigil = {
   ops: {
     departments: () => vigilCall<{ departments: Department[] }>("GET", "/v1/ops/departments"),
@@ -496,6 +525,17 @@ export const vigil = {
       vigilCall<FinanceTxn>("PATCH", `/v1/finance/transactions/${id}`, patch),
     removeTransaction: (id: string) => vigilCall("DELETE", `/v1/finance/transactions/${id}`),
     summary: () => vigilCall<FinanceSummary>("GET", "/v1/finance/summary"),
+    connect: {
+      status: () => vigilCall<FinanceConnectStatus>("GET", "/v1/finance/connect/status"),
+      linkToken: () => vigilCall<{ link_token: string | null }>("POST", "/v1/finance/connect/link-token"),
+      sandbox: () => vigilCall<{ connection: FinanceConnection }>("POST", "/v1/finance/connect/sandbox"),
+      exchange: (public_token: string, institution?: string) =>
+        vigilCall<{ connection: FinanceConnection }>("POST", "/v1/finance/connect/exchange", { public_token, institution }),
+      sync: (connection_id?: string) =>
+        vigilCall<{ accounts: number; transactions_added: number; connections: number }>(
+          "POST", "/v1/finance/connect/sync", connection_id ? { connection_id } : {}),
+      disconnect: (id: string) => vigilCall<{ disconnected: string }>("DELETE", `/v1/finance/connect/connections/${id}`),
+    },
   },
   crm: {
     contacts: () => vigilCall<{ contacts: CrmContact[] }>("GET", "/v1/crm/contacts"),
