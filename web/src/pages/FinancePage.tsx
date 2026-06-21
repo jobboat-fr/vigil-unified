@@ -153,6 +153,7 @@ function ConnectPanel({ onSynced }: { onSynced: () => void }) {
   const [busy, setBusy] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [keyVals, setKeyVals] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
     try {
@@ -205,6 +206,47 @@ function ConnectPanel({ onSynced }: { onSynced: () => void }) {
             </div>
           ))}
         </div>
+
+        {/* Keys editor — enter platform keys from the UI (stored encrypted) */}
+        {plaid && (
+          <details open={!plaid.configured}>
+            <summary className="cursor-pointer text-xs text-text-secondary">{plaid.configured ? "Update Plaid keys" : "Set Plaid keys"}</summary>
+            <div className="mt-2 flex flex-col gap-2">
+              {plaid.required_keys.map((k) =>
+                k.name.endsWith("_ENV") ? (
+                  <select
+                    key={k.name}
+                    className="rounded-md border border-current/20 bg-transparent px-3 py-2 text-sm outline-none focus:border-current/50"
+                    defaultValue=""
+                    onChange={(e) => setKeyVals((v) => ({ ...v, [k.name]: e.target.value }))}
+                  >
+                    <option value="" disabled>{k.name} (environment)</option>
+                    <option value="sandbox">sandbox</option>
+                    <option value="production">production</option>
+                  </select>
+                ) : (
+                  <input
+                    key={k.name}
+                    type={k.name.includes("SECRET") ? "password" : "text"}
+                    placeholder={k.name + (k.set ? " (set — leave blank to keep)" : "")}
+                    className="rounded-md border border-current/20 bg-transparent px-3 py-2 text-sm outline-none focus:border-current/50"
+                    onChange={(e) => setKeyVals((v) => ({ ...v, [k.name]: e.target.value }))}
+                  />
+                ),
+              )}
+              <Button
+                disabled={!!busy}
+                onClick={() => void wrap("keys", async () => {
+                  const r = await vigil.finance.connect.keys("plaid", keyVals);
+                  setKeyVals({});
+                  return `Saved ${r.saved} key${r.saved === 1 ? "" : "s"}.`;
+                })}
+              >
+                {busy === "keys" ? "Saving…" : "Save keys"}
+              </Button>
+            </div>
+          </details>
+        )}
 
         {/* Connections */}
         {status && status.connections.length > 0 && (

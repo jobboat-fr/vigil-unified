@@ -1,34 +1,37 @@
 """Finance connector — bank/accounting providers feeding the ledger.
 
-`status()` reports which providers are configured (their platform keys present) and
-the user's live connections — this is the keys-management view for the integration.
-`sync()` pulls accounts + transactions from a connected provider into the existing
+`status()` reports which providers are configured (their platform keys present —
+stored from the UI or set in env) and the user's live connections; this is the
+keys-management view. `sync()` pulls accounts + transactions into the existing
 `finance_accounts` / `finance_transactions` tables (idempotent on the provider's
 transaction id), so the Finance department has real data to reconcile.
 
-Plaid (bank) is implemented; QuickBooks/Xero are registered as accounting providers
-that light up once their keys + adapters land.
+Platform keys are resolved per-request via the keys store (stored value → env
+fallback), so the connector works whether keys came from the UI or deploy env.
+Plaid (bank) is implemented; QuickBooks/Xero are registered for later adapters.
 """
 from __future__ import annotations
 
-import os
 from datetime import UTC, datetime
 from typing import Any
 
 from winny_gateway.db import db_insert, db_select, db_update
+from winny_gateway.integrations import keys
 from winny_gateway.integrations import plaid_client as plaid
 from winny_gateway.integrations.secrets import decrypt_secret, encrypt_secret, mask_secret
 from winny_gateway.logging import get_logger
 
 logger = get_logger(__name__)
 
+PLAID_KEYS = ["PLAID_CLIENT_ID", "PLAID_SECRET", "PLAID_ENV"]
+
 # Provider registry. `implemented` gates the connect flow; `required_keys` are the
-# platform env vars surfaced in keys management.
+# platform keys surfaced (and editable) in keys management.
 PROVIDERS: dict[str, dict[str, Any]] = {
     "plaid": {
         "name": "Plaid — bank accounts",
         "kind": "bank",
-        "required_keys": ["PLAID_CLIENT_ID", "PLAID_SECRET", "PLAID_ENV"],
+        "required_keys": PLAID_KEYS,
         "implemented": True,
     },
     "quickbooks": {
@@ -48,29 +51,20 @@ PROVIDERS: dict[str, dict[str, Any]] = {
 _ACCT_TYPE = {"depository": "asset", "investment": "asset", "credit": "liability", "loan": "liability"}
 
 
-def _provider_configured(provider: str) -> bool:
-    spec = PROVIDERS.get(provider)
-    if not spec or not spec["implemented"]:
-        return False
-    if provider == "plaid":
-        return plaid.configured()
-    return all(os.getenv(k) for k in spec["required_keys"])
+async def _plaid_creds(uid: str) -> plaid.PlaidCreds:
+    k = await keys.get_keys(uid, "plaid", PLAID_KEYS)
+    return plaid.PlaidCreds(
+        client_id=k.get("PLAID_CLIENT_ID") or "",
+        secret=k.get("PLAID_SECRET") or "",
+        env=(k.get("PLAID_ENV") or "sandbox"),
+    )
 
 
-def provider_keys_status() -> list[dict[str, Any]]:
-    """The keys-management view: every provider, its required platform keys, and
-    whether each is set (never the value)."""
-    out = []
-    for pid, spec in PROVIDERS.items():
-        out.append({
-            "id": pid,
-            "name": spec["name"],
-            "kind": spec["kind"],
-            "implemented": spec["implemented"],
-            "configured": _provider_configured(pid),
-            "required_keys": [{"name": k, "set": bool(os.getenv(k))} for k in spec["required_keys"]],
-        })
-    return out
+def _safe_decrypt(enc: str) -> str:
+    try:
+        return decrypt_secret(enc) if enc else ""
+    except Exception:  # noqa: BLE001 — masking only; never break status on a bad token
+        return ""
 
 
 def _public_connection(row: dict[str, Any]) -> dict[str, Any]:
@@ -86,49 +80,58 @@ def _public_connection(row: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _safe_decrypt(enc: str) -> str:
-    try:
-        return decrypt_secret(enc) if enc else ""
-    except Exception:  # noqa: BLE001 — masking only; never break status on a bad token
-        return ""
-
-
 async def status(uid: str) -> dict[str, Any]:
-    rows = await db_select("finance_connections", filters={"user_id": uid}, limit=100)
+    providers = []
+    for pid, spec in PROVIDERS.items():
+        ks = await keys.status(uid, pid, spec["required_keys"])
+        cred_keys = [k for k in ks if not k["name"].endswith("_ENV")]
+        configured = bool(spec["implemented"] and cred_keys and all(k["set"] for k in cred_keys))
+        providers.append({
+            "id": pid, "name": spec["name"], "kind": spec["kind"],
+            "implemented": spec["implemented"], "configured": configured, "required_keys": ks,
+        })
+    conns = await db_select("finance_connections", filters={"user_id": uid}, limit=100)
+    creds = await _plaid_creds(uid)
     return {
-        "providers": provider_keys_status(),
-        "connections": [_public_connection(r) for r in rows],
-        "plaid_env": plaid.env(),
+        "providers": providers,
+        "connections": [_public_connection(r) for r in conns],
+        "plaid_env": creds.env,
     }
+
+
+async def set_keys(uid: str, provider: str, values: dict[str, Any]) -> int:
+    if provider not in PROVIDERS:
+        raise ValueError(f"unknown provider: {provider}")
+    return await keys.set_keys(uid, provider, values)
+
+
+async def link_token(uid: str) -> dict[str, Any]:
+    return await plaid.create_link_token(await _plaid_creds(uid), uid)
 
 
 async def _store_connection(uid: str, provider: str, access_token: str, item_id: str | None, institution: str | None) -> dict[str, Any]:
     row = await db_insert("finance_connections", {
-        "user_id": uid,
-        "provider": provider,
-        "item_id": item_id,
-        "access_token_enc": encrypt_secret(access_token),
-        "institution": institution,
-        "status": "active",
-        "accounts_count": 0,
+        "user_id": uid, "provider": provider, "item_id": item_id,
+        "access_token_enc": encrypt_secret(access_token), "institution": institution,
+        "status": "active", "accounts_count": 0,
     })
     return _public_connection(row or {})
 
 
 async def connect_sandbox(uid: str) -> dict[str, Any]:
-    """Sandbox-only one-shot connect (no browser Link) so the flow is end-to-end
-    runnable. Production uses link_token + the browser Link → exchange path."""
-    pub = await plaid.sandbox_public_token()
-    exchanged = await plaid.exchange_public_token(pub["public_token"])
+    creds = await _plaid_creds(uid)
+    pub = await plaid.sandbox_public_token(creds)
+    exchanged = await plaid.exchange_public_token(creds, pub["public_token"])
     access = exchanged["access_token"]
-    inst = await plaid.institution_name(access)
+    inst = await plaid.institution_name(creds, access)
     return await _store_connection(uid, "plaid", access, exchanged.get("item_id"), inst or "Sandbox bank")
 
 
 async def connect_exchange(uid: str, public_token: str, institution: str | None = None) -> dict[str, Any]:
-    exchanged = await plaid.exchange_public_token(public_token)
+    creds = await _plaid_creds(uid)
+    exchanged = await plaid.exchange_public_token(creds, public_token)
     access = exchanged["access_token"]
-    inst = institution or await plaid.institution_name(access)
+    inst = institution or await plaid.institution_name(creds, access)
     return await _store_connection(uid, "plaid", access, exchanged.get("item_id"), inst)
 
 
@@ -150,7 +153,7 @@ async def sync(uid: str, connection_id: str | None = None) -> dict[str, Any]:
     if not conns:
         return {"accounts": 0, "transactions_added": 0, "connections": 0}
 
-    # Existing Plaid txn ids (idempotency) across this user's ledger.
+    creds = await _plaid_creds(uid)
     existing = await db_select("finance_transactions", filters={"user_id": uid}, limit=5000)
     seen_txn = {
         (t.get("metadata") or {}).get("plaid_txn_id")
@@ -166,7 +169,7 @@ async def sync(uid: str, connection_id: str | None = None) -> dict[str, Any]:
             continue
         inst = conn.get("institution") or "Bank"
         try:
-            accounts = await plaid.accounts_get(access)
+            accounts = await plaid.accounts_get(creds, access)
             acct_map: dict[str, str | None] = {}
             for a in accounts:
                 mask = a.get("mask") or str(a.get("account_id", ""))[-4:]
@@ -175,7 +178,7 @@ async def sync(uid: str, connection_id: str | None = None) -> dict[str, Any]:
                     uid, name, _ACCT_TYPE.get(a.get("type", ""), "asset"))
             total_accounts += len(accounts)
 
-            result = await plaid.transactions_sync(access, conn.get("cursor"))
+            result = await plaid.transactions_sync(creds, access, conn.get("cursor"))
             for t in result.get("added", []):
                 tid = t.get("transaction_id")
                 if not tid or tid in seen_txn:
@@ -185,7 +188,6 @@ async def sync(uid: str, connection_id: str | None = None) -> dict[str, Any]:
                     "user_id": uid,
                     "txn_date": t.get("date") or datetime.now(UTC).date().isoformat(),
                     "description": t.get("merchant_name") or t.get("name") or "Bank transaction",
-                    # Plaid: positive = money out → expense (negative in our signed ledger).
                     "amount": -float(t.get("amount") or 0),
                     "currency": t.get("iso_currency_code") or "USD",
                     "category": None,
@@ -201,10 +203,8 @@ async def sync(uid: str, connection_id: str | None = None) -> dict[str, Any]:
                 total_added += 1
 
             await db_update("finance_connections", {
-                "cursor": result.get("next_cursor"),
-                "accounts_count": len(accounts),
-                "status": "active",
-                "error": None,
+                "cursor": result.get("next_cursor"), "accounts_count": len(accounts),
+                "status": "active", "error": None,
                 "last_synced_at": datetime.now(UTC).isoformat(),
             }, filters={"id": conn["id"], "user_id": uid})
         except Exception as exc:  # noqa: BLE001 — record the failure on the connection

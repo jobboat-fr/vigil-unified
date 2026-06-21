@@ -14,6 +14,7 @@ import pytest
 
 import winny_gateway.db as db_mod
 from winny_gateway.integrations import finance_connect as fc
+from winny_gateway.integrations import keys as keys_mod
 from winny_gateway.integrations import plaid_client as plaid
 
 
@@ -49,7 +50,7 @@ class FakeDB:
 @pytest.fixture
 def db(monkeypatch):
     fake = FakeDB()
-    for mod in (fc, db_mod):
+    for mod in (fc, keys_mod, db_mod):
         monkeypatch.setattr(mod, "db_insert", fake.insert, raising=False)
         monkeypatch.setattr(mod, "db_select", fake.select, raising=False)
         monkeypatch.setattr(mod, "db_update", fake.update, raising=False)
@@ -58,17 +59,15 @@ def db(monkeypatch):
 
 
 def _wire_plaid_sandbox(monkeypatch):
-    monkeypatch.setattr(plaid, "configured", lambda: True)
-    monkeypatch.setattr(plaid, "env", lambda: "sandbox")
-
-    async def sandbox_public_token(*_a, **_k): return {"public_token": "public-sandbox-xyz"}
-    async def exchange(_pt): return {"access_token": "access-sandbox-abc", "item_id": "item-1"}
-    async def inst(_at): return "First Platypus Bank"
-    async def accounts(_at): return [{"account_id": "acc-1", "mask": "0000", "type": "depository"}]
+    # The Plaid endpoints now take a PlaidCreds first arg; the stubs ignore it.
+    async def sandbox_public_token(_creds, *_a, **_k): return {"public_token": "public-sandbox-xyz"}
+    async def exchange(_creds, _pt): return {"access_token": "access-sandbox-abc", "item_id": "item-1"}
+    async def inst(_creds, _at): return "First Platypus Bank"
+    async def accounts(_creds, _at): return [{"account_id": "acc-1", "mask": "0000", "type": "depository"}]
 
     calls = {"n": 0}
 
-    async def txns(_at, _cursor=None):
+    async def txns(_creds, _at, _cursor=None):
         # First call returns one txn; subsequent calls return none (idempotency check).
         calls["n"] += 1
         if calls["n"] > 1:
@@ -96,6 +95,17 @@ def test_status_surfaces_provider_keys(db):
     assert data["connections"] == []
     # accounting providers are registered but not yet implemented
     assert any(p["id"] == "quickbooks" and not p["implemented"] for p in data["providers"])
+
+
+def test_set_keys_makes_plaid_configured_and_encrypts(db):
+    asyncio.run(fc.set_keys("user-1", "plaid", {"PLAID_CLIENT_ID": "cid", "PLAID_SECRET": "sec", "PLAID_ENV": "sandbox"}))
+    data = asyncio.run(fc.status("user-1"))
+    plaid_p = next(p for p in data["providers"] if p["id"] == "plaid")
+    assert plaid_p["configured"] is True  # client_id + secret present
+    cid = next(k for k in plaid_p["required_keys"] if k["name"] == "PLAID_CLIENT_ID")
+    assert cid["set"] is True and cid["source"] == "stored"
+    # stored encrypted at rest, never the plaintext
+    assert db.tables["integration_secrets"][0]["value_enc"] != "cid"
 
 
 def test_sandbox_connect_stores_encrypted_token(db, monkeypatch):

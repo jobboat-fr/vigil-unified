@@ -21,7 +21,7 @@ from pydantic import BaseModel, Field
 
 from winny_gateway.auth import get_current_user
 from winny_gateway.integrations import finance_connect
-from winny_gateway.integrations.plaid_client import PlaidError, create_link_token
+from winny_gateway.integrations.plaid_client import PlaidError
 
 router = APIRouter(prefix="/v1/finance/connect", tags=["finance"])
 
@@ -42,10 +42,26 @@ async def connect_status(user: dict = Depends(get_current_user)) -> dict[str, An
     return {"ok": True, "data": await finance_connect.status(_uid(user))}
 
 
+class KeysBody(BaseModel):
+    provider: str = Field(..., min_length=1)
+    values: dict[str, str] = Field(default_factory=dict, description="env-style key name → value")
+
+
+@router.post("/keys")
+async def save_keys(body: KeysBody, user: dict = Depends(get_current_user)) -> dict[str, Any]:
+    """Store platform keys (e.g. Plaid client_id/secret) for a provider, encrypted.
+    Values are write-only — only set/unset + source come back via /status."""
+    try:
+        saved = await finance_connect.set_keys(_uid(user), body.provider, body.values)
+    except ValueError as exc:
+        raise HTTPException(status_code=http.HTTP_400_BAD_REQUEST, detail={"error": "unknown_provider", "message": str(exc)})
+    return {"ok": True, "data": {"saved": saved, "status": await finance_connect.status(_uid(user))}}
+
+
 @router.post("/link-token")
 async def link_token(user: dict = Depends(get_current_user)) -> dict[str, Any]:
     try:
-        data = await create_link_token(_uid(user))
+        data = await finance_connect.link_token(_uid(user))
     except PlaidError as exc:
         raise _plaid_guard(exc)
     return {"ok": True, "data": {"link_token": data.get("link_token"), "expiration": data.get("expiration")}}

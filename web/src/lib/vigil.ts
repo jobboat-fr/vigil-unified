@@ -527,6 +527,8 @@ export const vigil = {
     summary: () => vigilCall<FinanceSummary>("GET", "/v1/finance/summary"),
     connect: {
       status: () => vigilCall<FinanceConnectStatus>("GET", "/v1/finance/connect/status"),
+      keys: (provider: string, values: Record<string, string>) =>
+        vigilCall<{ saved: number; status: FinanceConnectStatus }>("POST", "/v1/finance/connect/keys", { provider, values }),
       linkToken: () => vigilCall<{ link_token: string | null }>("POST", "/v1/finance/connect/link-token"),
       sandbox: () => vigilCall<{ connection: FinanceConnection }>("POST", "/v1/finance/connect/sandbox"),
       exchange: (public_token: string, institution?: string) =>
