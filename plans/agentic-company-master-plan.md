@@ -31,24 +31,41 @@ governed by our own thin spine, powered by Hermes-core skills + tools, and grown
 
 ## 1. How the ecosystem works inside Hermes
 
+The company is a **closed loop**: meetings produce structured artifacts + commitments
++ contacts → those feed the departments → departments act and produce more artifacts →
+the Chief of Staff briefs → back into the next meeting. The **council algorithm** is the
+shared cognition used by *both* the Meeting Room and the departments; the **Artifacts
+store** is the shared work-product surface; the **connector kit** reaches the systems of
+record.
+
 ```mermaid
 flowchart TB
-  U["Operator — SPA<br/>dev.vigil-ai.xyz"] -->|/v1 product API · Supabase JWT| GW
-  U -->|operator pages| PX["Vercel ops proxy<br/>(Supabase-gated)"]
-  PX --> HC
+  subgraph SURF["Surfaces — SPA (dev.vigil-ai.xyz)"]
+    MR["Meeting Room<br/>live council · LiveKit · Google Meet bot"]
+    ST["Studio + Artifacts canvas<br/>React-Flow · brainstorm · diagram"]
+    BD["Ops Team board"]
+  end
 
-  subgraph GW["Gateway — Railway · governance spine (ours)"]
-    ENG["Ops engine<br/>dispatch · acceptance contract · guardrails · kill-switch"]
-    LED["Registry + task ledger + handoff bus"]
-    KIT["Connector kit (ours)<br/>encrypted creds · sync · idempotency"]
-    CLI["Council client (tiered)"]
-    ENG --- LED
-    ENG --- KIT
-    ENG --- CLI
+  subgraph GW["Gateway — governance spine (ours)"]
+    ENG["Ops engine · acceptance · guardrails · handoff · kill-switch"]
+    ROOMS["Rooms — convene · intervene · summarize"]
+    STU["Studio — brainstorm-gate · draft · canvas save"]
+    KIT["Connector kit"]
+  end
+
+  subgraph COG["Council algorithm — shared cognition"]
+    C5["5-stage collective:<br/>primary → reviewers → consensus → chairman → behavioral"]
+    INT["Intervention engine (live raise-hand)"]
+    SS["Structurer · Summarizer · Brainstorm/Diagram"]
+  end
+
+  subgraph TIERS["Inference tiers"]
+    CHEAP["cheap / free-pool (adapted from freellmapi · llama.cpp)"]
+    HARD["HF router (hard reasoning · bill-to azzetco)"]
   end
 
   subgraph DEPTS["Departments — contracts + handoffs"]
-    FIN["CFO / Finance"]
+    FIN["Finance"]
     REV["Revenue"]
     SCOUT["Lead Scout"]
     SUP["Support"]
@@ -56,32 +73,59 @@ flowchart TB
     OPS["Operations"]
     COS["Chief of Staff"]
   end
-  ENG -->|dispatch run| DEPTS
-  COS -.->|route / handoff| FIN & REV & SCOUT & SUP & LEG & OPS
-  SCOUT -.->|handoff| REV
 
-  subgraph HC["Hermes core — OVH · skills + tools (no new layer)"]
-    PROF["Department profiles<br/>= SKILL.md + MCP tools + model + soul"]
-    HUB["Skill hub · MCP catalog · cron · sessions"]
-  end
-  DEPTS -->|graduate to| PROF
+  ART["Artifacts store<br/>summaries · reports · memos · briefs · decision-flow canvas"]
+  SOR["Systems of record<br/>Bank/Plaid · GitHub · Gmail · CRM · Vault"]
+  HC["Hermes core — OVH<br/>profiles = SKILL.md + MCP tools (Phase 6 target)"]
 
-  subgraph BRAIN["Council brain (tiered)"]
-    CHEAP["Cheap / free-pool tier<br/>(our router, engineering adapted from freellmapi; llama.cpp)"]
-    HARD["HF Inference Router<br/>(hard reasoning · bill-to azzetco)"]
-  end
-  CLI --> CHEAP
-  CLI --> HARD
-
+  MR --> ROOMS
+  BD --> ENG
+  ST --> STU
+  ROOMS --> C5
+  ROOMS --> INT
+  ROOMS -->|summarize| SS
+  STU --> SS
+  ENG -->|dispatch| DEPTS
+  DEPTS --> C5
+  C5 --> CHEAP
+  C5 --> HARD
+  SS --> ART
+  DEPTS -->|write| ART
+  DEPTS --> KIT
   KIT --> SOR
-  subgraph SOR["Systems of record — the company's own data"]
-    BANK["Bank · Plaid"]
-    GH["GitHub"]
-    MAIL["Gmail / IMAP"]
-    CRMX["CRM / HubSpot"]
-    VAULT["Vault documents"]
-  end
+  ROOMS -->|commitments| OPS
+  ROOMS -->|follow-up contacts| REV
+  ROOMS -->|follow-up contacts| SCOUT
+  COS -.->|route / handoff| FIN & REV & SCOUT & SUP & LEG & OPS
+  COS -->|brief| ART
+  ART --> ST
+  DEPTS -.->|graduate to| HC
 ```
+
+### 1a. The systems and how they connect
+
+- **Meeting Room** (`/v1/rooms`) — the live surface. Invite advisors (council lenses),
+  capture the transcript (typed, LiveKit room, or the Google Meet bot bridge), **convene
+  the council** (the 5-stage algorithm streamed over the transcript), get **live
+  interventions** ("raise hand" on a heartbeat), then **summarize → artifact + decision-
+  flow canvas + commitments + follow-up contacts**.
+- **Council algorithm** (`winny/council/*`) — the shared brain, *not* a single model
+  call: the **5-stage collective** (primary specialist → parallel reviewers → weighted
+  consensus → chairman synthesis iff consensus fails → behavioral overlay → verdict), the
+  **intervention engine** (specialist fan-out → judge → behavioral overlay → should-speak),
+  and **structurer / summarizer / brainstorm-diagram** lenses. The inference **tiers** sit
+  *under* it (cheap/free-pool for routine, HF for hard). Both meetings and departments call
+  this same cognition.
+- **Studio / Artifacts** (`/v1/artifacts`) — the shared work-product surface. **Every**
+  output is an `artifacts` row: meeting summaries, Finance reports, Legal memos, CoS
+  briefs, brainstorming boards. The **React-Flow canvas** (CanvasWorkspace + VigilNode)
+  edits them, with the council **brainstorm** (lenses) and **diagram** panels, versioned
+  on save.
+- **The handoffs between them (the systematic work):** a meeting's **commitments** flow to
+  **Operations** (digest/track); its **follow-up contacts** flow to **Revenue + Lead
+  Scout**; its **artifact** opens in **Studio**. Department runs **write artifacts** and
+  call the **same council algorithm**; the **Chief of Staff** routes departments and emits
+  the **company brief** (an artifact) — which seeds the next meeting. That is the loop.
 
 ### The governed run loop (every department run)
 
@@ -186,12 +230,17 @@ We **read → reimplement/adapt**; nothing becomes a runtime dependency.
 ## 6. Status — what exists vs. to build
 
 **Shipped (deployed, tested — 41 gateway tests green):**
-- Ops engine + 7 departments (handlers) with acceptance contracts, handoffs, guardrails,
-  kill switch; the board (`OpsTeamPage`) with per-job runs + health.
-- Plaid bank connector + encrypted keys store + keys-editable-from-UI (migrations
+- **Council algorithm** — 5-stage collective + intervention engine + structurer /
+  summarizer / brainstorm-diagram lenses (HF router, bill-to azzetco).
+- **Meeting Room** — advisors, transcript (typed · LiveKit · Google Meet bot bridge),
+  convene (SSE), live interventions, summarize → artifact + canvas + commitments + CRM.
+- **Studio / Artifacts** — brainstorm-gate → draft, the React-Flow canvas (CanvasWorkspace
+  + VigilNode) with council brainstorm + diagram panels, versioned saves.
+- **Ops engine + 7 departments** (handlers) with acceptance contracts, handoffs,
+  guardrails, kill switch; the board (`OpsTeamPage`) with per-job runs + health.
+- **Plaid bank connector** + encrypted keys store + keys-editable-from-UI (migrations
   017/018/019 applied to prod `vgl`).
-- Cheap-tier seam (`local` family + `cheap_worker()`, env-gated).
-- Council (HF router, bill-to azzetco; primary/reviewers/chairman).
+- **Cheap-tier seam** (`local` family + `cheap_worker()`, env-gated).
 
 **To build:** Phases 0–6 above (connector kit → free-pool router → finance/legal/sales
 skills+compute → SOP rigor → graduate to Hermes profiles).
