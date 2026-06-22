@@ -28,7 +28,12 @@ export default function PublicSite() {
 }
 
 function AuthCallback() {
-  const { authError } = useAuth();
+  const { authError, loading } = useAuth();
+  // No pending code exchange and the gate has settled with no session → don't
+  // sit on the spinner; send the user to the sign-in form.
+  if (!authError && !loading && !window.location.search.includes("code=")) {
+    return <Navigate to="/login" replace />;
+  }
   if (authError) {
     return (
       <div className="flex min-h-dvh flex-col items-center justify-center gap-3 p-6 text-center" style={{ background: "#07080d", color: "#e7e9f3" }}>

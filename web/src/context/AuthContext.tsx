@@ -53,31 +53,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     async function init() {
-      const params = new URLSearchParams(window.location.search);
-      const cbErr = params.get("error_description") || params.get("error");
-      const code = params.get("code");
+      // `finally` ALWAYS clears loading, so a rejected/hung auth call can never
+      // leave the gate stuck on its spinner.
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const cbErr = params.get("error_description") || params.get("error");
+        const code = params.get("code");
 
-      if (cbErr) {
-        if (mounted) { setAuthError(cbErr); cleanUrl(); setLoading(false); }
-        return;
-      }
-      if (code) {
-        const { data, error } = await supabase!.auth.exchangeCodeForSession(code);
+        if (cbErr) {
+          if (mounted) { setAuthError(cbErr); cleanUrl(); }
+          return;
+        }
+        if (code) {
+          const { data, error } = await supabase!.auth.exchangeCodeForSession(code);
+          if (!mounted) return;
+          if (error) setAuthError(error.message || "OAuth callback failed");
+          else { setSession(data?.session ?? null); setUser(data?.session?.user ?? null); setAuthError(""); }
+          cleanUrl();
+          return;
+        }
+        // `getSession()` can hang on the Navigator LockManager (a known
+        // supabase-js deadlock). Race it against a timeout so the gate never
+        // freezes — if the call was merely slow, `onAuthStateChange` recovers
+        // the session a moment later and swaps the public site for the app.
+        const restored = await Promise.race([
+          supabase!.auth.getSession().then((r) => r.data.session ?? null),
+          new Promise<Session | null>((resolve) => setTimeout(() => resolve(null), 4000)),
+        ]);
         if (!mounted) return;
-        if (error) setAuthError(error.message || "OAuth callback failed");
-        else { setSession(data?.session ?? null); setUser(data?.session?.user ?? null); setAuthError(""); }
-        cleanUrl();
-        setLoading(false);
-        return;
+        setSession(restored);
+        setUser(restored?.user ?? null);
+      } catch (e) {
+        if (mounted) setAuthError((e as Error)?.message || "Could not restore session");
+      } finally {
+        if (mounted) setLoading(false);
       }
-      const { data, error } = await supabase!.auth.getSession();
-      if (!mounted) return;
-      if (error) setAuthError(error.message || "Could not restore session");
-      setSession(data?.session ?? null);
-      setUser(data?.session?.user ?? null);
-      setLoading(false);
     }
-    init();
+    void init();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, s) => {
       setSession(s);
