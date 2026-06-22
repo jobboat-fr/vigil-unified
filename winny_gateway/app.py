@@ -54,6 +54,7 @@ from winny_gateway.routes.vigil import crm as vigil_crm
 from winny_gateway.routes.vigil import mail as vigil_mail
 from winny_gateway.routes.vigil import ops as vigil_ops
 from winny_gateway.routes.vigil import finance_connect as vigil_finance_connect
+from winny_gateway.routes.vigil import connect as vigil_connect
 from winny_gateway.security import SecurityMiddleware
 
 logger = get_logger(__name__)
@@ -221,6 +222,8 @@ def create_app(config: GatewayConfig | None = None) -> FastAPI:
     app.include_router(vigil_finance.router)
     # Finance connector — bank (Plaid) / accounting platform sync into the ledger.
     app.include_router(vigil_finance_connect.router)
+    # Connector kit — generic per-tenant system-of-record connectors (GitHub, …).
+    app.include_router(vigil_connect.router)
     # CRM — contacts + deal pipeline the crm skill routes into.
     app.include_router(vigil_crm.router)
     # Mail — inbox triage store (himalaya transport) the mail-triage skill uses.
