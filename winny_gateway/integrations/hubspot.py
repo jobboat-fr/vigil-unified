@@ -43,7 +43,7 @@ class HubSpotConnector(Connector):
     provider = "hubspot"
     kind = "crm"
 
-    async def verify_token(self, token: str) -> dict[str, Any]:
+    async def verify_token(self, token: str, account: str | None = None) -> dict[str, Any]:
         info = await _get(token, "/account-info/v3/details")
         return {"external_account": str(info.get("portalId") or info.get("accountType") or "hubspot")}
 

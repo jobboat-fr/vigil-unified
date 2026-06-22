@@ -8,16 +8,18 @@ import { GatewayError } from "@/lib/ww";
 // with a per-provider token. Tokens are stored encrypted and never returned; the
 // departments then sync + work the tenant's live data.
 
-const PROVIDER_LABEL: Record<string, { name: string; hint: string }> = {
+const PROVIDER_LABEL: Record<string, { name: string; hint: string; account?: string }> = {
   github: { name: "GitHub", hint: "Personal access token (repo, read:org)" },
   hubspot: { name: "HubSpot", hint: "Private-app access token" },
   stripe: { name: "Stripe", hint: "Restricted/secret key (read)" },
+  gmail: { name: "Gmail", hint: "App password (16 chars, 2FA required)", account: "you@gmail.com" },
 };
 
 export default function ConnectionsPage() {
   const [status, setStatus] = useState<ConnectStatus | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
   const [tokens, setTokens] = useState<Record<string, string>>({});
+  const [accounts, setAccounts] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState("");
   const [msg, setMsg] = useState<Record<string, string>>({});
   const [err, setErr] = useState<Record<string, string>>({});
@@ -47,8 +49,9 @@ export default function ConnectionsPage() {
     if (!token) return;
     setBusy(provider + ":connect");
     try {
-      const { connection } = await vigil.connect.token(provider, token);
+      const { connection } = await vigil.connect.token(provider, token, (accounts[provider] || "").trim() || undefined);
       setTokens((t) => ({ ...t, [provider]: "" }));
+      setAccounts((a) => ({ ...a, [provider]: "" }));
       note(provider, `Connected ${connection.external_account || provider}.`);
       await refresh();
     } catch (e) {
@@ -120,18 +123,29 @@ export default function ConnectionsPage() {
                     <button type="button" className="text-xs text-text-secondary hover:text-foreground" disabled={!!busy} onClick={() => void disconnect(c)}>✕</button>
                   </div>
                 ))}
-                <div className="flex gap-2">
-                  <input
-                    type="password"
-                    className={inputCls}
-                    placeholder={label.hint}
-                    value={tokens[p.id] || ""}
-                    onChange={(e) => setTokens((t) => ({ ...t, [p.id]: e.target.value }))}
-                    onKeyDown={(e) => { if (e.key === "Enter") void connect(p.id); }}
-                  />
-                  <Button disabled={busy === p.id + ":connect" || !(tokens[p.id] || "").trim()} onClick={() => void connect(p.id)}>
-                    {busy === p.id + ":connect" ? "Connecting…" : "Connect"}
-                  </Button>
+                <div className="flex flex-col gap-2">
+                  {label.account && (
+                    <input
+                      type="email"
+                      className={inputCls}
+                      placeholder={label.account}
+                      value={accounts[p.id] || ""}
+                      onChange={(e) => setAccounts((a) => ({ ...a, [p.id]: e.target.value }))}
+                    />
+                  )}
+                  <div className="flex gap-2">
+                    <input
+                      type="password"
+                      className={inputCls}
+                      placeholder={label.hint}
+                      value={tokens[p.id] || ""}
+                      onChange={(e) => setTokens((t) => ({ ...t, [p.id]: e.target.value }))}
+                      onKeyDown={(e) => { if (e.key === "Enter") void connect(p.id); }}
+                    />
+                    <Button disabled={busy === p.id + ":connect" || !(tokens[p.id] || "").trim() || (!!label.account && !(accounts[p.id] || "").trim())} onClick={() => void connect(p.id)}>
+                      {busy === p.id + ":connect" ? "Connecting…" : "Connect"}
+                    </Button>
+                  </div>
                 </div>
                 {msg[p.id] && <p className="text-xs" style={{ color: "#059669" }}>{msg[p.id]}</p>}
                 {err[p.id] && <p className="text-xs" style={{ color: "#ff3366" }}>{err[p.id]}</p>}

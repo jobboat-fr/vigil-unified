@@ -15,6 +15,7 @@ from datetime import UTC, datetime
 from typing import Any, Awaitable, Callable
 
 from winny_gateway.db import db_insert, db_select, db_update
+from winny_gateway.integrations import connector
 from winny_gateway.logging import get_logger
 from winny_gateway.ops import cos, finance, growth, legal, operations, revenue, support
 
@@ -34,6 +35,7 @@ DEPARTMENTS: dict[str, dict[str, Any]] = {
         "head_lens": "comms",
         "mandate": "Triage the inbox: classify every message and draft replies for the ones that need a response.",
         "kpis": [{"key": "triaged", "label": "Inbox triaged", "target": "100%"}],
+        "sync_kinds": ["email"],
         "guardrails": {
             "per_run_spend_cap_usd": 0.50,
             "daily_run_cap": 50,
@@ -62,6 +64,7 @@ DEPARTMENTS: dict[str, dict[str, Any]] = {
         "head_lens": "cfo_review",
         "mandate": "Reconcile the ledger — pull bank data, categorise every transaction, and flag anomalies for review.",
         "kpis": [{"key": "reconciled", "label": "Ledger reconciled", "target": "100%"}],
+        "sync_kinds": ["payments"],
         "guardrails": {
             "per_run_spend_cap_usd": 1.00,
             "daily_run_cap": 50,
@@ -84,6 +87,7 @@ DEPARTMENTS: dict[str, dict[str, Any]] = {
         "head_lens": "cro",
         "mandate": "Keep the pipeline warm — draft follow-ups for every deal stalled in proposal or negotiation.",
         "kpis": [{"key": "followups", "label": "Stalled deals followed up", "target": "100%"}],
+        "sync_kinds": ["crm"],
         "guardrails": {
             "per_run_spend_cap_usd": 1.00,
             "daily_run_cap": 50,
@@ -104,6 +108,7 @@ DEPARTMENTS: dict[str, dict[str, Any]] = {
         "head_lens": "cro",
         "mandate": "Source and qualify inbound leads into the CRM, then hand the deals to Revenue to work.",
         "kpis": [{"key": "leads", "label": "Leads sourced", "target": "—"}],
+        "sync_kinds": ["email", "crm"],
         "guardrails": {"per_run_spend_cap_usd": 1.00, "daily_run_cap": 50,
                        "allowed_tools": ["mail_messages", "crm_contacts", "crm_deals"],
                        "max_wall_ms": 120_000, "irreversible_requires_owner": True},
@@ -297,6 +302,15 @@ async def run_job(
         "created_at": _now(),
     })
     task_id = (task or {}).get("id")
+
+    # ── Pull fresh system-of-record data (best-effort) ──────────────────────
+    # A department syncs its connected providers (e.g. Support→email, Revenue→crm)
+    # before working, so it acts on live data. Never fails the run.
+    for kind in (spec.get("sync_kinds") or []):
+        try:
+            await connector.sync_kind(uid, kind)
+        except Exception as exc:  # noqa: BLE001
+            logger.info("ops.presync skip dept=%s kind=%s: %s", dept_row["slug"], kind, exc)
 
     # ── Run handler + acceptance, enforce budget ────────────────────────────
     handler: Handler = job["handler"]

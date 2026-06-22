@@ -442,8 +442,8 @@ export interface ConnectStatus {
 export const vigil = {
   connect: {
     status: () => vigilCall<ConnectStatus>("GET", "/v1/connect/status"),
-    token: (provider: string, token: string) =>
-      vigilCall<{ connection: Connection }>("POST", `/v1/connect/${provider}/token`, { token }),
+    token: (provider: string, token: string, account?: string) =>
+      vigilCall<{ connection: Connection }>("POST", `/v1/connect/${provider}/token`, { token, ...(account ? { account } : {}) }),
     sync: (provider: string, connection_id: string) =>
       vigilCall<Record<string, unknown>>("POST", `/v1/connect/${provider}/sync`, { connection_id }),
     disconnect: (id: string) =>

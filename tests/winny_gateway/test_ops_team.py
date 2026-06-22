@@ -16,6 +16,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from winny_gateway.auth import get_current_user
+from winny_gateway.integrations import connector as conn_mod
 from winny_gateway.ops import engine as engine_mod
 from winny_gateway.ops import support as support_mod
 from winny_gateway.routes.vigil import ops as ops_mod
@@ -175,6 +176,20 @@ def test_feed_and_ledger_record_the_run(client):
     assert len(tasks) == 1 and tasks[0]["job"] == "triage"
     events = _data(client.get("/v1/ops/feed"))["events"]
     assert events and "Support" in events[0]["summary"]
+
+
+def test_run_presyncs_the_departments_connectors(client, monkeypatch):
+    calls: list[tuple[str, str]] = []
+
+    async def spy(uid, kind):
+        calls.append((uid, kind))
+        return {"synced": 0}
+    monkeypatch.setattr(conn_mod, "sync_kind", spy)
+
+    _seed_inbox(client.db, "user-1", 1)
+    did = _support_id(client)
+    client.post(f"/v1/ops/departments/{did}/run")
+    assert ("user-1", "email") in calls  # Support pulled its inbox connector before triaging
 
 
 def test_department_is_user_scoped(client):

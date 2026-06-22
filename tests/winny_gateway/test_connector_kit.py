@@ -58,7 +58,7 @@ def client(monkeypatch):
     # Monkeypatch the GitHub connector's network calls (no real GitHub).
     gh = conn_mod.get_connector("github")
 
-    async def verify(_token): return {"external_account": "octocat", "github_id": 1}
+    async def verify(_token, _account=None): return {"external_account": "octocat", "github_id": 1}
     async def sync(_uid, _conn, _token): return {"metadata": {"repos": 3, "open_issues": 7}, "repos": 3, "open_issues": 7}
     monkeypatch.setattr(gh, "verify_token", verify)
     monkeypatch.setattr(gh, "sync", sync)
@@ -101,7 +101,7 @@ def test_connect_stores_encrypted_token_then_sync_and_disconnect(client):
 def test_bad_token_is_a_clean_error_not_a_crash(client, monkeypatch):
     gh = conn_mod.get_connector("github")
 
-    async def bad(_t):
+    async def bad(_t, _account=None):
         raise conn_mod.ConnectorError("invalid GitHub token", code="invalid_token", status=400)
     monkeypatch.setattr(gh, "verify_token", bad)
     r = client.post("/v1/connect/github/token", json={"token": "nope"})

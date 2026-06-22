@@ -34,7 +34,7 @@ class StripeConnector(Connector):
     provider = "stripe"
     kind = "payments"
 
-    async def verify_token(self, token: str) -> dict[str, Any]:
+    async def verify_token(self, token: str, account: str | None = None) -> dict[str, Any]:
         acct = await _get(token, "/account")
         return {"external_account": str(acct.get("id") or "stripe"),
                 "business_name": (acct.get("business_profile") or {}).get("name")}

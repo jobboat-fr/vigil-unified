@@ -25,7 +25,7 @@ class GitHubConnector(Connector):
     provider = "github"
     kind = "engineering"
 
-    async def verify_token(self, token: str) -> dict[str, Any]:
+    async def verify_token(self, token: str, account: str | None = None) -> dict[str, Any]:
         try:
             async with httpx.AsyncClient(timeout=20) as c:
                 r = await c.get(f"{_API}/user", headers=_auth(token))

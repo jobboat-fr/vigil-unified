@@ -21,6 +21,7 @@ from winny_gateway.integrations import connector
 from winny_gateway.integrations import github as _github  # noqa: F401 — registers GitHubConnector
 from winny_gateway.integrations import hubspot as _hubspot  # noqa: F401 — registers HubSpotConnector
 from winny_gateway.integrations import stripe_conn as _stripe  # noqa: F401 — registers StripeConnector
+from winny_gateway.integrations import gmail as _gmail  # noqa: F401 — registers GmailConnector
 from winny_gateway.integrations.connector import ConnectorError
 
 router = APIRouter(prefix="/v1/connect", tags=["connect"])
@@ -44,12 +45,13 @@ async def connect_status(user: dict = Depends(get_current_user)) -> dict[str, An
 
 class TokenBody(BaseModel):
     token: str = Field(..., min_length=1)
+    account: str | None = Field(default=None, description="Optional account id (e.g. email for IMAP).")
 
 
 @router.post("/{provider}/token")
 async def save_token(provider: str, body: TokenBody, user: dict = Depends(get_current_user)) -> dict[str, Any]:
     try:
-        conn = await connector.connect(_uid(user), provider, body.token)
+        conn = await connector.connect(_uid(user), provider, body.token, body.account)
     except ConnectorError as exc:
         raise _guard(exc)
     return {"ok": True, "data": {"connection": conn}}

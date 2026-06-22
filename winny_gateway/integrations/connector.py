@@ -39,8 +39,9 @@ class Connector(ABC):
     kind: str = "generic"
 
     @abstractmethod
-    async def verify_token(self, token: str) -> dict[str, Any]:
-        """Validate a tenant token; return {external_account, ...} or raise ConnectorError."""
+    async def verify_token(self, token: str, account: str | None = None) -> dict[str, Any]:
+        """Validate a tenant token (and optional account, e.g. an email for IMAP);
+        return {external_account, ...} or raise ConnectorError."""
 
     @abstractmethod
     async def sync(self, uid: str, conn: dict[str, Any], token: str) -> dict[str, Any]:
@@ -85,19 +86,19 @@ def _safe_decrypt(enc: str) -> str:
         return ""
 
 
-async def connect(uid: str, provider: str, token: str) -> dict[str, Any]:
+async def connect(uid: str, provider: str, token: str, account: str | None = None) -> dict[str, Any]:
     """Verify a tenant token with the provider, then store it encrypted."""
     c = get_connector(provider)
     if not c:
         raise ConnectorError(f"unknown provider '{provider}'", code="unknown_provider", status=404)
     if not (token or "").strip():
         raise ConnectorError("token is required", code="missing_token", status=400)
-    identity = await c.verify_token(token.strip())
+    identity = await c.verify_token(token.strip(), (account or "").strip() or None)
     row = await db_insert(_TABLE, {
         "user_id": uid,
         "provider": provider,
         "kind": c.kind,
-        "external_account": identity.get("external_account"),
+        "external_account": identity.get("external_account") or (account or "").strip() or None,
         "access_token_enc": encrypt_secret(token.strip()),
         "refresh_token_enc": encrypt_secret(identity["refresh_token"]) if identity.get("refresh_token") else None,
         "status": "active",
@@ -139,6 +140,21 @@ async def run_sync(uid: str, connection_id: str) -> dict[str, Any]:
         "last_synced_at": datetime.now(UTC).isoformat(),
     }, filters={"id": connection_id, "user_id": uid})
     return result
+
+
+async def sync_kind(uid: str, kind: str) -> dict[str, Any]:
+    """Best-effort: sync every active connection of a given kind (email|crm|payments|…)
+    for a tenant. Used by departments to pull fresh system-of-record data before a run;
+    never raises — a provider error is recorded on its connection and skipped."""
+    rows = await db_select(_TABLE, filters={"user_id": uid, "kind": kind}, limit=50)
+    synced = 0
+    for r in rows:
+        try:
+            await run_sync(uid, r["id"])
+            synced += 1
+        except ConnectorError as exc:
+            logger.info("connector.sync_kind skip %s/%s: %s", kind, r.get("provider"), exc.code)
+    return {"synced": synced}
 
 
 async def disconnect(uid: str, connection_id: str) -> bool:
