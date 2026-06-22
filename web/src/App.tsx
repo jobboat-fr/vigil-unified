@@ -105,6 +105,7 @@ import ChatPage from "@/pages/ChatPage";
 import MeetingRoomPage from "@/pages/MeetingRoomPage";
 import StudioPage from "@/pages/StudioPage";
 import OpsTeamPage from "@/pages/OpsTeamPage";
+import ConnectionsPage from "@/pages/ConnectionsPage";
 import VaultPage from "@/pages/VaultPage";
 import FinancePage from "@/pages/FinancePage";
 import CrmPage from "@/pages/CrmPage";
@@ -160,6 +161,7 @@ const BUILTIN_ROUTES_CORE: Record<string, ComponentType> = {
   "/sessions": SessionsPage,
   // VIGIL workspace
   "/ops-team": OpsTeamPage,
+  "/connections": ConnectionsPage,
   "/meeting-room": MeetingRoomPage,
   "/studio": StudioPage,
   "/vault": VaultPage,
@@ -208,6 +210,7 @@ const BUILTIN_NAV_REST: NavItem[] = [
   },
   // ── VIGIL workspace ──
   { path: "/ops-team", label: "Ops Team", icon: Network },
+  { path: "/connections", label: "Connections", icon: Plug },
   { path: "/meeting-room", label: "Meeting Room", icon: Video },
   { path: "/studio", label: "Studio", icon: PenLine },
   { path: "/vault", label: "Vault", icon: Lock },

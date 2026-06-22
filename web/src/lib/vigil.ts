@@ -418,7 +418,37 @@ export interface FinanceConnectStatus {
   plaid_env: string;
 }
 
+// ── Connector kit (system-of-record connectors) ─────────────────────────────
+export interface ConnectProvider {
+  id: string;
+  kind: string;
+}
+export interface Connection {
+  id: string;
+  provider: string;
+  kind: string;
+  external_account: string | null;
+  status: string;
+  token_masked: string;
+  last_synced_at: string | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
+}
+export interface ConnectStatus {
+  providers: ConnectProvider[];
+  connections: Connection[];
+}
+
 export const vigil = {
+  connect: {
+    status: () => vigilCall<ConnectStatus>("GET", "/v1/connect/status"),
+    token: (provider: string, token: string) =>
+      vigilCall<{ connection: Connection }>("POST", `/v1/connect/${provider}/token`, { token }),
+    sync: (provider: string, connection_id: string) =>
+      vigilCall<Record<string, unknown>>("POST", `/v1/connect/${provider}/sync`, { connection_id }),
+    disconnect: (id: string) =>
+      vigilCall<{ disconnected: string }>("DELETE", `/v1/connect/connections/${id}`),
+  },
   ops: {
     departments: () => vigilCall<{ departments: Department[] }>("GET", "/v1/ops/departments"),
     department: (id: string) => vigilCall<Department>("GET", `/v1/ops/departments/${id}`),
