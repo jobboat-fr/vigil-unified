@@ -19,6 +19,7 @@ from pydantic import BaseModel, Field
 from winny_gateway.auth import get_current_user
 from winny_gateway.integrations import connector
 from winny_gateway.integrations import github as _github  # noqa: F401 — registers GitHubConnector
+from winny_gateway.integrations import hubspot as _hubspot  # noqa: F401 — registers HubSpotConnector
 from winny_gateway.integrations.connector import ConnectorError
 
 router = APIRouter(prefix="/v1/connect", tags=["connect"])
