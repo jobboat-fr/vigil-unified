@@ -14,7 +14,7 @@ import json
 from typing import Any
 
 from winny.council.providers import ask
-from winny.council.registry import worker_registry
+from winny.council.registry import cheap_worker
 from winny.council.summarizer import _parse_json
 from winny_gateway.db import db_insert, db_select
 
@@ -30,7 +30,7 @@ async def enrich(cand: dict[str, Any]) -> tuple[dict[str, Any], float]:
         f"Name: {cand.get('name')}\nEmail: {cand.get('email')}\n"
         f"They emailed us about: {cand.get('subject') or '(unknown)'}\n\nQualify this lead."
     )
-    result = await ask(worker_registry()["primary"], prompt, system=_SYSTEM, temperature=0.4, max_tokens=200)
+    result = await ask(cheap_worker(), prompt, system=_SYSTEM, temperature=0.4, max_tokens=200)
     plan = _parse_json(result.get("output", "")) or {}
     try:
         cost = float(result.get("cost_usd") or 0.0)

@@ -144,6 +144,13 @@ async def ask(
                 "HuggingFace", model, messages, temperature, max_tokens, timeout,
                 extra_headers=extra,
             )
+        if family in ("local", "llama", "llamacpp"):
+            # Local OpenAI-compatible server (e.g. llama.cpp / Ollama) for cheap,
+            # high-volume classification. No API key required; llama.cpp ignores
+            # Authorization, so a placeholder satisfies the OpenAI client path.
+            base = (os.getenv("LOCAL_LLM_BASE") or "http://127.0.0.1:8080/v1").rstrip("/")
+            return await _call_openai(f"{base}/chat/completions", os.getenv("LOCAL_LLM_KEY") or "sk-local",
+                                      "Local", model, messages, temperature, max_tokens, timeout)
         if family in _OAI_COMPAT:
             base_env, base_default, key_env = _OAI_COMPAT[family]
             base = (os.getenv(base_env) or base_default).rstrip("/")

@@ -63,6 +63,27 @@ def worker_registry() -> dict[str, dict[str, Any]]:
     }
 
 
+def cheap_worker() -> dict[str, Any]:
+    """A cheap, high-volume classifier worker.
+
+    When a local OpenAI-compatible model is configured (``LOCAL_LLM_BASE``, e.g. a
+    llama.cpp/Ollama server), routine classification (mail triage, transaction
+    categorisation, lead scoring) runs there for ~$0 instead of the metered council
+    model — the council stays for hard reasoning. Falls back to the primary worker
+    when no local model is set, so callers can always use it safely (no-op default).
+    """
+    if os.getenv("LOCAL_LLM_BASE"):
+        return {
+            "provider": "Local",
+            "model": os.getenv("LOCAL_LLM_MODEL") or "local-model",
+            "family": "local",
+            "specialization": "CHEAP_CLASSIFIER",
+            "voteWeight": 1.0,
+            "enabled": True,
+        }
+    return worker_registry()["primary"]
+
+
 _COMMON = {
     "primaryWorker": "primary",
     "reviewers": ["reviewer_1", "reviewer_2"],
