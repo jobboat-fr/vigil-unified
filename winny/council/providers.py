@@ -163,6 +163,52 @@ async def ask(
         return _stub(model, family, f"transport error: {exc}")
 
 
+# ── Cheap tier: multi-provider router with failover + a rate-limit ledger ───────
+# Engineering adapted from freellmapi (provider adapters + per-provider cooldown +
+# automatic failover), reimplemented here — no dependency on that service. Used for
+# high-volume classification (mail triage, txn categorisation, lead scoring).
+import time as _time
+
+_cheap_cooldowns: dict[str, float] = {}
+_CHEAP_COOLDOWN_S = 120.0  # park a provider that errored/rate-limited for 2 min
+
+
+def _cheap_key(w: dict[str, Any]) -> str:
+    return f"{w.get('family')}:{w.get('model')}"
+
+
+async def ask_cheap(
+    user_prompt: str,
+    *,
+    system: str | None = None,
+    temperature: float = 0.2,
+    max_tokens: int = 400,
+    timeout: float = DEFAULT_TIMEOUT,
+) -> dict[str, Any]:
+    """Try the cheap pool in order, failing over past any provider that returns a
+    stub (missing key / transport error / rate-limit), which is parked on a cooldown.
+    Returns the first real result, else the last stub. Never raises."""
+    from winny.council.registry import cheap_pool, worker_registry
+
+    pool = cheap_pool()
+    now = _time.monotonic()
+    last: dict[str, Any] | None = None
+    for w in pool:
+        if _cheap_cooldowns.get(_cheap_key(w), 0.0) > now:
+            continue
+        res = await ask(w, user_prompt, system=system, temperature=temperature, max_tokens=max_tokens, timeout=timeout)
+        last = res
+        if not res.get("stub"):
+            _cheap_cooldowns.pop(_cheap_key(w), None)  # healthy again
+            return res
+        _cheap_cooldowns[_cheap_key(w)] = now + _CHEAP_COOLDOWN_S
+    if last is not None:
+        return last
+    # Every provider was on cooldown (or the pool was empty) — fall back to primary.
+    return await ask(worker_registry()["primary"], user_prompt, system=system,
+                     temperature=temperature, max_tokens=max_tokens, timeout=timeout)
+
+
 class _MissingKey(RuntimeError):
     pass
 

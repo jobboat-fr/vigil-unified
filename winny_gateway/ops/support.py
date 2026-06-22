@@ -17,8 +17,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from winny.council.providers import ask
-from winny.council.registry import cheap_worker
+from winny.council.providers import ask_cheap
 from winny.council.summarizer import _parse_json
 from winny_gateway.db import db_insert, db_select, db_update
 
@@ -42,7 +41,7 @@ async def classify_message(msg: dict[str, Any]) -> tuple[dict[str, Any], float]:
         f"{(msg.get('body') or msg.get('snippet') or '')[:2000]}\n\n"
         "Classify it. Respond ONLY with the JSON object."
     )
-    result = await ask(cheap_worker(), prompt, system=_TRIAGE_SYSTEM, temperature=0.2, max_tokens=400)
+    result = await ask_cheap(prompt, system=_TRIAGE_SYSTEM, temperature=0.2, max_tokens=400)
     plan = _parse_json(result.get("output", "")) or {}
     try:
         cost = float(result.get("cost_usd") or 0.0)

@@ -16,8 +16,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from winny.council.providers import ask
-from winny.council.registry import cheap_worker, worker_registry
+from winny.council.providers import ask, ask_cheap
+from winny.council.registry import worker_registry
 from winny.council.summarizer import _parse_json
 from winny_gateway.db import db_insert, db_select, db_update
 from winny_gateway.integrations import finance_connect
@@ -41,7 +41,7 @@ async def classify_txn(txn: dict[str, Any]) -> tuple[str, float]:
         f"Amount: {txn.get('amount')}\nCurrency: {txn.get('currency') or 'USD'}\n\n"
         "Classify it. Respond ONLY with the JSON object."
     )
-    result = await ask(cheap_worker(), prompt, system=_SYSTEM, temperature=0.2, max_tokens=200)
+    result = await ask_cheap(prompt, system=_SYSTEM, temperature=0.2, max_tokens=200)
     plan = _parse_json(result.get("output", "")) or {}
     cat = plan.get("category") if plan.get("category") in FINANCE_CATEGORIES else "other"
     try:

@@ -84,6 +84,40 @@ def cheap_worker() -> dict[str, Any]:
     return worker_registry()["primary"]
 
 
+def _worker_from_spec(spec: str) -> dict[str, Any]:
+    """Parse a cheap-pool spec like 'local', 'groq:llama-3.1-8b-instant',
+    'hf:openai/gpt-oss-20b' into a worker dict."""
+    spec = spec.strip()
+    fam, _, model = spec.partition(":")
+    fam = (fam or "").lower()
+    if fam == "local":
+        return {"provider": "Local", "family": "local",
+                "model": model or os.getenv("LOCAL_LLM_MODEL") or "local-model", "voteWeight": 1.0, "enabled": True}
+    if fam in ("hf", "huggingface"):
+        return {"provider": "HuggingFace", "family": "huggingface",
+                "model": model or "openai/gpt-oss-20b", "voteWeight": 1.0, "enabled": True}
+    return {"provider": fam.title(), "family": fam, "model": model, "voteWeight": 1.0, "enabled": True}
+
+
+def cheap_pool() -> list[dict[str, Any]]:
+    """Ordered list of cheap providers for high-volume classification, tried with
+    failover by ``providers.ask_cheap``.
+
+    ``CHEAP_POOL`` (comma-separated specs) overrides; otherwise: a local model first
+    (if ``LOCAL_LLM_BASE`` is set), then a paid-cheap HF fallback so there is always a
+    working tier. Commercial note: free third-party tiers must not serve paying
+    tenants (ToS) — keep those out of the pool when serving customers.
+    """
+    raw = os.getenv("CHEAP_POOL", "").strip()
+    if raw:
+        return [_worker_from_spec(s) for s in raw.split(",") if s.strip()]
+    pool: list[dict[str, Any]] = []
+    if os.getenv("LOCAL_LLM_BASE"):
+        pool.append(_worker_from_spec("local"))
+    pool.append(_worker_from_spec(f"hf:{os.getenv('CHEAP_HF_MODEL', 'openai/gpt-oss-20b')}"))
+    return pool
+
+
 _COMMON = {
     "primaryWorker": "primary",
     "reviewers": ["reviewer_1", "reviewer_2"],
