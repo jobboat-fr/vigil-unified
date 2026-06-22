@@ -422,6 +422,20 @@ export interface FinanceConnectStatus {
 export interface ConnectProvider {
   id: string;
   kind: string;
+  actions?: { action: string; params: string[]; label?: string }[];
+}
+export interface OutboundAction {
+  id: string;
+  provider: string;
+  connection_id: string | null;
+  action: string;
+  params: Record<string, unknown>;
+  status: "pending" | "executed" | "rejected" | "failed";
+  result: Record<string, unknown> | null;
+  error: string | null;
+  department_id: string | null;
+  requested_by: string;
+  created_at: string;
 }
 export interface Connection {
   id: string;
@@ -448,6 +462,12 @@ export const vigil = {
       vigilCall<Record<string, unknown>>("POST", `/v1/connect/${provider}/sync`, { connection_id }),
     disconnect: (id: string) =>
       vigilCall<{ disconnected: string }>("DELETE", `/v1/connect/connections/${id}`),
+    actions: (status?: string) =>
+      vigilCall<{ actions: OutboundAction[] }>("GET", `/v1/connect/actions${status ? `?status=${status}` : ""}`),
+    propose: (connection_id: string, action: string, params: Record<string, unknown>) =>
+      vigilCall<{ action: OutboundAction }>("POST", "/v1/connect/actions", { connection_id, action, params }),
+    approve: (id: string) => vigilCall<{ action: OutboundAction }>("POST", `/v1/connect/actions/${id}/approve`),
+    reject: (id: string) => vigilCall<{ action: OutboundAction }>("POST", `/v1/connect/actions/${id}/reject`),
   },
   ops: {
     departments: () => vigilCall<{ departments: Department[] }>("GET", "/v1/ops/departments"),

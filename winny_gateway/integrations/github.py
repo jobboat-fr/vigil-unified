@@ -24,6 +24,25 @@ def _auth(token: str) -> dict[str, str]:
 class GitHubConnector(Connector):
     provider = "github"
     kind = "engineering"
+    supported_actions = [{"action": "create_issue", "params": ["repo", "title", "body"], "label": "Open issue"}]
+
+    async def act(self, action: str, params: dict[str, Any], conn: dict[str, Any], token: str) -> dict[str, Any]:
+        if action != "create_issue":
+            return await super().act(action, params, conn, token)
+        repo = (params.get("repo") or "").strip()   # "owner/name"
+        title = (params.get("title") or "").strip()
+        if not repo or not title:
+            raise ConnectorError("create_issue requires 'repo' (owner/name) and 'title'", code="bad_params", status=400)
+        try:
+            async with httpx.AsyncClient(timeout=20) as c:
+                r = await c.post(f"{_API}/repos/{repo}/issues",
+                                 headers=_auth(token), json={"title": title, "body": params.get("body") or ""})
+        except httpx.HTTPError as exc:
+            raise ConnectorError(f"GitHub unreachable: {exc}", code="network", status=502) from exc
+        if r.status_code >= 400:
+            raise ConnectorError(f"GitHub create_issue HTTP {r.status_code}", code="github_error", status=502)
+        issue = r.json()
+        return {"issue_url": issue.get("html_url"), "number": issue.get("number")}
 
     async def verify_token(self, token: str, account: str | None = None) -> dict[str, Any]:
         try:

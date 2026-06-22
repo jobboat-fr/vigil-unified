@@ -75,3 +75,44 @@ async def disconnect(connection_id: str, user: dict = Depends(get_current_user))
     if not await connector.disconnect(_uid(user), connection_id):
         raise HTTPException(status_code=http.HTTP_404_NOT_FOUND, detail={"error": "connection_not_found"})
     return {"ok": True, "data": {"disconnected": connection_id}}
+
+
+# ── Outbound write-actions (owner-gated: propose → human approves → execute) ────
+class ActionBody(BaseModel):
+    connection_id: str = Field(..., min_length=1)
+    action: str = Field(..., min_length=1)
+    params: dict[str, Any] = Field(default_factory=dict)
+
+
+@router.get("/actions")
+async def list_actions(status: str | None = None, user: dict = Depends(get_current_user)) -> dict[str, Any]:
+    return {"ok": True, "data": {"actions": await connector.list_actions(_uid(user), status)}}
+
+
+@router.post("/actions")
+async def propose_action(body: ActionBody, user: dict = Depends(get_current_user)) -> dict[str, Any]:
+    """Queue a pending outbound action (never executes here)."""
+    try:
+        a = await connector.propose_action(_uid(user), body.connection_id, body.action, body.params, requested_by="user")
+    except ConnectorError as exc:
+        raise _guard(exc)
+    return {"ok": True, "data": {"action": a}}
+
+
+@router.post("/actions/{action_id}/approve")
+async def approve_action(action_id: str, user: dict = Depends(get_current_user)) -> dict[str, Any]:
+    """Human-in-the-loop: approve → execute the action through its connector."""
+    try:
+        a = await connector.approve_action(_uid(user), action_id)
+    except ConnectorError as exc:
+        raise _guard(exc)
+    return {"ok": True, "data": {"action": a}}
+
+
+@router.post("/actions/{action_id}/reject")
+async def reject_action(action_id: str, user: dict = Depends(get_current_user)) -> dict[str, Any]:
+    try:
+        a = await connector.reject_action(_uid(user), action_id)
+    except ConnectorError as exc:
+        raise _guard(exc)
+    return {"ok": True, "data": {"action": a}}

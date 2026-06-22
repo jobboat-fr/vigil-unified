@@ -11,6 +11,8 @@ from __future__ import annotations
 import asyncio
 import email
 import imaplib
+import smtplib
+from email.message import EmailMessage
 from email.utils import parseaddr, parsedate_to_datetime
 from typing import Any
 
@@ -87,9 +89,38 @@ def _fetch_messages(account: str, password: str, limit: int = 30) -> list[dict[s
     return out
 
 
+def _send_email(account: str, password: str, to: str, subject: str, body: str, in_reply_to: str | None) -> None:  # blocking
+    msg = EmailMessage()
+    msg["From"] = account
+    msg["To"] = to
+    msg["Subject"] = subject or ""
+    if in_reply_to:
+        msg["In-Reply-To"] = in_reply_to
+        msg["References"] = in_reply_to
+    msg.set_content(body or "")
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as s:
+        s.login(account, password)
+        s.send_message(msg)
+
+
 class GmailConnector(Connector):
     provider = "gmail"
     kind = "email"
+    supported_actions = [{"action": "send", "params": ["to", "subject", "body"], "label": "Send email"}]
+
+    async def act(self, action: str, params: dict[str, Any], conn: dict[str, Any], token: str) -> dict[str, Any]:
+        if action != "send":
+            return await super().act(action, params, conn, token)
+        account = conn.get("external_account")
+        to = (params.get("to") or "").strip()
+        if not account or not to:
+            raise ConnectorError("send requires a connected account and a 'to' address", code="bad_params", status=400)
+        try:
+            await asyncio.to_thread(_send_email, account, token, to, params.get("subject") or "",
+                                    params.get("body") or "", params.get("in_reply_to"))
+        except Exception as exc:  # noqa: BLE001
+            raise ConnectorError(f"Gmail send failed: {exc}", code="send_failed", status=502) from exc
+        return {"sent_to": to}
 
     async def verify_token(self, token: str, account: str | None = None) -> dict[str, Any]:
         if not account or "@" not in account:
