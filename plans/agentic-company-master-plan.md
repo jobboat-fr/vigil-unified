@@ -29,6 +29,46 @@ governed by our own thin spine, powered by Hermes-core skills + tools, and grown
 
 ---
 
+## 0a. Commercial reality — this is multi-tenant SaaS
+
+This is a **product sold to companies**, not the owner's internal tool. Each customer
+is a **tenant** running *their own* company of agents. This is a governing constraint;
+several recommendations above change because of it.
+
+- **Tenant isolation (already true — keep absolute):** every table is `user_id`/tenant
+  -scoped via RLS + the gateway scope-guard; departments, connections, artifacts, and
+  secrets all seed and scope per tenant.
+- **Platform vs tenant credentials (correction):** connector *app* credentials (Plaid
+  `client_id/secret`; OAuth app keys for GitHub/Gmail/HubSpot) are **ours — one set in a
+  secrets manager**, not per-customer and not the per-user "keys-from-UI" (that is for our
+  operator/admin config only). A tenant authorizes via **OAuth / Plaid-Link** → a per-tenant
+  **access token** (encrypted, least-privilege scopes).
+- **Inference tier (correction):** **free LLM tiers must NOT serve paying tenants** (ToS
+  prohibit commercial resale; rate-limited/unreliable). The freellmapi engineering is for
+  *internal* tooling only. Customer-serving cheap tier = **self-hosted llama.cpp on our
+  infra** or a **paid** cheap model; hard reasoning = HF/paid. Cost is metered per tenant.
+- **Autonomy default (correction to §0/earlier):** acting autonomously on a *customer's*
+  money/email/contracts is a liability surface. Commercial default = **approval-gated for
+  irreversible/outbound actions, configurable per tenant/plan**. We already have the
+  owner-gate + acceptance + kill-switch to support either mode.
+- **Cost · metering · plan gating (new):** per-tenant usage metering (council cost is
+  already tracked per call) → **billing**; spend caps and which departments/connectors are
+  enabled become **plan-derived**, not hardcoded.
+- **Scaling (new risk):** "departments → per-tenant Hermes profiles on one OVH box" does
+  **not** scale to N tenants × M departments. The governed **gateway** (stateless,
+  horizontally scalable) stays the runtime; Hermes core provides **pooled** skills/tools.
+  Phase 6 is reframed accordingly (skills/tools pooled, not per-tenant OVH profiles).
+- **Onboarding / self-serve (new):** sign-up → provision tenant departments (per-user
+  seeding exists) → **OAuth connect** each system of record → run. No operator pasting keys
+  per customer.
+- **Compliance & security (new, now blocking):** GDPR data export/deletion, encryption
+  at rest (RLS + Fernet present), **secret rotation** (secrets exposed in dev chat are a
+  commercial blocker — rotate before launch), least-privilege connector scopes, and a
+  SOC2 trajectory for selling to businesses. Connectors hold tenants' bank/email tokens —
+  the highest-value attack surface; treat accordingly.
+
+---
+
 ## 1. How the ecosystem works inside Hermes
 
 The company is a **closed loop**: meetings produce structured artifacts + commitments
@@ -209,9 +249,10 @@ We **read → reimplement/adapt**; nothing becomes a runtime dependency.
 - **Phase 0 — Connector kit.** Generalise the Plaid connector (encrypted creds · sync ·
   idempotency · status/keys) into a reusable base so GitHub / Gmail / HubSpot are each a
   thin adapter we own. *(Replaces the n8n idea.)*
-- **Phase 1 — Free-pool inference router.** Adapt freellmapi's engineering into
-  `providers.py` (multi free-tier providers + rate-limit ledger + failover) behind the
-  cheap-tier. Our keys, our code.
+- **Phase 1 — Cheap inference tier.** *Internal:* adapt freellmapi's engineering
+  (multi-provider + rate-limit ledger + failover) into `providers.py` for our own dev/ops
+  classification. *Customer-serving (commercial):* **self-hosted llama.cpp on our infra**
+  or a **paid** cheap model — never free tiers (ToS). Cost metered per tenant.
 - **Phase 2 — Finance deep skill + exact math.** `finance_calc.py` (clean-room) +
   double-entry + P&L/BS/CF, fronted by a Finance `SKILL.md` adapting cfo-stack's SOP.
 - **Phase 3 — Legal grounded verification.** Adapt lavern's doc-parser + multi-pass
@@ -220,10 +261,14 @@ We **read → reimplement/adapt**; nothing becomes a runtime dependency.
   OneWave + SDR engineering.
 - **Phase 5 — SOP rigor.** Fold MetaGPT/AutoGen role-SOP + consensus/termination into the
   department contracts + handoffs.
-- **Phase 6 — Graduate departments to Hermes profiles.** Each department = a Hermes
-  profile (our skills + our MCP tools + model + soul); the gateway `run_job` dispatches
-  the profile via the ops proxy instead of a bespoke handler. Acceptance / handoff /
-  owner-gate stay in the gateway. **This is the migration off bespoke handlers.**
+- **Phase 6 — Pool Hermes skills/tools behind the gateway (multi-tenant).** Capability
+  (skills + MCP tools) lives in Hermes core as a **shared, pooled** resource; the gateway
+  stays the per-tenant runtime and dispatches it with tenant-scoped creds. **Not** a
+  per-tenant Hermes profile on one OVH box (doesn't scale). Acceptance / handoff /
+  owner-gate stay in the gateway. The bespoke handlers thin out as skills/tools mature.
+- **Phase 7 — Commercial hardening.** Per-tenant OAuth onboarding, usage metering →
+  billing + plan gating, approval-gated autonomy default, GDPR export/deletion, secret
+  rotation, least-privilege connector scopes, SOC2 trajectory. (See §0a.)
 
 ---
 
