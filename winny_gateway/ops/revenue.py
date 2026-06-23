@@ -18,6 +18,7 @@ from typing import Any
 from winny.council.providers import ask
 from winny.council.registry import worker_registry
 from winny_gateway.db import db_insert, db_select
+from winny_gateway.integrations import connector
 
 STALLED_STAGES = ["proposal", "negotiation"]
 
@@ -55,7 +56,17 @@ async def run(uid: str, inp: dict[str, Any]) -> dict[str, Any]:
         for d in existing if isinstance(d.get("metadata"), dict)
     }
 
+    # If the tenant has connected Gmail, we'll PROPOSE a send for each draft — pending
+    # human approval (never auto-sent). Best-effort; no connection = drafts only.
+    gmail_cid: str | None = None
+    try:
+        gconns = await connector.list_connections(uid, "gmail")
+        gmail_cid = gconns[0]["id"] if gconns else None
+    except Exception:  # noqa: BLE001
+        gmail_cid = None
+
     drafted: list[str] = []
+    proposed = 0
     cost = 0.0
     calls = 0
     for d in stalled:
@@ -68,27 +79,36 @@ async def run(uid: str, inp: dict[str, Any]) -> dict[str, Any]:
         body, c = await draft_followup(d, contact)
         cost += c
         calls += 1
+        to = contact["email"] if contact and contact.get("email") else None
+        subject = f"Following up: {d.get('title') or 'our conversation'}"
         await db_insert("mail_drafts", {
-            "user_id": uid,
-            "to_addrs": [contact["email"]] if contact and contact.get("email") else [],
-            "subject": f"Following up: {d.get('title') or 'our conversation'}",
-            "body": body,
-            "status": "draft",
-            "metadata": {"deal_id": d["id"], "source": "revenue_dept"},
+            "user_id": uid, "to_addrs": [to] if to else [], "subject": subject, "body": body,
+            "status": "draft", "metadata": {"deal_id": d["id"], "source": "revenue_dept"},
         })
         drafted.append(d["id"])
+        if gmail_cid and to:
+            try:
+                await connector.propose_action(uid, gmail_cid, "send",
+                                                {"to": to, "subject": subject, "body": body},
+                                                requested_by="agent")
+                proposed += 1
+            except Exception:  # noqa: BLE001 — proposing is additive, never fail the run
+                pass
 
+    summary = f"Drafted {len(drafted)} follow-ups for stalled deals"
+    if proposed:
+        summary += f", proposed {proposed} sends (pending approval)"
     art = await db_insert("artifacts", {
         "user_id": uid, "title": f"Pipeline follow-ups — {len(drafted)} deals",
         "kind": "report", "brief": "Revenue follow-up run", "approach": "",
-        "text_dump": f"# Pipeline follow-ups\n\nDrafted **{len(drafted)}** follow-ups for stalled deals (review-then-send).",
+        "text_dump": f"# Pipeline follow-ups\n\n{summary}.",
         "status": "draft", "version": 1,
     })
 
     return {
         "artifact_id": (art or {}).get("id"),
-        "summary": f"Drafted {len(drafted)} follow-ups for stalled deals",
-        "metrics": {"cost_usd": round(cost, 4), "tool_calls": calls, "drafted": len(drafted)},
+        "summary": summary,
+        "metrics": {"cost_usd": round(cost, 4), "tool_calls": calls, "drafted": len(drafted), "proposed": proposed},
         "targeted_ids": drafted,
     }
 
