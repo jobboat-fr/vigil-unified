@@ -13,6 +13,7 @@ orchestration here handle persistence, masking, idempotency, and scoping.
 """
 from __future__ import annotations
 
+import asyncio
 from abc import ABC, abstractmethod
 from datetime import UTC, datetime
 from typing import Any
@@ -154,14 +155,19 @@ async def sync_kind(uid: str, kind: str) -> dict[str, Any]:
     for a tenant. Used by departments to pull fresh system-of-record data before a run;
     never raises — a provider error is recorded on its connection and skipped."""
     rows = await db_select(_TABLE, filters={"user_id": uid, "kind": kind}, limit=50)
-    synced = 0
-    for r in rows:
+
+    async def _one(r: dict[str, Any]) -> bool:
         try:
             await run_sync(uid, r["id"])
-            synced += 1
+            return True
         except ConnectorError as exc:
             logger.info("connector.sync_kind skip %s/%s: %s", kind, r.get("provider"), exc.code)
-    return {"synced": synced}
+            return False
+
+    # Connections of the same kind are independent (distinct providers/tokens) —
+    # sync them concurrently so a multi-connection tenant isn't serialised on I/O.
+    results = await asyncio.gather(*(_one(r) for r in rows)) if rows else []
+    return {"synced": sum(results)}
 
 
 # ── Outbound write-actions (owner-gated: propose ≠ execute) ─────────────────────

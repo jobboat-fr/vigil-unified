@@ -10,6 +10,7 @@ can persist job templates (ops_jobs) and dispatch to Hermes profiles instead.
 """
 from __future__ import annotations
 
+import asyncio
 import time
 from datetime import UTC, datetime
 from typing import Any, Awaitable, Callable
@@ -326,11 +327,13 @@ async def run_job(
     # ── Pull fresh system-of-record data (best-effort) ──────────────────────
     # A department syncs its connected providers (e.g. Support→email, Revenue→crm)
     # before working, so it acts on live data. Never fails the run.
-    for kind in (spec.get("sync_kinds") or []):
-        try:
-            await connector.sync_kind(uid, kind)
-        except Exception as exc:  # noqa: BLE001
-            logger.info("ops.presync skip dept=%s kind=%s: %s", dept_row["slug"], kind, exc)
+    kinds = spec.get("sync_kinds") or []
+    if kinds:
+        outcomes = await asyncio.gather(
+            *(connector.sync_kind(uid, k) for k in kinds), return_exceptions=True)
+        for k, res in zip(kinds, outcomes):
+            if isinstance(res, Exception):
+                logger.info("ops.presync skip dept=%s kind=%s: %s", dept_row["slug"], k, res)
 
     # ── Run handler + acceptance, enforce budget ────────────────────────────
     handler: Handler = job["handler"]

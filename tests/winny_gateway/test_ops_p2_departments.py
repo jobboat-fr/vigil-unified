@@ -290,12 +290,19 @@ def test_lead_scout_hands_off_to_revenue(client):
 
 def test_operations_digest_reconciles(client):
     client.db._t("commitments").extend([
-        {"id": "c1", "org_id": "u1", "status": "open", "text": "ship"},
+        {"id": "c1", "org_id": "u1", "status": "open", "text": "ship", "source": "notion"},
         {"id": "c2", "org_id": "u1", "status": "done", "text": "done"},
+        {"id": "c3", "org_id": "u1", "status": "open", "text": "call", "room_id": "r1"},
+        {"id": "c4", "org_id": "u1", "status": "open", "text": "overdue", "source": "notion",
+         "due_at": "2020-01-01T00:00:00Z"},
     ])
     did = _dept(client, "operations")["id"]
     task = _data(client.post(f"/v1/ops/departments/{did}/run", json={"job": "digest"}))["task"]
     assert task["accepted"] is True
+    art = next(a for a in client.db.tables["artifacts"] if a["kind"] == "report")
+    assert "3 open items" in art["title"]                  # 3 open, 1 done excluded
+    assert "notion: 2" in art["text_dump"] and "meeting: 1" in art["text_dump"]  # by source
+    assert "1 overdue" in art["text_dump"]                  # due_at in the past
 
 
 def test_chief_of_staff_routes_the_whole_company(client):
