@@ -167,6 +167,19 @@ def test_legal_precedent_board_stores_and_feeds_back(client, monkeypatch):
     assert "Prior findings (precedent board" in seen_context[-1]
 
 
+def test_legal_multipass_blocks_low_confidence(client, monkeypatch):
+    client.db._t("vault_documents").append({"id": "vd1", "user_id": "u1", "title": "NDA", "summary": "x", "extracted_text": "x"})
+    did = _dept(client, "legal")["id"]
+
+    async def grounded(_q, _ctx): return ("Risk [doc:vd1].", ["vd1"], 0.001)
+    async def doubt(_memo, _ctx): return ({"confidence": 0.2, "flags": ["clause overstated"]}, 0.001)
+    monkeypatch.setattr(legal_mod, "review", grounded)
+    monkeypatch.setattr(legal_mod, "verify", doubt)
+
+    task = _data(client.post(f"/v1/ops/departments/{did}/run", json={"job": "review"}))["task"]
+    assert task["accepted"] is False    # grounded, but the verification pass flagged it → blocked
+
+
 def test_legal_vacuous_when_no_documents(client):
     did = _dept(client, "legal")["id"]
     task = _data(client.post(f"/v1/ops/departments/{did}/run", json={"job": "review"}))["task"]

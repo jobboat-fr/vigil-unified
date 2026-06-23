@@ -14,6 +14,7 @@ from typing import Any
 
 from winny.council.providers import ask
 from winny.council.registry import worker_registry
+from winny.council.summarizer import _parse_json
 from winny_gateway.db import db_insert, db_select
 
 _CITE = re.compile(r"\[doc:([0-9a-fA-F-]{6,})\]")
@@ -37,6 +38,36 @@ async def review(query: str, context: str) -> tuple[str, list[str], float]:
     except (TypeError, ValueError):
         cost = 0.0
     return memo, cited, cost
+
+
+_VERIFY_SYSTEM = (
+    "You are an adversarial legal reviewer verifying a colleague's memo against the "
+    "source documents. Check every claim is supported by a cited [doc:<id>] in the "
+    "sources; flag overreach, unsupported assertions, or invented facts. Respond ONLY "
+    'with JSON: {"confidence": 0.0-1.0, "flags": ["short issue", ...]}'
+)
+
+
+async def verify(memo: str, context: str) -> tuple[dict[str, Any], float]:
+    """Second pass: adversarially verify the memo against the sources. Returns a
+    {confidence, flags} verdict. Defaults to pass (1.0) when it can't parse a verdict,
+    so it only ever BLOCKS on an explicit low-confidence result."""
+    prompt = f"Memo:\n{memo}\n\nSource documents:\n{context}\n\nVerify it. Respond ONLY with the JSON object."
+    result = await ask(worker_registry()["primary"], prompt, system=_VERIFY_SYSTEM, temperature=0.1, max_tokens=400)
+    if result.get("stub"):
+        # No verifier model available — don't block; the grounding gate still applies.
+        return {"confidence": 1.0, "flags": []}, 0.0
+    plan = _parse_json(result.get("output", "")) or {}
+    try:
+        conf = max(0.0, min(1.0, float(plan.get("confidence"))))
+    except (TypeError, ValueError):
+        conf = 1.0
+    flags = plan.get("flags") if isinstance(plan.get("flags"), list) else []
+    try:
+        cost = float(result.get("cost_usd") or 0.0)
+    except (TypeError, ValueError):
+        cost = 0.0
+    return {"confidence": conf, "flags": [str(f)[:160] for f in flags[:10]]}, cost
 
 
 async def run(uid: str, inp: dict[str, Any]) -> dict[str, Any]:
@@ -74,10 +105,18 @@ async def run(uid: str, inp: dict[str, Any]) -> dict[str, Any]:
     memo, cited, cost = await review(query, context)
     real_cited = [c for c in cited if c in doc_ids]   # keep only citations to real documents
 
+    # Multi-pass: adversarially verify the memo against the sources.
+    verdict, vcost = await verify(memo, context)
+    cost += vcost
+
+    full_memo = memo + (
+        f"\n\n---\n**Verification** — confidence {verdict['confidence']:.2f}"
+        + ("\n- " + "\n- ".join(verdict["flags"]) if verdict["flags"] else " · no flags")
+    )
     art = await db_insert("artifacts", {
         "user_id": uid, "title": f"Legal review — {len(docs)} documents", "kind": "report",
-        "brief": "Legal review (grounded in the Vault)", "approach": "",
-        "text_dump": memo, "status": "draft", "version": 1,
+        "brief": "Legal review (grounded + verified)", "approach": "",
+        "text_dump": full_memo, "status": "draft", "version": 1,
     })
 
     # Record this finding on the precedent board (only when grounded).
@@ -88,10 +127,11 @@ async def run(uid: str, inp: dict[str, Any]) -> dict[str, Any]:
 
     return {
         "artifact_id": (art or {}).get("id"),
-        "summary": f"Reviewed {len(docs)} company documents, cited {len(real_cited)}",
-        "metrics": {"cost_usd": round(cost, 4), "tool_calls": 1, "docs": len(docs)},
+        "summary": f"Reviewed {len(docs)} docs, cited {len(real_cited)}, verified (confidence {verdict['confidence']:.2f})",
+        "metrics": {"cost_usd": round(cost, 4), "tool_calls": 2, "docs": len(docs)},
         "doc_ids": doc_ids,
         "cited_ids": real_cited,
+        "verdict": verdict,
         "precedents_used": len(precedents),
     }
 
@@ -102,4 +142,9 @@ async def acceptance(uid: str, _inp: dict[str, Any], result: dict[str, Any]) -> 
     cited = result.get("cited_ids") or []
     if not cited:
         return {"accepted": False, "reason": "memo cited no real document — ungrounded"}
-    return {"accepted": True, "reason": f"grounded in {len(cited)} cited documents"}
+    verdict = result.get("verdict") or {}
+    conf = float(verdict.get("confidence", 1.0))
+    if conf < 0.5:
+        flags = ", ".join(verdict.get("flags") or [])
+        return {"accepted": False, "reason": f"failed verification (confidence {conf:.2f}): {flags[:200]}"}
+    return {"accepted": True, "reason": f"grounded in {len(cited)} docs, verified (confidence {conf:.2f})"}
