@@ -16,6 +16,7 @@ from pydantic import BaseModel, Field
 from winny_gateway.auth import get_current_user
 from winny_gateway.db import db_insert, db_select, db_update
 from winny_gateway.logging import get_logger
+from winny_gateway.ops import billing
 from winny_gateway.ops.engine import (
     DEPARTMENTS,
     GuardrailError,
@@ -108,12 +109,24 @@ class RunBody(BaseModel):
 
 
 async def _dispatch(uid: str, dept: dict[str, Any], job: str, inp: dict[str, Any], trigger: str) -> dict[str, Any]:
+    # Plan quota gate (commercial model) — refuse over the plan's daily run cap.
+    allowed, usage = await billing.check_run_quota(uid)
+    if not allowed:
+        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                            detail={"error": "quota_exceeded", "plan": usage["plan"],
+                                    "daily_cap": usage["daily_cap"], "runs_today": usage["runs_today"]})
     try:
         task = await run_job(uid, dept, job, inp, trigger=trigger)
     except GuardrailError as exc:
         # 409: the run was refused by a guardrail (paused / cap), not a server error.
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail={"error": exc.code, "message": exc.message})
     return {"ok": True, "data": {"task": task}}
+
+
+@router.get("/usage")
+async def usage(user: dict = Depends(get_current_user)) -> dict[str, Any]:
+    """The tenant's plan + this period's usage (runs today/month, cost, cap)."""
+    return {"ok": True, "data": await billing.usage_summary(_uid(user))}
 
 
 @router.post("/departments/{dept_id}/run")
