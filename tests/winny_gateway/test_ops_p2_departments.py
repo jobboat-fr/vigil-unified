@@ -180,6 +180,43 @@ def test_council_consensus_blocks_on_dissent(monkeypatch):
     assert out["confidence"] == 0.333 and out["decision"] is False   # the panel did not agree
 
 
+def test_hermes_dispatch_unconfigured_is_unavailable(monkeypatch):
+    from winny_gateway.integrations import hermes_dispatch as hd
+    monkeypatch.delenv("OPS_DASHBOARD_URL", raising=False)
+    monkeypatch.delenv("OPS_GATE_SECRET", raising=False)
+    assert hd.available() is False   # → engine always uses the local handler
+
+
+def test_engine_graduates_job_to_hermes_then_falls_back(client, monkeypatch):
+    eng = engine_mod
+    eng.DEPARTMENTS["finance"]["jobs"]["report"]["hermes_skill"] = "finance.report"
+    try:
+        # 1) Hermes available + returns a valid result → engine routes through it.
+        called: dict[str, Any] = {}
+
+        async def fake_run_skill(uid, skill, payload):
+            called["skill"] = skill
+            return {"summary": "via hermes",
+                    "figures": {"pnl": {"net_income": 0, "by_category": {}}},
+                    "metrics": {"cost_usd": 0.0, "tool_calls": 0}}
+        monkeypatch.setattr(eng.hermes_dispatch, "available", lambda: True)
+        monkeypatch.setattr(eng.hermes_dispatch, "run_skill", fake_run_skill)
+        did = _dept(client, "finance")["id"]
+        task = _data(client.post(f"/v1/ops/departments/{did}/run", json={"job": "report"}))["task"]
+        assert called["skill"] == "finance.report" and task["status"] == "done"
+
+        # 2) Hermes raises → falls back to the in-gateway handler (still computes).
+        async def boom(_u, _s, _p): raise RuntimeError("ovh down")
+        monkeypatch.setattr(eng.hermes_dispatch, "run_skill", boom)
+        for i, (amt, cat) in enumerate([(1000.0, "revenue"), (-300.0, "software")]):
+            client.db._t("finance_transactions").append(
+                {"id": f"h{i}", "user_id": "u1", "amount": amt, "category": cat, "status": "reconciled"})
+        task2 = _data(client.post(f"/v1/ops/departments/{did}/run", json={"job": "report"}))["task"]
+        assert task2["status"] == "done"   # local fallback worked despite OVH being down
+    finally:
+        eng.DEPARTMENTS["finance"]["jobs"]["report"].pop("hermes_skill", None)
+
+
 def test_legal_requires_real_citations(client, monkeypatch):
     client.db._t("vault_documents").append({"id": "vd1", "user_id": "u1", "title": "NDA", "summary": "mutual nda", "extracted_text": "x"})
     did = _dept(client, "legal")["id"]

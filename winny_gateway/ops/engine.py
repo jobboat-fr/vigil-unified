@@ -15,7 +15,7 @@ from datetime import UTC, datetime
 from typing import Any, Awaitable, Callable
 
 from winny_gateway.db import db_insert, db_select, db_update
-from winny_gateway.integrations import connector
+from winny_gateway.integrations import connector, hermes_dispatch
 from winny_gateway.logging import get_logger
 from winny_gateway.ops import cos, finance, growth, legal, marketing, operations, revenue, support
 
@@ -334,13 +334,26 @@ async def run_job(
     # ── Run handler + acceptance, enforce budget ────────────────────────────
     handler: Handler = job["handler"]
     accept: Acceptance = job["acceptance"]
+    hermes_skill = job.get("hermes_skill")
     started = time.monotonic()
     error = None
     accepted = False
     reason = ""
     result: dict[str, Any] = {}
     try:
-        result = await handler(uid, job_input)
+        # Phase 6 graduation: route to a pooled Hermes skill when this job opts in
+        # AND OVH is configured; fall back to the in-gateway handler on any failure.
+        result = {}
+        if hermes_skill and hermes_dispatch.available():
+            try:
+                result = await hermes_dispatch.run_skill(
+                    uid, hermes_skill,
+                    {"department": spec["slug"], "job": job_name, "input": job_input})
+            except Exception as exc:  # noqa: BLE001 — graduation must never regress
+                logger.info("ops.hermes_fallback dept=%s job=%s: %s", spec["slug"], job_name, exc)
+                result = {}
+        if not result:
+            result = await handler(uid, job_input)
         verdict = await accept(uid, job_input, result)
         accepted = bool(verdict.get("accepted"))
         reason = str(verdict.get("reason") or "")
