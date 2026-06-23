@@ -19,6 +19,7 @@ from typing import Any
 from winny.council.providers import ask, ask_cheap
 from winny.council.registry import worker_registry
 from winny.council.summarizer import _parse_json
+from winny_gateway.ops import finance_calc as calc
 from winny_gateway.db import db_insert, db_select, db_update
 from winny_gateway.integrations import finance_connect
 from winny_gateway.logging import get_logger
@@ -115,45 +116,21 @@ async def acceptance(uid: str, _inp: dict[str, Any], result: dict[str, Any]) -> 
 
 
 # ── Accountant report ────────────────────────────────────────────────────────
-# The numbers are computed deterministically (LLMs are unreliable at arithmetic);
-# the model only writes narrative commentary over the already-computed figures.
-
-def _compute(rows: list[dict[str, Any]]) -> dict[str, Any]:
-    income = 0.0
-    expense = 0.0  # accumulates as a negative number
-    by_category: dict[str, float] = {}
-    for t in rows:
-        a = float(t.get("amount") or 0)
-        if a >= 0:
-            income += a
-        else:
-            expense += a
-        cat = t.get("category") or "uncategorized"
-        by_category[cat] = round(by_category.get(cat, 0.0) + a, 2)
-    net = round(income + expense, 2)
-    top_expenses = sorted(((k, v) for k, v in by_category.items() if v < 0), key=lambda kv: kv[1])[:5]
-    return {
-        "income": round(income, 2),
-        "expense": round(-expense, 2),       # reported positive
-        "net": net,
-        "by_category": by_category,           # signed; sums to net by construction
-        "top_expenses": [{"category": k, "amount": v} for k, v in top_expenses],
-        "count": len(rows),
-        "uncategorized": sum(1 for t in rows if not t.get("category")),
-    }
-
+# Every figure is computed deterministically (winny_gateway.ops.finance_calc) —
+# income statement, balance sheet, cash flow, and a Benford fraud screen. The model
+# only writes narrative commentary over the already-final numbers.
 
 async def narrate(figures: dict[str, Any]) -> tuple[str, float]:
     import json
     prompt = (
         "Here are the period's FINAL, already-computed figures (do not recompute or "
         f"change any number — reference them):\n{json.dumps(figures, indent=2)}\n\n"
-        "Write a 3-5 sentence CFO commentary: the trend, the biggest cost drivers, any "
-        "concern, and one concrete recommendation. Output prose only."
+        "Write a 3-5 sentence CFO commentary: the trend, the biggest cost drivers, the "
+        "fraud-screen result, and one concrete recommendation. Output prose only."
     )
     result = await ask(worker_registry()["primary"],
                        prompt, system="You are a sharp CFO writing concise commentary over given numbers.",
-                       temperature=0.4, max_tokens=350)
+                       temperature=0.4, max_tokens=400)
     try:
         cost = float(result.get("cost_usd") or 0.0)
     except (TypeError, ValueError):
@@ -162,43 +139,57 @@ async def narrate(figures: dict[str, Any]) -> tuple[str, float]:
 
 
 def _report_md(f: dict[str, Any], commentary: str) -> str:
-    lines = [
+    p, bs, cf, bf = f["pnl"], f["balance_sheet"], f["cash_flow"], f["benford"]
+    return "\n".join([
         "# Accountant report\n",
-        f"- Income: **{f['income']:.2f}**",
-        f"- Expense: **{f['expense']:.2f}**",
-        f"- Net: **{f['net']:.2f}**",
-        f"- Transactions: {f['count']} ({f['uncategorized']} uncategorized)\n",
-        "## Top cost drivers",
-    ]
-    lines += [f"- {e['category']}: {e['amount']:.2f}" for e in f["top_expenses"]] or ["- (none)"]
-    lines += ["\n## Commentary\n", commentary or "_(no commentary)_"]
-    return "\n".join(lines)
+        "## Income statement",
+        f"- Revenue: **{p['revenue']:.2f}**",
+        f"- Expense: **{p['expense']:.2f}**",
+        f"- Net income: **{p['net_income']:.2f}**  (net margin {p['net_margin'] * 100:.1f}%)\n",
+        "## Balance sheet",
+        f"- Assets {bs['assets']:.2f} · Liabilities {bs['liabilities']:.2f} · Equity {bs['equity']:.2f}\n",
+        "## Cash flow",
+        f"- Net cash: **{cf['net_cash']:.2f}**\n",
+        "## Fraud screen (Benford's law)",
+        f"- {bf['conformity']} (MAD {bf['mad']}) — {'⚠ review for fabricated/rounded amounts' if bf['suspicious'] else 'no anomaly'}\n",
+        "## Commentary\n",
+        commentary or "_(no commentary)_",
+    ])
 
 
 async def report(uid: str, inp: dict[str, Any]) -> dict[str, Any]:
-    rows = await db_select("finance_transactions", filters={"user_id": uid}, limit=5000)
-    figures = _compute(rows)
+    txns = await db_select("finance_transactions", filters={"user_id": uid}, limit=5000)
+    accounts = await db_select("finance_accounts", filters={"user_id": uid}, limit=1000)
+    figures = {
+        "pnl": calc.pnl(txns),
+        "balance_sheet": calc.balance_sheet(accounts, txns),
+        "cash_flow": calc.cash_flow(txns),
+        "benford": calc.benford([t.get("amount") for t in txns]),
+        "count": len(txns),
+    }
     commentary, cost = await narrate(figures)
+    net = figures["pnl"]["net_income"]
     art = await db_insert("artifacts", {
-        "user_id": uid, "title": f"Accountant report — net {figures['net']:.2f}",
+        "user_id": uid, "title": f"Accountant report — net {net:.2f}",
         "kind": "report", "brief": "Financial report", "approach": "",
         "text_dump": _report_md(figures, commentary), "status": "draft", "version": 1,
     })
     return {
         "artifact_id": (art or {}).get("id"),
-        "summary": f"Report: income {figures['income']:.2f}, expense {figures['expense']:.2f}, net {figures['net']:.2f}",
+        "summary": f"Report: revenue {figures['pnl']['revenue']:.2f}, net {net:.2f}"
+                   + (" · ⚠ Benford flag" if figures["benford"]["suspicious"] else ""),
         "metrics": {"cost_usd": round(cost, 4), "tool_calls": 1, "transactions": figures["count"]},
         "figures": figures,
     }
 
 
 async def report_acceptance(uid: str, _inp: dict[str, Any], result: dict[str, Any]) -> dict[str, Any]:
-    """The report is accepted only if its category breakdown reconciles to net —
-    a real arithmetic invariant, so a wrong/tampered number fails the gate."""
-    f = result.get("figures") or {}
-    cat_sum = round(sum((f.get("by_category") or {}).values()), 2)
-    net = round(float(f.get("net") or 0), 2)
+    """Accepted only if the income statement's category breakdown reconciles to net
+    income — a real arithmetic invariant, so a wrong/tampered number fails the gate."""
+    p = (result.get("figures") or {}).get("pnl") or {}
+    cat_sum = round(sum((p.get("by_category") or {}).values()), 2)
+    net = round(float(p.get("net_income") or 0), 2)
     ok = abs(cat_sum - net) < 0.01
     return {"accepted": ok,
-            "reason": (f"category sums ({cat_sum}) reconcile to net ({net})" if ok
-                       else f"does NOT reconcile: categories {cat_sum} vs net {net}")}
+            "reason": (f"category sums ({cat_sum}) reconcile to net income ({net})" if ok
+                       else f"does NOT reconcile: categories {cat_sum} vs net income {net}")}

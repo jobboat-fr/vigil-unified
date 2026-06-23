@@ -118,7 +118,7 @@ def test_finance_report_reconciles(client):
 
 def test_finance_report_acceptance_rejects_mismatch():
     import asyncio
-    bad = {"figures": {"net": 500, "by_category": {"a": 100, "b": 100}}}  # sums to 200, not 500
+    bad = {"figures": {"pnl": {"net_income": 500, "by_category": {"a": 100, "b": 100}}}}  # sums to 200, not 500
     verdict = asyncio.run(finance_mod.report_acceptance("u1", {}, bad))
     assert verdict["accepted"] is False
 
