@@ -17,7 +17,7 @@ from typing import Any, Awaitable, Callable
 from winny_gateway.db import db_insert, db_select, db_update
 from winny_gateway.integrations import connector
 from winny_gateway.logging import get_logger
-from winny_gateway.ops import cos, finance, growth, legal, operations, revenue, support
+from winny_gateway.ops import cos, finance, growth, legal, marketing, operations, revenue, support
 
 MAX_HANDOFF_DEPTH = 2  # cos(0) → scout(1) → revenue(2); bounds cross-department fan-out
 
@@ -102,6 +102,23 @@ DEPARTMENTS: dict[str, dict[str, Any]] = {
                           "default_input": {"limit": 25}, "is_selftest": False},
             "selftest": {"handler": revenue.run, "acceptance": revenue.acceptance,
                          "default_input": {"limit": 5}, "is_selftest": True},
+        },
+    },
+    "marketing": {
+        "slug": "marketing",
+        "name": "Marketing",
+        "head_lens": "cmo",
+        "mandate": "Plan campaigns for the contact base — audience, channels, and message variants.",
+        "kpis": [{"key": "audience", "label": "Audience reached", "target": "—"}],
+        "sync_kinds": ["crm"],
+        "guardrails": {"per_run_spend_cap_usd": 0.50, "daily_run_cap": 50,
+                       "allowed_tools": ["crm_contacts"], "max_wall_ms": 120_000,
+                       "irreversible_requires_owner": True},
+        "jobs": {
+            "campaign": {"handler": marketing.run, "acceptance": marketing.acceptance,
+                         "default_input": {}, "is_selftest": False},
+            "selftest": {"handler": marketing.run, "acceptance": marketing.acceptance,
+                         "default_input": {}, "is_selftest": True},
         },
     },
     "growth": {

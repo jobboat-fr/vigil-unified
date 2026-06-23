@@ -19,7 +19,7 @@ from winny.council.registry import worker_registry
 from winny_gateway.db import db_insert, db_select
 
 # Operational departments the Chief of Staff routes to (everyone but itself).
-ROUTABLE = ["support", "finance", "revenue", "growth", "legal", "operations"]
+ROUTABLE = ["support", "finance", "revenue", "growth", "marketing", "legal", "operations"]
 
 
 async def route(uid: str, _inp: dict[str, Any]) -> dict[str, Any]:

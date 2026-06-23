@@ -26,6 +26,7 @@ from winny_gateway.ops import engine as engine_mod
 from winny_gateway.ops import finance as finance_mod
 from winny_gateway.ops import growth as growth_mod
 from winny_gateway.ops import legal as legal_mod
+from winny_gateway.ops import marketing as marketing_mod
 from winny_gateway.ops import operations as ops_dept_mod
 from winny_gateway.ops import revenue as revenue_mod
 from winny_gateway.ops import support as support_mod
@@ -61,7 +62,7 @@ class FakeDB:
 
 
 _ALL = [ops_mod, engine_mod, support_mod, finance_mod, revenue_mod,
-        growth_mod, legal_mod, ops_dept_mod, cos_mod, fc, db_mod]
+        growth_mod, legal_mod, marketing_mod, ops_dept_mod, cos_mod, fc, db_mod]
 
 
 @pytest.fixture
@@ -78,6 +79,8 @@ def client(monkeypatch):
     async def enrich(_c): return ({"company": "Acme", "title": "CTO", "score": 70, "why": "good fit"}, 0.001)
     async def draft(_d, _c): return ("Hi, following up.", 0.001)
     async def brief_narrate(_r): return ("All systems healthy.", 0.001)
+    async def campaign(_t, _a): return ("Angle: re-engage. Subject A/B. Body.", 0.001)
+    monkeypatch.setattr(marketing_mod, "draft_campaign", campaign)
     monkeypatch.setattr(finance_mod, "classify_txn", classify)
     monkeypatch.setattr(finance_mod, "narrate", narrate)
     monkeypatch.setattr(growth_mod, "enrich", enrich)
@@ -103,9 +106,17 @@ def _dept(client, slug):
 
 def test_full_roster_seeds_with_jobs(client):
     depts = {d["slug"]: d for d in _data(client.get("/v1/ops/departments"))["departments"]}
-    assert set(depts) == {"support", "finance", "revenue", "growth", "legal", "operations", "cos"}
+    assert set(depts) == {"support", "finance", "revenue", "growth", "marketing", "legal", "operations", "cos"}
     assert depts["finance"]["jobs"] == ["reconcile", "report", "analyze"]
     assert depts["cos"]["primary_job"] == "route"
+
+
+def test_marketing_campaign_reconciles_audience(client):
+    for i in range(4):
+        client.db._t("crm_contacts").append({"id": f"c{i}", "user_id": "u1", "name": f"n{i}", "email": f"e{i}@x.com"})
+    did = _dept(client, "marketing")["id"]
+    task = _data(client.post(f"/v1/ops/departments/{did}/run", json={"job": "campaign"}))["task"]
+    assert task["status"] == "done" and task["accepted"] is True   # audience (4) reconciles
 
 
 def test_finance_report_reconciles(client):
