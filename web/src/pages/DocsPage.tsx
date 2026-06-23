@@ -4,6 +4,7 @@ import { useI18n } from "@/i18n";
 import { usePageHeader } from "@/contexts/usePageHeader";
 import { cn } from "@/lib/utils";
 import { PluginSlot } from "@/plugins";
+import { useSeo } from "@/lib/seo";
 
 export const HERMES_DOCS_URL = "https://hermes-agent.nousresearch.com/docs/";
 
@@ -18,6 +19,12 @@ const DS_BUTTON_OUTLINED_LINK_CN = cn(
 export default function DocsPage() {
   const { t } = useI18n();
   const { setEnd } = usePageHeader();
+  useSeo({
+    title: "Docs — VIGIL × WinnyWoo",
+    description:
+      "Documentation for VIGIL × WinnyWoo: the AI council, the crypto trade desk, connectors, and the human-in-the-loop ops team.",
+    path: "/docs",
+  });
 
   useLayoutEffect(() => {
     setEnd(

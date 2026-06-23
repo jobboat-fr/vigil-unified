@@ -1,0 +1,11 @@
+# VIGIL × WinnyWoo
+User-agent: *
+Allow: /$
+Allow: /docs
+# Keep auth + the signed-in app out of the index
+Disallow: /login
+Disallow: /signup
+Disallow: /auth
+Disallow: /join/
+
+Sitemap: https://dev.vigil-ai.xyz/sitemap.xml

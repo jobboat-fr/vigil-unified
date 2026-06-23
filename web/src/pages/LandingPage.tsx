@@ -5,6 +5,7 @@ import {
   ShieldCheck, Sparkles, BrainCircuit, GitBranch,
 } from "lucide-react";
 import { ww, type MarketOverview } from "@/lib/ww";
+import { useSeo } from "@/lib/seo";
 
 const A = "#7c5cff"; // violet accent
 const B = "#22d3ee"; // cyan accent
@@ -14,6 +15,12 @@ const NEG = "#fb7185";
 export default function LandingPage() {
   const navigate = useNavigate();
   const [mkt, setMkt] = useState<MarketOverview | null>(null);
+  useSeo({
+    title: "VIGIL × WinnyWoo — the AI workspace that thinks before it acts",
+    description:
+      "An AI workspace that deliberates before acting: a multi-advisor council, a data-grounded crypto desk, and your finance, CRM, mail and document studio — all human-in-the-loop.",
+    path: "/",
+  });
 
   useEffect(() => {
     let on = true;
