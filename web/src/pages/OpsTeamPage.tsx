@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/components/card";
 import { Button } from "@nous-research/ui/ui/components/button";
-import { vigil, type Department, type OpsEvent, type OpsTask } from "@/lib/vigil";
+import { vigil, type Department, type OpsEvent, type OpsTask, type OpsUsage } from "@/lib/vigil";
 import { GatewayError } from "@/lib/ww";
 
 // Ops Team — the agentic company. Departments are on-demand agent units; each
@@ -24,6 +24,7 @@ function healthLine(d: Department): string {
 export default function OpsTeamPage() {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [events, setEvents] = useState<OpsEvent[]>([]);
+  const [usage, setUsage] = useState<OpsUsage | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
   const [busy, setBusy] = useState<Record<string, string>>({});
   const [result, setResult] = useState<Record<string, OpsTask>>({});
@@ -31,9 +32,12 @@ export default function OpsTeamPage() {
 
   const refresh = useCallback(async () => {
     try {
-      const [{ departments }, { events }] = await Promise.all([vigil.ops.departments(), vigil.ops.feed(20)]);
+      const [{ departments }, { events }, usage] = await Promise.all([
+        vigil.ops.departments(), vigil.ops.feed(20), vigil.ops.usage().catch(() => null),
+      ]);
       setDepartments(departments);
       setEvents(events);
+      setUsage(usage);
       setAuthError(null);
     } catch (e) {
       if (e instanceof GatewayError && e.code === "NO_SESSION") setAuthError("Sign in to VIGIL to use the Ops Team.");
@@ -96,10 +100,19 @@ export default function OpsTeamPage() {
         <Card><CardContent className="py-4 text-sm" style={{ color: "#f59e0b" }}>{authError}</CardContent></Card>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-md p-3" style={{ background: "var(--color-background-secondary, rgba(127,127,127,0.06))" }}>
           <div className="text-xs text-text-secondary">Departments live</div>
           <div className="text-2xl font-semibold">{live} / {departments.length}</div>
+        </div>
+        <div className="rounded-md p-3" style={{ background: "var(--color-background-secondary, rgba(127,127,127,0.06))" }}>
+          <div className="text-xs text-text-secondary">Plan · runs today</div>
+          <div className="text-2xl font-semibold capitalize">
+            {usage?.plan ?? "—"}
+            <span className="text-sm font-normal text-text-secondary">
+              {" · "}{usage ? usage.runs_today : 0}{usage?.daily_cap != null ? ` / ${usage.daily_cap}` : ""}
+            </span>
+          </div>
         </div>
         <div className="rounded-md p-3" style={{ background: "var(--color-background-secondary, rgba(127,127,127,0.06))" }}>
           <div className="text-xs text-text-secondary">Recent activity</div>

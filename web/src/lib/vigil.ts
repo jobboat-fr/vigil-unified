@@ -348,6 +348,17 @@ export interface OpsHealth {
   last_run_at?: string;
   runs: number;
 }
+export interface OpsUsage {
+  plan: string;
+  plan_name: string;
+  price_eur_cents: number | null;
+  runs_today: number;
+  runs_month: number;
+  cost_usd_month: number;
+  daily_cap: number | null;
+  remaining_today: number | null;
+  limits: Record<string, unknown>;
+}
 export interface Department {
   id: string;
   slug: string;
@@ -486,6 +497,7 @@ export const vigil = {
       return vigilCall<{ tasks: OpsTask[] }>("GET", `/v1/ops/tasks?${qs.toString()}`);
     },
     feed: (limit = 30) => vigilCall<{ events: OpsEvent[] }>("GET", `/v1/ops/feed?limit=${limit}`),
+    usage: () => vigilCall<OpsUsage>("GET", "/v1/ops/usage"),
     pauseAll: () => vigilCall<{ paused: number }>("POST", "/v1/ops/pause-all"),
     resumeAll: () => vigilCall<{ resumed: number }>("POST", "/v1/ops/resume-all"),
   },
