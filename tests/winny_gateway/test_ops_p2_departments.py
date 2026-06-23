@@ -149,6 +149,24 @@ def test_legal_requires_real_citations(client, monkeypatch):
     assert task2["accepted"] is False  # cited a non-existent document → ungrounded
 
 
+def test_legal_precedent_board_stores_and_feeds_back(client, monkeypatch):
+    client.db._t("vault_documents").append({"id": "vd1", "user_id": "u1", "title": "NDA", "summary": "mutual nda", "extracted_text": "x"})
+    did = _dept(client, "legal")["id"]
+    seen_context: list[str] = []
+
+    async def grounded(_q, ctx):
+        seen_context.append(ctx)
+        return ("Auto-renewal risk [doc:vd1].", ["vd1"], 0.001)
+    monkeypatch.setattr(legal_mod, "review", grounded)
+
+    # First review → stores a precedent
+    client.post(f"/v1/ops/departments/{did}/run", json={"job": "review"})
+    assert len(client.db.tables["legal_precedents"]) == 1
+    # Second review → the prior finding is fed into the context (cross-engagement learning)
+    client.post(f"/v1/ops/departments/{did}/run", json={"job": "review"})
+    assert "Prior findings (precedent board" in seen_context[-1]
+
+
 def test_legal_vacuous_when_no_documents(client):
     did = _dept(client, "legal")["id"]
     task = _data(client.post(f"/v1/ops/departments/{did}/run", json={"job": "review"}))["task"]

@@ -62,6 +62,15 @@ async def run(uid: str, inp: dict[str, Any]) -> dict[str, Any]:
         f"({d.get('category') or 'other'}) — {(d.get('summary') or (d.get('extracted_text') or ''))[:600]}"
         for d in docs
     )
+
+    # Precedent board — feed recent findings into context so the review builds on
+    # prior engagements instead of starting cold (adapted from lavern).
+    precedents = await db_select("legal_precedents", filters={"user_id": uid}, order_by="-created_at", limit=8)
+    if precedents:
+        context += "\n\nPrior findings (precedent board — consider, do not blindly repeat):\n" + "\n".join(
+            f"- {p.get('title')}: {p.get('summary')}" for p in precedents
+        )
+
     memo, cited, cost = await review(query, context)
     real_cited = [c for c in cited if c in doc_ids]   # keep only citations to real documents
 
@@ -70,12 +79,20 @@ async def run(uid: str, inp: dict[str, Any]) -> dict[str, Any]:
         "brief": "Legal review (grounded in the Vault)", "approach": "",
         "text_dump": memo, "status": "draft", "version": 1,
     })
+
+    # Record this finding on the precedent board (only when grounded).
+    if real_cited:
+        await db_insert("legal_precedents", {
+            "user_id": uid, "title": query[:120], "summary": memo[:400], "doc_ids": real_cited,
+        })
+
     return {
         "artifact_id": (art or {}).get("id"),
         "summary": f"Reviewed {len(docs)} company documents, cited {len(real_cited)}",
         "metrics": {"cost_usd": round(cost, 4), "tool_calls": 1, "docs": len(docs)},
         "doc_ids": doc_ids,
         "cited_ids": real_cited,
+        "precedents_used": len(precedents),
     }
 
 

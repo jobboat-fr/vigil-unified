@@ -108,6 +108,7 @@ _USER_SCOPED_TABLES = frozenset({
     "integration_secrets",
     "connections",
     "outbound_actions",
+    "legal_precedents",
     "crm_contacts",
     "crm_deals",
     "mail_messages",
