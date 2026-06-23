@@ -145,6 +145,41 @@ def test_finance_report_acceptance_rejects_mismatch():
     assert verdict["accepted"] is False
 
 
+def test_council_consensus_tallies_votes(monkeypatch):
+    import asyncio
+
+    from winny.council import consensus as cons_mod
+    votes = iter([
+        {"output": '{"vote":"yes","reason":"grounded"}', "cost_usd": 0.001},
+        {"output": '{"vote":"yes","reason":"ok"}', "cost_usd": 0.001},
+        {"output": '{"vote":"no","reason":"overreach in clause 3"}', "cost_usd": 0.001},
+    ])
+
+    async def fake_ask(_w, _p, **_k): return next(votes)
+    monkeypatch.setattr(cons_mod, "ask", fake_ask)
+    monkeypatch.setattr(cons_mod, "worker_registry",
+                        lambda: {"primary": 1, "reviewer_1": 1, "reviewer_2": 1})
+    out = asyncio.run(cons_mod.consensus("Is it grounded?", "ctx"))
+    assert out["yes"] == 2 and out["no"] == 1
+    assert out["confidence"] == 0.667 and out["decision"] is True   # 0.667 >= 0.66 threshold
+
+
+def test_council_consensus_blocks_on_dissent(monkeypatch):
+    import asyncio
+
+    from winny.council import consensus as cons_mod
+    votes = iter([{"output": '{"vote":"no","reason":"x"}'},
+                  {"output": '{"vote":"no","reason":"y"}'},
+                  {"output": '{"vote":"yes","reason":"z"}'}])
+
+    async def fake_ask(_w, _p, **_k): return next(votes)
+    monkeypatch.setattr(cons_mod, "ask", fake_ask)
+    monkeypatch.setattr(cons_mod, "worker_registry",
+                        lambda: {"primary": 1, "reviewer_1": 1, "reviewer_2": 1})
+    out = asyncio.run(cons_mod.consensus("Is it grounded?"))
+    assert out["confidence"] == 0.333 and out["decision"] is False   # the panel did not agree
+
+
 def test_legal_requires_real_citations(client, monkeypatch):
     client.db._t("vault_documents").append({"id": "vd1", "user_id": "u1", "title": "NDA", "summary": "mutual nda", "extracted_text": "x"})
     did = _dept(client, "legal")["id"]

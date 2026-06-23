@@ -12,6 +12,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from winny.council.consensus import consensus
 from winny.council.providers import ask
 from winny.council.registry import worker_registry
 from winny.council.summarizer import _parse_json
@@ -49,25 +50,20 @@ _VERIFY_SYSTEM = (
 
 
 async def verify(memo: str, context: str) -> tuple[dict[str, Any], float]:
-    """Second pass: adversarially verify the memo against the sources. Returns a
-    {confidence, flags} verdict. Defaults to pass (1.0) when it can't parse a verdict,
-    so it only ever BLOCKS on an explicit low-confidence result."""
-    prompt = f"Memo:\n{memo}\n\nSource documents:\n{context}\n\nVerify it. Respond ONLY with the JSON object."
-    result = await ask(worker_registry()["primary"], prompt, system=_VERIFY_SYSTEM, temperature=0.1, max_tokens=400)
-    if result.get("stub"):
-        # No verifier model available — don't block; the grounding gate still applies.
-        return {"confidence": 1.0, "flags": []}, 0.0
-    plan = _parse_json(result.get("output", "")) or {}
-    try:
-        conf = max(0.0, min(1.0, float(plan.get("confidence"))))
-    except (TypeError, ValueError):
-        conf = 1.0
-    flags = plan.get("flags") if isinstance(plan.get("flags"), list) else []
-    try:
-        cost = float(result.get("cost_usd") or 0.0)
-    except (TypeError, ValueError):
-        cost = 0.0
-    return {"confidence": conf, "flags": [str(f)[:160] for f in flags[:10]]}, cost
+    """Second pass: a reviewer PANEL votes on whether the memo is fully grounded
+    (multi-reviewer consensus, not a single call). Returns a {confidence, flags}
+    verdict; an offline/empty panel returns confidence 1.0 so it only blocks on an
+    explicit low-consensus result — the deterministic grounding gate always applies."""
+    result = await consensus(
+        "Is every claim in this memo supported by a cited [doc:<id>] in the sources? "
+        "Vote yes only if it is fully grounded with no overreach.",
+        f"Memo:\n{memo}\n\nSources:\n{context}",
+    )
+    conf = result.get("confidence")
+    if conf is None:           # whole panel abstained (offline) → don't block
+        return {"confidence": 1.0, "flags": []}, result.get("cost_usd", 0.0)
+    flags = [str(v.get("reason"))[:160] for v in result.get("votes", []) if v.get("vote") == "no" and v.get("reason")]
+    return {"confidence": float(conf), "flags": flags[:10]}, result.get("cost_usd", 0.0)
 
 
 async def run(uid: str, inp: dict[str, Any]) -> dict[str, Any]:
