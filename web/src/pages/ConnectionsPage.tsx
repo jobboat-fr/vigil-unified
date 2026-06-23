@@ -13,6 +13,7 @@ const PROVIDER_LABEL: Record<string, { name: string; hint: string; account?: str
   hubspot: { name: "HubSpot", hint: "Private-app access token" },
   stripe: { name: "Stripe", hint: "Restricted/secret key (read)" },
   gmail: { name: "Gmail", hint: "App password (16 chars, 2FA required)", account: "you@gmail.com" },
+  notion: { name: "Notion", hint: "Internal integration token (secret_…)" },
 };
 
 export default function ConnectionsPage() {

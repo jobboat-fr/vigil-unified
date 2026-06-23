@@ -160,6 +160,7 @@ DEPARTMENTS: dict[str, dict[str, Any]] = {
         "head_lens": "coo",
         "mandate": "Track the company's open action items and blocked work — a deterministic operations digest.",
         "kpis": [{"key": "open_items", "label": "Open items tracked", "target": "—"}],
+        "sync_kinds": ["tasks"],
         "guardrails": {"per_run_spend_cap_usd": 0.10, "daily_run_cap": 100,
                        "allowed_tools": ["commitments", "ops_tasks"],
                        "max_wall_ms": 60_000, "irreversible_requires_owner": False},
