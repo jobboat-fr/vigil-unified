@@ -77,6 +77,8 @@ DEPARTMENTS: dict[str, dict[str, Any]] = {
                           "default_input": {"limit": 50}, "is_selftest": False},
             "report": {"handler": finance.report, "acceptance": finance.report_acceptance,
                        "default_input": {}, "is_selftest": False},
+            "analyze": {"handler": finance.analyze, "acceptance": finance.analyze_acceptance,
+                        "default_input": {"horizon": 12, "rate": 0.10}, "is_selftest": False},
             "selftest": {"handler": finance.run, "acceptance": finance.acceptance,
                          "default_input": {"limit": 5}, "is_selftest": True},
         },

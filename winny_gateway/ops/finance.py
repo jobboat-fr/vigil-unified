@@ -193,3 +193,60 @@ async def report_acceptance(uid: str, _inp: dict[str, Any], result: dict[str, An
     return {"accepted": ok,
             "reason": (f"category sums ({cat_sum}) reconcile to net income ({net})" if ok
                        else f"does NOT reconcile: categories {cat_sum} vs net income {net}")}
+
+
+# ── Forward analysis: runway · DCF valuation · risk ─────────────────────────────
+async def analyze(uid: str, inp: dict[str, Any]) -> dict[str, Any]:
+    """Forward-looking analysis from the ledger — all deterministic: monthly burn,
+    cash runway, a DCF valuation projecting the average monthly cash flow, and a 95%
+    historical VaR on the monthly series. The model narrates; the numbers are computed."""
+    txns = await db_select("finance_transactions", filters={"user_id": uid}, limit=5000)
+    cf = calc.cash_flow(txns)
+    months = list(cf["by_month"].values())
+    avg_monthly = round(sum(months) / len(months), 2) if months else 0.0
+    cash = cf["net_cash"]
+    burn = round(-avg_monthly, 2) if avg_monthly < 0 else 0.0
+    runway_months = round(cash / burn, 1) if burn > 0 and cash > 0 else None
+
+    horizon = max(1, min(int(inp.get("horizon") or 12), 120))
+    annual_rate = float(inp.get("rate") or 0.10)
+    monthly_rate = annual_rate / 12
+    valuation_dcf = calc.dcf([avg_monthly] * horizon, monthly_rate) if avg_monthly else 0.0
+    var_95 = calc.historical_var(months, 0.95) if len(months) >= 2 else 0.0
+
+    figures = {
+        "avg_monthly_net": avg_monthly, "cash": cash, "burn": burn,
+        "runway_months": runway_months, "valuation_dcf": valuation_dcf, "var_95": var_95,
+        "horizon_months": horizon, "discount_rate": annual_rate,
+        "months": len(months), "by_month": cf["by_month"], "net_cash": cf["net_cash"],
+    }
+    commentary, cost = await narrate(figures)
+    art = await db_insert("artifacts", {
+        "user_id": uid, "title": f"Financial analysis — valuation {valuation_dcf:.0f}",
+        "kind": "report", "brief": "Forward financial analysis", "approach": "",
+        "text_dump": (
+            f"# Financial analysis\n\n- Avg monthly net: **{avg_monthly:.2f}**\n"
+            f"- Burn: {burn:.2f} · Runway: {runway_months if runway_months is not None else 'n/a'} months\n"
+            f"- DCF valuation ({horizon}mo @ {annual_rate * 100:.0f}%): **{valuation_dcf:.2f}**\n"
+            f"- 95% VaR (monthly): {var_95:.2f}\n\n## Commentary\n\n{commentary or '_(no commentary)_'}"
+        ),
+        "status": "draft", "version": 1,
+    })
+    return {
+        "artifact_id": (art or {}).get("id"),
+        "summary": f"Valuation {valuation_dcf:.0f}, runway {runway_months if runway_months is not None else 'n/a'}mo, VaR {var_95:.0f}",
+        "metrics": {"cost_usd": round(cost, 4), "tool_calls": 1, "transactions": len(txns)},
+        "figures": figures,
+    }
+
+
+async def analyze_acceptance(uid: str, _inp: dict[str, Any], result: dict[str, Any]) -> dict[str, Any]:
+    """Invariant: the monthly cash series sums to net cash (the analysis is built on a
+    consistent series, not invented aggregates)."""
+    f = result.get("figures") or {}
+    months_sum = round(sum((f.get("by_month") or {}).values()), 2)
+    net = round(float(f.get("net_cash") or 0), 2)
+    ok = abs(months_sum - net) < 0.01
+    return {"accepted": ok,
+            "reason": (f"monthly series ({months_sum}) reconciles to net cash ({net})" if ok
+                       else f"series does NOT reconcile: {months_sum} vs {net}")}

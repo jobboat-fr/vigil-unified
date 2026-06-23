@@ -104,7 +104,7 @@ def _dept(client, slug):
 def test_full_roster_seeds_with_jobs(client):
     depts = {d["slug"]: d for d in _data(client.get("/v1/ops/departments"))["departments"]}
     assert set(depts) == {"support", "finance", "revenue", "growth", "legal", "operations", "cos"}
-    assert depts["finance"]["jobs"] == ["reconcile", "report"]
+    assert depts["finance"]["jobs"] == ["reconcile", "report", "analyze"]
     assert depts["cos"]["primary_job"] == "route"
 
 
@@ -114,6 +114,17 @@ def test_finance_report_reconciles(client):
     did = _dept(client, "finance")["id"]
     task = _data(client.post(f"/v1/ops/departments/{did}/run", json={"job": "report"}))["task"]
     assert task["status"] == "done" and task["accepted"] is True  # arithmetic invariant held
+
+
+def test_finance_analyze_computes_runway_and_valuation(client):
+    for i, (amt, mo) in enumerate([(1000.0, "01"), (-400.0, "01"), (300.0, "02"), (-500.0, "02"), (200.0, "03")]):
+        client.db._t("finance_transactions").append({
+            "id": f"t{i}", "user_id": "u1", "amount": amt, "category": "x",
+            "status": "reconciled", "txn_date": f"2026-{mo}-10", "metadata": {},
+        })
+    did = _dept(client, "finance")["id"]
+    task = _data(client.post(f"/v1/ops/departments/{did}/run", json={"job": "analyze"}))["task"]
+    assert task["status"] == "done" and task["accepted"] is True   # monthly series reconciles to net cash
 
 
 def test_finance_report_acceptance_rejects_mismatch():
