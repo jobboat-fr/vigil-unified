@@ -61,6 +61,45 @@ async function scrapeOpsToken() {
   return _opsToken;
 }
 
+// Static dashboard-plugin assets (UI bundles) are proxied WITHOUT the Supabase
+// gate — they're inert client code, only the OVH gate secret is required. The
+// /dashboard-plugins/* rewrite routes them here as __opspath=dashboard-plugins/<…>.
+const PLUGIN_MIME = {
+  js: "application/javascript; charset=utf-8",
+  mjs: "application/javascript; charset=utf-8",
+  css: "text/css; charset=utf-8",
+  json: "application/json; charset=utf-8",
+  svg: "image/svg+xml",
+  map: "application/json; charset=utf-8",
+  woff: "font/woff",
+  woff2: "font/woff2",
+};
+
+async function proxyPluginAsset(opspath, res) {
+  if (opspath.includes("..") || opspath.includes("://")) {
+    res.status(400).json({ detail: "bad plugin path" });
+    return;
+  }
+  const upstream = `${DASH}/${opspath}`;
+  const headersFor = (tok) => ({ "x-ops-gate": GATE, "x-hermes-session-token": tok || "" });
+  if (!_opsToken) await scrapeOpsToken();
+  let up = await fetch(upstream, { headers: headersFor(_opsToken) });
+  if (up.status === 401) {
+    await scrapeOpsToken();
+    up = await fetch(upstream, { headers: headersFor(_opsToken) });
+  }
+  res.status(up.status);
+  let ct = up.headers.get("content-type");
+  if (!ct || ct.startsWith("text/plain")) {
+    const ext = (opspath.split(".").pop() || "").toLowerCase();
+    if (PLUGIN_MIME[ext]) ct = PLUGIN_MIME[ext];
+  }
+  if (ct) res.setHeader("content-type", ct);
+  res.setHeader("cache-control", "public, max-age=300"); // versioned per deploy
+  const buf = Buffer.from(await up.arrayBuffer());
+  res.send(buf);
+}
+
 function rawBody(req) {
   return new Promise((resolve) => {
     const chunks = [];
@@ -73,6 +112,16 @@ function rawBody(req) {
 export default async function handler(req, res) {
   if (!DASH || !GATE) {
     res.status(503).json({ detail: "operator proxy not configured" });
+    return;
+  }
+
+  // 0) Static dashboard-plugin assets bypass the Supabase gate (inert UI
+  //    bundles). Routed here by the /dashboard-plugins/* rewrite as
+  //    __opspath=dashboard-plugins/<…>; relayed straight from OVH with the
+  //    correct Content-Type so the browser stops refusing the wrong-MIME 404s.
+  const _op = new URL(req.url || "/", "http://internal").searchParams.get("__opspath") || "";
+  if (_op.startsWith("dashboard-plugins/")) {
+    await proxyPluginAsset(_op, res);
     return;
   }
 

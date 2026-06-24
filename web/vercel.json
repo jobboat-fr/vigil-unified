@@ -11,7 +11,7 @@
     },
     {
       "source": "/dashboard-plugins/(.*)",
-      "destination": "/api/plugin-proxy?__p=$1"
+      "destination": "/api/ops?__opspath=dashboard-plugins/$1"
     },
     {
       "source": "/((?!api/|dashboard-plugins/|ws$|ws/|assets/|favicon\\.svg|vigil-mark\\.svg|winnywoo-mark\\.svg|.*\\.[a-zA-Z0-9]+$).*)",
