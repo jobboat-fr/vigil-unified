@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Routes, Route, Navigate, Link } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import LandingPage from "@/pages/LandingPage";
@@ -13,6 +14,14 @@ import { BRAND } from "@/lib/brand";
  * no Supabase session. Once a session exists, AuthGate swaps this for the app.
  */
 export default function PublicSite() {
+  // Let the document scroll on the public surface (long landing/docs pages). The
+  // class is removed on unmount so the authed dashboard keeps its fixed shell.
+  useEffect(() => {
+    const el = document.documentElement;
+    el.classList.add("vigil-public-scroll");
+    return () => el.classList.remove("vigil-public-scroll");
+  }, []);
+
   return (
     <Routes>
       <Route path="/" element={<LandingPage />} />

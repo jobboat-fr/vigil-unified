@@ -147,6 +147,20 @@ code, kbd, pre, samp, .font-mono, .font-mono-ui {
   }
 }
 
+/* Public marketing + docs pages are long, naturally-scrolling documents. The
+   app shell above pins html/body/#root to the viewport with overflow:hidden
+   (its sidebar/content scroll internally) — which CLIPS these long pages and
+   breaks scrolling on desktop. PublicSite toggles this class on <html> so the
+   document scrolls normally on the public surface; the dashboard is untouched. */
+html.vigil-public-scroll,
+html.vigil-public-scroll body,
+html.vigil-public-scroll #root {
+  height: auto;
+  max-height: none;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
 /* Nousnet's hermes-agent layout bumps `small` and `code` to readable
    dashboard sizes. Keep in sync. */
 small { font-size: 1.0625rem; }
