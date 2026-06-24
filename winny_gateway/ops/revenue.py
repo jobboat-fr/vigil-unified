@@ -19,6 +19,7 @@ from winny.council.providers import ask
 from winny.council.registry import worker_registry
 from winny_gateway.db import db_insert, db_select
 from winny_gateway.integrations import connector
+from winny_gateway.ops import brand
 
 STALLED_STAGES = ["proposal", "negotiation"]
 
@@ -67,6 +68,7 @@ async def run(uid: str, inp: dict[str, Any]) -> dict[str, Any]:
 
     drafted: list[str] = []
     proposed = 0
+    off_brand = 0
     cost = 0.0
     calls = 0
     for d in stalled:
@@ -87,6 +89,13 @@ async def run(uid: str, inp: dict[str, Any]) -> dict[str, Any]:
         })
         drafted.append(d["id"])
         if gmail_cid and to:
+            # Brand-voice QA gate: only the agent's autonomous send-proposal is gated;
+            # the draft above always exists for the human to edit.
+            qa = await brand.brand_qa(body, channel="email")
+            cost += float(qa.get("cost_usd") or 0.0)
+            if not qa["ok"]:
+                off_brand += 1
+                continue
             try:
                 await connector.propose_action(uid, gmail_cid, "send",
                                                 {"to": to, "subject": subject, "body": body},
@@ -98,6 +107,8 @@ async def run(uid: str, inp: dict[str, Any]) -> dict[str, Any]:
     summary = f"Drafted {len(drafted)} follow-ups for stalled deals"
     if proposed:
         summary += f", proposed {proposed} sends (pending approval)"
+    if off_brand:
+        summary += f", held {off_brand} off-brand (draft only)"
     art = await db_insert("artifacts", {
         "user_id": uid, "title": f"Pipeline follow-ups — {len(drafted)} deals",
         "kind": "report", "brief": "Revenue follow-up run", "approach": "",
@@ -108,7 +119,8 @@ async def run(uid: str, inp: dict[str, Any]) -> dict[str, Any]:
     return {
         "artifact_id": (art or {}).get("id"),
         "summary": summary,
-        "metrics": {"cost_usd": round(cost, 4), "tool_calls": calls, "drafted": len(drafted), "proposed": proposed},
+        "metrics": {"cost_usd": round(cost, 4), "tool_calls": calls, "drafted": len(drafted),
+                    "proposed": proposed, "off_brand": off_brand},
         "targeted_ids": drafted,
     }
 
