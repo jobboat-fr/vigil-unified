@@ -112,6 +112,9 @@ async def connect(uid: str, provider: str, token: str, account: str | None = Non
         "status": "active",
         "metadata": {k: v for k, v in identity.items() if k not in ("refresh_token",)},
     })
+    logger.info("connector connected", extra={"action": "connector.connect", "component": "connectors",
+                                              "provider": provider, "user_id": uid,
+                                              "external_account": (row or {}).get("external_account")})
     return _public(row or {})
 
 
@@ -207,6 +210,9 @@ async def propose_action(uid: str, connection_id: str, action: str, params: dict
         "action": action, "params": params or {}, "status": "pending",
         "department_id": department_id, "requested_by": requested_by,
     })
+    logger.info("connector action proposed", extra={"action": "connector.propose", "component": "connectors",
+                                                    "provider": conn["provider"], "user_id": uid,
+                                                    "act": action, "requested_by": requested_by})
     return _public_action(row or {})
 
 
@@ -241,6 +247,9 @@ async def approve_action(uid: str, action_id: str) -> dict[str, Any]:
         raise
     updated = await db_update(_ACTIONS, {"status": "executed", "result": result, "error": None},
                               filters={"id": action_id, "user_id": uid})
+    logger.info("connector action executed", extra={"action": "connector.approve", "component": "connectors",
+                                                    "provider": conn["provider"], "user_id": uid,
+                                                    "act": a["action"], "action_id": action_id})
     return _public_action(updated[0] if updated else a)
 
 
@@ -248,6 +257,8 @@ async def reject_action(uid: str, action_id: str) -> dict[str, Any]:
     updated = await db_update(_ACTIONS, {"status": "rejected"}, filters={"id": action_id, "user_id": uid})
     if not updated:
         raise ConnectorError("action not found", code="not_found", status=404)
+    logger.info("connector action rejected", extra={"action": "connector.reject", "component": "connectors",
+                                                    "user_id": uid, "action_id": action_id})
     return _public_action(updated[0])
 
 
@@ -256,4 +267,6 @@ async def disconnect(uid: str, connection_id: str) -> bool:
     if not rows:
         return False
     await db_delete(_TABLE, filters={"id": connection_id, "user_id": uid})
+    logger.info("connector disconnected", extra={"action": "connector.disconnect", "component": "connectors",
+                                                 "user_id": uid, "connection_id": connection_id})
     return True
