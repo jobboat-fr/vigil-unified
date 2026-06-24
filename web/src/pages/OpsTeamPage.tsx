@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/components/card";
 import { Button } from "@nous-research/ui/ui/components/button";
 import { vigil, type Department, type OpsEvent, type OpsTask, type OpsUsage } from "@/lib/vigil";
@@ -22,6 +23,7 @@ function healthLine(d: Department): string {
 }
 
 export default function OpsTeamPage() {
+  const navigate = useNavigate();
   const [departments, setDepartments] = useState<Department[]>([]);
   const [events, setEvents] = useState<OpsEvent[]>([]);
   const [usage, setUsage] = useState<OpsUsage | null>(null);
@@ -145,16 +147,30 @@ export default function OpsTeamPage() {
                 <p className="text-sm text-text-secondary leading-snug">{d.mandate}</p>
                 <p className="text-[11px] text-text-secondary font-mono">{healthLine(d)}</p>
                 {r && (
-                  <p
-                    className="text-xs rounded-md px-2 py-1.5"
+                  <div
+                    className="rounded-md px-2.5 py-2 text-xs"
                     style={{
-                      background: r.accepted ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.1)",
-                      color: r.accepted ? "#16a34a" : "#dc2626",
+                      background: r.accepted ? "rgba(52,211,153,0.10)" : "rgba(251,113,133,0.10)",
+                      border: `1px solid ${r.accepted ? "rgba(52,211,153,0.28)" : "rgba(251,113,133,0.28)"}`,
                     }}
                   >
-                    {r.accepted ? "✓ " : "✕ "}{r.title} — {r.status}
-                    {r.reason ? ` (${r.reason})` : ""} · ${Number(r.cost_usd).toFixed(3)} · {r.wall_ms}ms
-                  </p>
+                    <div className="flex items-center justify-between gap-2 font-semibold" style={{ color: r.accepted ? "#16a34a" : "#dc2626" }}>
+                      <span>{r.accepted ? "✓" : "✕"} {r.job} — {r.status}</span>
+                      <span className="font-mono text-[10px] font-normal text-text-secondary">${Number(r.cost_usd).toFixed(3)} · {r.wall_ms}ms</span>
+                    </div>
+                    {(r.summary || r.reason) && (
+                      <p className="mt-1 leading-snug text-foreground/80">{r.summary || r.reason}</p>
+                    )}
+                    {r.output_artifact_id && (
+                      <button
+                        onClick={() => navigate(`/studio?artifact=${r.output_artifact_id}`)}
+                        className="mt-1.5 inline-flex items-center gap-1 font-medium underline hover:text-foreground"
+                        style={{ color: "#2563EB" }}
+                      >
+                        Open output →
+                      </button>
+                    )}
+                  </div>
                 )}
                 <div className="flex flex-wrap gap-2">
                   {(d.jobs.length ? d.jobs : ["run"]).map((job) => (

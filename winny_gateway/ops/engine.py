@@ -425,4 +425,4 @@ async def run_job(
             "ts": _now(),
         })
 
-    return (updated[0] if updated else task) | {"accepted": accepted, "reason": reason}
+    return (updated[0] if updated else task) | {"accepted": accepted, "reason": reason, "summary": summary}

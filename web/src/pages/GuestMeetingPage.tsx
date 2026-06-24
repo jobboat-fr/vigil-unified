@@ -22,7 +22,14 @@ export default function GuestMeetingPage() {
     try {
       setJoin(await joinGuestRoom(shareToken, name.trim()));
     } catch (e) {
-      setError((e as Error).message || "Could not join the meeting.");
+      const msg = (e as Error).message || "";
+      if (/livekit|not_configured|503/i.test(msg)) {
+        setError("The host hasn't started the live video yet. Ask them to click “Start live meeting”, then reopen this link.");
+      } else if (/invalid_share|404/i.test(msg)) {
+        setError("This invite link is invalid or has expired.");
+      } else {
+        setError(msg || "Could not join the meeting.");
+      }
     } finally {
       setJoining(false);
     }

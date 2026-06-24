@@ -390,6 +390,7 @@ export interface OpsTask {
   error: string | null;
   created_at: string;
   reason?: string;
+  summary?: string;
 }
 export interface OpsEvent {
   id: string;

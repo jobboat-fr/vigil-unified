@@ -513,6 +513,20 @@ async def guest_join(share_token: str, body: GuestJoinBody) -> dict[str, Any]:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail={"error": "invalid_share_token"})
     room = rows[0]
     guest_id = f"guest-{lk.new_share_token()[:10]}"
+    # Smart onboarding (1/2): record who joined so the post-meeting summarize can
+    # convert them into CRM contacts. Best-effort — never block the join.
+    try:
+        await db_insert("guest_leads", {
+            "org_id": room.get("user_id"),
+            "room_id": room.get("id"),
+            "name": (body.name or "Guest").strip()[:120],
+            "consent_to_follow_up": True,
+            "status": "new",
+            "source": "meeting-invite",
+            "metadata": {"joined_via": "share_link"},
+        })
+    except Exception as exc:  # noqa: BLE001
+        logger.info("guest_join.lead_insert_failed room=%s: %s", room.get("id"), exc)
     return {
         "ok": True,
         "data": {
@@ -606,6 +620,27 @@ async def summarize_room(room_id: str, body: SummarizeBody, user: dict = Depends
             })
             if r:
                 contacts_n += 1
+
+        # Smart onboarding (2/2): convert the humans who actually JOINED via the
+        # invite link (recorded in guest_leads on join) into CRM contacts, deduped
+        # against names the summary already onboarded. Mark each lead onboarded so
+        # re-summarizing doesn't duplicate.
+        seen_names = {str(f.get("name") or "").strip().lower() for f in result["follow_ups"]}
+        leads = await db_select("guest_leads", filters={"org_id": uid, "room_id": room_id, "status": "new"}, limit=200)
+        for lead in leads:
+            nm = str(lead.get("name") or "").strip()
+            if nm and nm.lower() not in seen_names:
+                seen_names.add(nm.lower())
+                r = await db_insert("crm_contacts", {
+                    "user_id": uid, "name": nm,
+                    "company": lead.get("company") or None,
+                    "notes": lead.get("main_need") or "Joined the live meeting",
+                    "tags": ["meeting-guest"],
+                })
+                if r:
+                    contacts_n += 1
+            await db_update("guest_leads", {"status": "onboarded"},
+                            filters={"id": lead["id"], "org_id": uid})
 
     # Close the meeting: persist the summary (the council later reviews THIS, not
     # the transcript), mark the room concluded, and make the AI agent leave.
