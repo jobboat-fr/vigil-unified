@@ -25,6 +25,7 @@
 
 import { useEffect, useState } from "react";
 import { api, type AuthMeResponse } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
 import { LogOut } from "lucide-react";
 
@@ -41,8 +42,8 @@ function truncateUserId(id: string): string {
 }
 
 export function AuthWidget({ className }: AuthWidgetProps) {
+  const { user, signOut } = useAuth();
   const [me, setMe] = useState<AuthMeResponse | null>(null);
-  const [hidden, setHidden] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -55,27 +56,39 @@ export function AuthWidget({ className }: AuthWidgetProps) {
       })
       .catch((err: unknown) => {
         if (cancelled) return;
-        // 401 from /api/auth/me means the gate isn't engaged in this
-        // process (loopback mode) — render nothing. fetchJSON throws an
-        // Error with the status code as a prefix; the global 401
-        // handler only redirects on the structured envelope, so a plain
-        // 401 from /api/auth/me with no envelope bubbles up here.
+        // 401/403 from /api/auth/me just means we're not operator-gated in
+        // this process (a plain product/Supabase user). That's expected —
+        // we fall back to the product identity below, not an error.
         const msg = err instanceof Error ? err.message : String(err);
-        if (msg.startsWith("401:") || msg.startsWith("403:")) {
-          setHidden(true);
-          return;
+        if (!(msg.startsWith("401:") || msg.startsWith("403:"))) {
+          setError("auth status unavailable");
         }
-        setError("auth status unavailable");
       });
     return () => {
       cancelled = true;
     };
   }, []);
 
-  if (hidden) return null;
+  // Full logout: operator-console teardown + Supabase product sign-out
+  // (AuthContext.signOut), then leave the protected area.
+  const handleLogout = async () => {
+    try {
+      await signOut();
+    } finally {
+      window.location.assign("/login");
+    }
+  };
 
-  if (error) {
-    return (
+  // Operator identity (me) when gated; otherwise the product (Supabase) user.
+  const label =
+    me?.display_name ||
+    me?.email ||
+    user?.email ||
+    (me ? truncateUserId(me.user_id) : user ? truncateUserId(user.id) : null);
+
+  // Nothing to show only when there's neither an operator nor a product session.
+  if (!label) {
+    return error ? (
       <div
         className={cn(
           "px-5 py-2 text-[0.65rem] tracking-[0.05em] text-muted-foreground/70",
@@ -84,33 +97,8 @@ export function AuthWidget({ className }: AuthWidgetProps) {
       >
         {error}
       </div>
-    );
+    ) : null;
   }
-
-  if (!me) {
-    // Loading. Reserve the row height so the sidebar doesn't flicker
-    // when the data arrives.
-    return (
-      <div
-        className={cn(
-          "h-9 px-5 py-2 text-[0.65rem] text-muted-foreground/40",
-          className,
-        )}
-        aria-busy="true"
-      >
-        …
-      </div>
-    );
-  }
-
-  const handleLogout = () => {
-    void api.logout();
-  };
-
-  // Prefer display_name → email → truncated user_id. Contract V1 only
-  // populates user_id; the fallthroughs are forward-compat for a future
-  // Portal that adds a userinfo endpoint (OQ-C1 in the plan).
-  const label = me.display_name || me.email || truncateUserId(me.user_id);
 
   return (
     <div
@@ -125,16 +113,16 @@ export function AuthWidget({ className }: AuthWidgetProps) {
       aria-label={`Logged in as ${label}`}
     >
       <div className="flex min-w-0 flex-col">
-        <span className="truncate font-mono text-foreground/90" title={me.user_id}>
+        <span className="truncate font-mono text-foreground/90" title={me?.user_id ?? user?.id}>
           {label}
         </span>
         <span className="truncate text-muted-foreground/70">
-          via {me.provider}
+          {me ? `via ${me.provider}` : "signed in"}
         </span>
       </div>
       <button
         type="button"
-        onClick={handleLogout}
+        onClick={() => void handleLogout()}
         className={cn(
           "shrink-0 rounded p-1.5 text-muted-foreground/70",
           "transition-colors hover:bg-current/10 hover:text-foreground",

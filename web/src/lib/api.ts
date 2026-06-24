@@ -130,6 +130,7 @@ export async function fetchJSON<T>(
       /* non-JSON 401 — let it fall through */
     }
     if (
+      !options?.allowUnauthorized &&
       (body.error === "unauthenticated" || body.error === "session_expired") &&
       body.login_url
     ) {
@@ -316,6 +317,37 @@ function profileQuery(profile?: string): string {
 function appendProfileParam(url: string, profile?: string): string {
   if (!profile || url.includes("profile=")) return url;
   return `${url}${url.includes("?") ? "&" : "?"}profile=${encodeURIComponent(profile)}`;
+}
+
+/**
+ * Tear down the embedded Hermes operator-console session on logout: drop the
+ * injected session token and clear `hermes.*` browser storage so a stale token
+ * can't be replayed, then best-effort invalidate the gated operator cookie.
+ * Does NOT navigate — the caller owns that. On the Vercel product deploy the
+ * operator `/auth/logout` isn't proxied (harmless no-op); revoking the Supabase
+ * session is what actually de-authorizes the operator proxy.
+ */
+export async function clearHermesSession(): Promise<void> {
+  try {
+    window.__HERMES_SESSION_TOKEN__ = undefined;
+  } catch {
+    /* ignore */
+  }
+  try {
+    for (const store of [window.sessionStorage, window.localStorage]) {
+      for (let i = store.length - 1; i >= 0; i--) {
+        const k = store.key(i);
+        if (k && k.startsWith("hermes.")) store.removeItem(k);
+      }
+    }
+  } catch {
+    /* SSR / privacy mode — ignore */
+  }
+  try {
+    await fetch(`${BASE}/auth/logout`, { method: "POST", credentials: "include" });
+  } catch {
+    /* offline / not gated — the operator cookie expires on its own */
+  }
 }
 
 export const api = {
@@ -899,7 +931,9 @@ export const api = {
 
   // Dashboard themes
   getThemes: () =>
-    fetchJSON<DashboardThemesResponse>("/api/dashboard/themes"),
+    fetchJSON<DashboardThemesResponse>("/api/dashboard/themes", undefined, {
+      allowUnauthorized: true,
+    }),
   setTheme: (name: string) =>
     fetchJSON<{ ok: boolean; theme: string }>("/api/dashboard/theme", {
       method: "PUT",
@@ -907,7 +941,9 @@ export const api = {
       body: JSON.stringify({ name }),
     }),
   getFontPref: () =>
-    fetchJSON<DashboardFontResponse>("/api/dashboard/font"),
+    fetchJSON<DashboardFontResponse>("/api/dashboard/font", undefined, {
+      allowUnauthorized: true,
+    }),
   setFontPref: (font: string) =>
     fetchJSON<{ ok: boolean; font: string }>("/api/dashboard/font", {
       method: "PUT",

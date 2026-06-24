@@ -13,6 +13,7 @@ import {
 } from "react";
 import type { Provider, Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
+import { clearHermesSession } from "@/lib/api";
 
 interface AuthValue {
   user: User | null;
@@ -110,7 +111,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user, session, loading, authError, configured: true,
         signIn: (email, password) => supabase!.auth.signInWithPassword({ email, password }).then((r) => ({ error: r.error })),
         signUp: (email, password) => supabase!.auth.signUp({ email, password }).then((r) => ({ data: { session: r.data?.session ?? null }, error: r.error })),
-        signOut: () => supabase!.auth.signOut().then(() => undefined),
+        // Full logout: tear down the embedded operator-console session first
+        // (drops the injected token + hermes.* storage + gated cookie), then
+        // revoke the Supabase product session (server-side refresh-token revoke
+        // + clears the local `vigil-auth` store). Caller navigates to /login.
+        signOut: async () => {
+          await clearHermesSession();
+          await supabase!.auth.signOut();
+        },
         resetPassword: (email) => supabase!.auth.resetPasswordForEmail(email, { redirectTo: redirect() }).then((r) => ({ error: r.error })),
         signInWithGoogle: () => supabase!.auth.signInWithOAuth({ provider: "google", options: { redirectTo: redirect() } }).then(() => undefined),
         signInWithApple: () => supabase!.auth.signInWithOAuth({ provider: "apple", options: { redirectTo: redirect() } }).then(() => undefined),

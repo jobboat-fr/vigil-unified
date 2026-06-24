@@ -10,6 +10,10 @@
       "destination": "/api/ops?__opspath=$1"
     },
     {
+      "source": "/dashboard-plugins/(.*)",
+      "destination": "/api/plugin-proxy?__p=$1"
+    },
+    {
       "source": "/((?!api/|dashboard-plugins/|ws$|ws/|assets/|favicon\\.svg|vigil-mark\\.svg|winnywoo-mark\\.svg|.*\\.[a-zA-Z0-9]+$).*)",
       "destination": "/index.html"
     }
