@@ -75,6 +75,7 @@ import { SidebarStatusStrip, gatewayLine } from "@/components/SidebarStatusStrip
 import { useBelowBreakpoint } from "@nous-research/ui/hooks/use-below-breakpoint";
 import { useSidebarStatus } from "@/hooks/useSidebarStatus";
 import { AuthWidget } from "@/components/AuthWidget";
+import { OnboardingWizard } from "@/components/OnboardingWizard";
 import { PageHeaderProvider } from "@/contexts/PageHeaderProvider";
 import { ProfileProvider } from "@/contexts/ProfileProvider";
 import { useProfileScope } from "@/contexts/useProfileScope";
@@ -873,6 +874,7 @@ export default function App() {
       </div>
 
       <PluginSlot name="overlay" />
+      <OnboardingWizard />
     </div>
     </ProfileProvider>
   );
