@@ -48,10 +48,12 @@ export default function AuthPage({ initialMode = "signin" }: { initialMode?: Mod
         @keyframes ap-in{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
         .ap-in{animation:ap-in .6s cubic-bezier(.2,.7,.2,1) both}
         .ap-grid{background-image:linear-gradient(${BRAND.line} 1px,transparent 1px),linear-gradient(90deg,${BRAND.line} 1px,transparent 1px);background-size:46px 46px}
-        .ap-field{width:100%;border-radius:.375rem;border:1px solid ${BRAND.line};background:rgba(255,230,203,.04);padding:.55rem .7rem;font-size:.875rem;color:${BRAND.ink};outline:none}
+        .ap-field{width:100%;border-radius:.375rem;border:1px solid rgba(255,230,203,.45);background:rgba(255,230,203,.04);padding:.55rem .7rem;font-size:.875rem;color:${BRAND.ink};outline:none}
         .ap-field:focus{border-color:${BRAND.gold}88}
         .ap-oauth{border:1px solid ${BRAND.line};border-radius:.375rem;padding:.5rem;font-size:.8rem;color:${BRAND.ink};transition:background .15s,border-color .15s}
         .ap-oauth:hover{background:rgba(255,230,203,.05);border-color:${BRAND.gold}55}
+        .ap-field:focus-visible,button:focus-visible,.ap-oauth:focus-visible{outline:2px solid ${BRAND.gold};outline-offset:2px}
+        @media (prefers-reduced-motion: reduce){.ap-in{animation:none!important}}
       `}</style>
       <div aria-hidden className="ap-grid pointer-events-none absolute inset-0 opacity-50"
            style={{ maskImage: "radial-gradient(70% 55% at 50% 0%, #000 30%, transparent 75%)" }} />
@@ -64,7 +66,7 @@ export default function AuthPage({ initialMode = "signin" }: { initialMode?: Mod
             <img src="/vigil-mark.svg" alt="VIGIL" width={44} height={44} />
             <h1 className="text-3xl font-bold" style={{ fontFamily: BRAND.display, letterSpacing: ".02em" }}>VIGIL</h1>
           </Link>
-          <p style={{ fontFamily: BRAND.mono, fontSize: 11, letterSpacing: ".18em", textTransform: "uppercase", color: `${BRAND.ink}80` }}>
+          <p style={{ fontFamily: BRAND.mono, fontSize: 11, letterSpacing: ".18em", textTransform: "uppercase", color: `${BRAND.ink}99` }}>
             {heading}
           </p>
         </div>
@@ -72,19 +74,19 @@ export default function AuthPage({ initialMode = "signin" }: { initialMode?: Mod
         <form onSubmit={submit} className="flex flex-col gap-3 rounded-xl p-6"
               style={{ background: BRAND.panel, border: `1px solid ${BRAND.line}` }}>
           <label className="flex flex-col gap-1.5">
-            <span style={{ fontFamily: BRAND.mono, fontSize: 10, letterSpacing: ".12em", textTransform: "uppercase", color: `${BRAND.ink}70` }}>Email</span>
+            <span style={{ fontFamily: BRAND.mono, fontSize: 10, letterSpacing: ".12em", textTransform: "uppercase", color: `${BRAND.ink}99` }}>Email</span>
             <input className="ap-field" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
           </label>
 
           {mode !== "reset" && (
             <label className="flex flex-col gap-1.5">
-              <span style={{ fontFamily: BRAND.mono, fontSize: 10, letterSpacing: ".12em", textTransform: "uppercase", color: `${BRAND.ink}70` }}>Password</span>
+              <span style={{ fontFamily: BRAND.mono, fontSize: 10, letterSpacing: ".12em", textTransform: "uppercase", color: `${BRAND.ink}99` }}>Password</span>
               <input className="ap-field" type="password" autoComplete={mode === "signup" ? "new-password" : "current-password"} required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
             </label>
           )}
 
-          {(err || authError) && <p className="text-xs" style={{ color: BRAND.rose }}>{err || authError}</p>}
-          {msg && <p className="text-xs" style={{ color: BRAND.emer }}>{msg}</p>}
+          {(err || authError) && <p role="alert" className="text-xs" style={{ color: BRAND.rose }}>{err || authError}</p>}
+          {msg && <p role="status" className="text-xs" style={{ color: BRAND.emer }}>{msg}</p>}
 
           <button type="submit" disabled={busy} className="mt-1 w-full rounded-md py-2.5 text-sm font-bold uppercase tracking-widest disabled:opacity-60"
                   style={{ background: BRAND.gold, color: BRAND.bg, fontFamily: BRAND.mono }}>
@@ -94,7 +96,7 @@ export default function AuthPage({ initialMode = "signin" }: { initialMode?: Mod
 
         {mode !== "reset" && (
           <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-2" style={{ fontFamily: BRAND.mono, fontSize: 10, letterSpacing: ".12em", textTransform: "uppercase", color: `${BRAND.ink}55` }}>
+            <div className="flex items-center gap-2" style={{ fontFamily: BRAND.mono, fontSize: 10, letterSpacing: ".12em", textTransform: "uppercase", color: `${BRAND.ink}99` }}>
               <span className="h-px flex-1" style={{ background: BRAND.line }} /> or <span className="h-px flex-1" style={{ background: BRAND.line }} />
             </div>
             <div className="grid grid-cols-2 gap-2">
@@ -106,7 +108,7 @@ export default function AuthPage({ initialMode = "signin" }: { initialMode?: Mod
           </div>
         )}
 
-        <div className="flex items-center justify-between text-xs" style={{ color: `${BRAND.ink}70` }}>
+        <div className="flex items-center justify-between text-xs" style={{ color: `${BRAND.ink}99` }}>
           {mode === "signin" ? (
             <>
               <button type="button" className="hover:underline" onClick={() => setMode("signup")}>Create account</button>

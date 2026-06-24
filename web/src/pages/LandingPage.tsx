@@ -53,6 +53,9 @@ export default function LandingPage() {
         .ll-card{transition:transform .2s ease,border-color .2s ease,background .2s ease}
         .ll-card:hover{transform:translateY(-4px);border-color:${GOLD}66;background:#0a2a28}
         .ll-grid{background-image:linear-gradient(${LINE} 1px,transparent 1px),linear-gradient(90deg,${LINE} 1px,transparent 1px);background-size:46px 46px}
+        .ll-mono:focus-visible,a:focus-visible{outline:2px solid ${GOLD};outline-offset:2px;border-radius:2px}
+        @media (forced-colors: active){.ll-grad{-webkit-text-fill-color:CanvasText;color:CanvasText;background:none}}
+        @media (prefers-reduced-motion: reduce){.ll-in,.ll-grad,.ll-cursor::after{animation:none!important}}
       `}</style>
 
       {/* NAV */}
@@ -98,7 +101,7 @@ export default function LandingPage() {
 
           {/* LIVE market pulse */}
           <div className="ll-in mx-auto mt-14 max-w-3xl" style={{ animationDelay: ".24s" }}>
-            <div className="ll-mono mb-2 flex items-center justify-center gap-2 text-[11px] uppercase tracking-widest" style={{ color: `${INK}66` }}>
+            <div className="ll-mono mb-2 flex items-center justify-center gap-2 text-[11px] uppercase tracking-widest" style={{ color: `${INK}99` }}>
               <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: EMER, boxShadow: `0 0 8px ${EMER}` }} />
               Live market pulse
             </div>
@@ -124,13 +127,13 @@ export default function LandingPage() {
       <section className="px-5 py-12 md:px-10">
         <div className="mx-auto max-w-6xl">
           <h2 className="ll-disp text-center text-3xl font-bold md:text-4xl">Everything in one workspace</h2>
-          <p className="mx-auto mt-3 max-w-xl text-center text-sm" style={{ color: `${INK}80` }}>Each surface is a real tool the agent can read, reason over, and act in — never autonomously where money or messages are involved.</p>
+          <p className="mx-auto mt-3 max-w-xl text-center text-sm" style={{ color: `${INK}99` }}>Each surface is a real tool the agent can read, reason over, and act in — never autonomously where money or messages are involved.</p>
           <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {SURFACES.map((s) => (
               <div key={s.title} className="ll-card rounded-lg p-5" style={{ border: `1px solid ${LINE}`, background: PANEL }}>
                 <div className="flex h-10 w-10 items-center justify-center rounded" style={{ background: `${GOLD}1c`, color: GOLD }}>{s.icon}</div>
                 <h3 className="ll-disp mt-4 text-lg font-bold">{s.title}</h3>
-                <p className="mt-1.5 text-sm" style={{ color: `${INK}80` }}>{s.body}</p>
+                <p className="mt-1.5 text-sm" style={{ color: `${INK}99` }}>{s.body}</p>
               </div>
             ))}
           </div>
@@ -183,7 +186,7 @@ export default function LandingPage() {
                 <img src="/vigil-mark.svg" alt="" width={24} height={24} />
                 <span className="ll-disp text-lg font-bold tracking-[0.04em]">VIGIL</span>
               </div>
-              <p className="mt-3 max-w-xs text-sm" style={{ color: `${INK}70` }}>
+              <p className="mt-3 max-w-xs text-sm" style={{ color: `${INK}99` }}>
                 The AI workspace that thinks before it acts. One human-in-the-loop agent across your council, desk, and books.
               </p>
             </div>
@@ -192,8 +195,8 @@ export default function LandingPage() {
             <FooterCol title="Trust" links={[["Human-in-the-loop", "/docs"], ["Your keys, your data", "/docs"], ["Audit log", "/login"]]} />
           </div>
           <div className="mt-10 flex flex-col items-start justify-between gap-3 border-t pt-6 sm:flex-row sm:items-center" style={{ borderColor: LINE }}>
-            <span className="ll-mono text-xs uppercase tracking-widest" style={{ color: `${INK}55` }}>© {new Date().getFullYear()} VIGIL</span>
-            <span className="text-xs" style={{ color: `${INK}45` }}>Not financial, tax, or legal advice.</span>
+            <span className="ll-mono text-xs uppercase tracking-widest" style={{ color: `${INK}99` }}>© {new Date().getFullYear()} VIGIL</span>
+            <span className="text-xs" style={{ color: `${INK}99` }}>Not financial, tax, or legal advice.</span>
           </div>
         </div>
       </footer>
@@ -210,10 +213,10 @@ function Pulse({ label, value, chg, sub }: { label: string; value: string; chg?:
   const c = chg != null ? Number(chg) : null;
   return (
     <div className="rounded px-3 py-2.5 text-left" style={{ background: PANEL, border: `1px solid ${LINE}` }}>
-      <div className="ll-mono text-[10px] uppercase tracking-wider" style={{ color: `${INK}66` }}>{label}</div>
+      <div className="ll-mono text-[10px] uppercase tracking-wider" style={{ color: `${INK}99` }}>{label}</div>
       <div className="ll-mono text-base font-bold tabular-nums" style={{ color: INK }}>{value}</div>
       {c != null && <div className="ll-mono text-xs tabular-nums" style={{ color: c >= 0 ? EMER : ROSE }}>{c >= 0 ? "▲" : "▼"} {Math.abs(c).toFixed(2)}%</div>}
-      {sub && <div className="text-[10px]" style={{ color: `${INK}55` }}>{sub}</div>}
+      {sub && <div className="text-[10px]" style={{ color: `${INK}99` }}>{sub}</div>}
     </div>
   );
 }
@@ -234,7 +237,7 @@ function Step({ n, title, body }: { n: string; title: string; body: string }) {
     <div className="rounded-lg p-6" style={{ border: `1px solid ${LINE}`, background: PANEL }}>
       <div className="ll-disp ll-grad text-4xl font-bold">{n}</div>
       <h3 className="ll-disp mt-3 text-lg font-bold">{title}</h3>
-      <p className="mt-1.5 text-sm" style={{ color: `${INK}80` }}>{body}</p>
+      <p className="mt-1.5 text-sm" style={{ color: `${INK}99` }}>{body}</p>
     </div>
   );
 }
@@ -244,7 +247,7 @@ function Principle({ icon, title, body }: { icon: ReactNode; title: string; body
     <div className="rounded-lg p-5" style={{ border: `1px solid ${LINE}` }}>
       <div className="flex h-9 w-9 items-center justify-center rounded" style={{ background: `${GOLD}1c`, color: GOLD }}>{icon}</div>
       <h3 className="ll-disp mt-3 text-base font-bold">{title}</h3>
-      <p className="mt-1 text-xs" style={{ color: `${INK}70` }}>{body}</p>
+      <p className="mt-1 text-xs" style={{ color: `${INK}99` }}>{body}</p>
     </div>
   );
 }
@@ -252,7 +255,7 @@ function Principle({ icon, title, body }: { icon: ReactNode; title: string; body
 function FooterCol({ title, links }: { title: string; links: string[][] }) {
   return (
     <div>
-      <div className="ll-mono text-[11px] font-bold uppercase tracking-widest" style={{ color: `${INK}55` }}>{title}</div>
+      <div className="ll-mono text-[11px] font-bold uppercase tracking-widest" style={{ color: `${INK}99` }}>{title}</div>
       <ul className="mt-3 space-y-2">
         {links.map((l) => (
           <li key={l[0]}><Link to={l[1]} className="text-sm hover:underline" style={{ color: `${INK}b0` }}>{l[0]}</Link></li>

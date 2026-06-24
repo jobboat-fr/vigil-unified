@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Plug, Network, Video, Check, ArrowRight, X, Sparkles } from "lucide-react";
 import { vigil } from "@/lib/vigil";
@@ -55,6 +55,34 @@ export function OnboardingWizard() {
     return () => { on = false; };
   }, []);
 
+  // Modal a11y: focus the dialog on open, trap Tab inside it, close on Escape,
+  // and restore focus to the previously-focused element on close.
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.activeElement as HTMLElement | null;
+    dialogRef.current?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        try { localStorage.setItem(DONE_KEY, "1"); } catch { /* ignore */ }
+        setOpen(false);
+        return;
+      }
+      if (e.key !== "Tab") return;
+      const node = dialogRef.current;
+      if (!node) return;
+      const f = Array.from(
+        node.querySelectorAll<HTMLElement>('button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])'),
+      ).filter((el) => !el.hasAttribute("disabled"));
+      if (!f.length) return;
+      const first = f[0], last = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("keydown", onKey); prev?.focus?.(); };
+  }, [open]);
+
   if (!open) return null;
 
   const done = (k: keyof StepState) => state[k];
@@ -67,11 +95,14 @@ export function OnboardingWizard() {
 
   return (
     <div className="fixed inset-0 z-[80] flex items-center justify-center p-4"
-         style={{ background: "rgba(2,12,12,.72)", backdropFilter: "blur(4px)" }}
-         role="dialog" aria-modal="true" aria-label="Welcome to VIGIL">
-      <style>{`@keyframes ob-in{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}`}</style>
-      <div className="relative w-full max-w-lg overflow-hidden rounded-2xl"
-           style={{ background: BRAND.panel, border: `1px solid ${BRAND.line}`, color: BRAND.ink, animation: "ob-in .5s cubic-bezier(.2,.7,.2,1) both" }}>
+         style={{ background: "rgba(2,12,12,.72)", backdropFilter: "blur(4px)" }}>
+      <style>{`@keyframes ob-in{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+        .ob-modal{animation:ob-in .5s cubic-bezier(.2,.7,.2,1) both}
+        .ob-modal button:focus-visible{outline:2px solid ${BRAND.gold};outline-offset:2px}
+        @media (prefers-reduced-motion: reduce){.ob-modal{animation:none}}`}</style>
+      <div ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label="Welcome to VIGIL"
+           className="ob-modal relative w-full max-w-lg overflow-hidden rounded-2xl outline-none"
+           style={{ background: BRAND.panel, border: `1px solid ${BRAND.line}`, color: BRAND.ink }}>
         <div aria-hidden className="pointer-events-none absolute inset-0"
              style={{ background: `radial-gradient(80% 50% at 50% 0%, ${BRAND.gold}18, transparent 70%)` }} />
         <button onClick={dismiss} aria-label="Skip" className="absolute right-3 top-3 z-10 rounded p-1.5"
@@ -120,7 +151,7 @@ export function OnboardingWizard() {
           </ol>
 
           <div className="mt-5 flex items-center justify-between">
-            <button onClick={dismiss} className="text-xs hover:underline" style={{ color: `${BRAND.ink}80` }}>Skip for now</button>
+            <button onClick={dismiss} className="text-xs hover:underline" style={{ color: `${BRAND.ink}99` }}>Skip for now</button>
             <button onClick={dismiss} className="rounded px-4 py-2 text-xs font-bold uppercase tracking-widest"
                     style={{ border: `1px solid ${BRAND.line}`, color: BRAND.ink, fontFamily: BRAND.mono }}>
               {completed === STEPS.length ? "All set" : "I'll explore on my own"}

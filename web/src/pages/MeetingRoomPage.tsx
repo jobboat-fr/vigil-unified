@@ -314,7 +314,7 @@ export default function MeetingRoomPage() {
   // Full-screen shared live room (the "Zoom") — host + human guests + (next) the agent.
   if (liveJoin) {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col" style={{ background: "#07080d" }}>
+      <div role="dialog" aria-modal="true" aria-label={active?.title ? `Live meeting: ${active.title}` : "Live meeting"} className="fixed inset-0 z-50 flex flex-col" style={{ background: "#07080d" }}>
         <div className="flex items-center justify-between px-3 py-2" style={{ borderBottom: "1px solid #ffffff14", color: "#e7e9f3" }}>
           <span className="text-sm font-semibold">{active?.title || "Live meeting"}</span>
           <div className="flex items-center gap-2">
@@ -373,7 +373,7 @@ export default function MeetingRoomPage() {
               </ul>
             </div>
             <div className="flex gap-2 px-3 py-2" style={{ borderTop: "1px solid #ffffff14" }}>
-              <input value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") void sendMessage(); }} placeholder="Note what was said…" className="flex-1 rounded border bg-transparent px-2 py-1 text-sm" style={{ borderColor: "#ffffff33", color: "#e7e9f3" }} />
+              <input value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") void sendMessage(); }} aria-label="Meeting note" placeholder="Note what was said…" className="flex-1 rounded border bg-transparent px-2 py-1 text-sm" style={{ borderColor: "#ffffff33", color: "#e7e9f3" }} />
               <Button size="sm" onClick={() => void sendMessage()} disabled={!text.trim()}>Add</Button>
             </div>
           </div>
@@ -464,14 +464,14 @@ export default function MeetingRoomPage() {
                   value={speaker}
                   onChange={(e) => setSpeaker(e.target.value)}
                   className="w-24 rounded border border-current/20 bg-transparent px-2 py-1.5 text-sm"
-                  placeholder="Speaker"
+                  aria-label="Speaker name" placeholder="Speaker"
                 />
                 <input
                   value={text}
                   onChange={(e) => setText(e.target.value)}
                   onKeyDown={(e) => { if (e.key === "Enter") void sendMessage(); }}
                   className="flex-1 rounded border border-current/20 bg-transparent px-2 py-1.5 text-sm"
-                  placeholder="What was said…"
+                  aria-label="Transcript line" placeholder="What was said…"
                 />
                 <Button size="sm" onClick={() => void sendMessage()} disabled={!text.trim()}>Add</Button>
               </div>
@@ -549,7 +549,7 @@ export default function MeetingRoomPage() {
                   <p className="text-text-secondary text-[11px]">Opens a shared video room. Invite humans with the link; your AI {persona} joins the same call.</p>
                   {inviteLink && (
                     <div className="flex items-center gap-2 text-xs">
-                      <input readOnly value={inviteLink} className="flex-1 rounded border border-current/20 bg-transparent px-2 py-1 font-mono" onFocus={(e) => e.currentTarget.select()} />
+                      <input aria-label="Invite link" readOnly value={inviteLink} className="flex-1 rounded border border-current/20 bg-transparent px-2 py-1 font-mono" onFocus={(e) => e.currentTarget.select()} />
                       <button className="text-text-secondary hover:text-foreground" onClick={() => void navigator.clipboard?.writeText(inviteLink)}>Copy</button>
                     </div>
                   )}
@@ -565,7 +565,7 @@ export default function MeetingRoomPage() {
                     <input
                       value={meetUrl}
                       onChange={(e) => setMeetUrl(e.target.value)}
-                      placeholder="https://meet.google.com/abc-defg-hij"
+                      aria-label="Google Meet link" placeholder="https://meet.google.com/abc-defg-hij"
                       className="flex-1 min-w-[220px] rounded border border-current/20 bg-transparent px-2 py-1 text-xs font-mono"
                     />
                     <label className="flex items-center gap-1 text-xs text-text-secondary">
@@ -600,7 +600,7 @@ export default function MeetingRoomPage() {
                       <input
                         value={sayText}
                         onChange={(e) => setSayText(e.target.value)}
-                        placeholder={`Make ${persona} say…`}
+                        aria-label="Speak as the AI persona" placeholder={`Make ${persona} say…`}
                         onKeyDown={(e) => { if (e.key === "Enter") void sayInMeet(); }}
                         className="flex-1 rounded border border-current/20 bg-transparent px-2 py-1"
                       />
