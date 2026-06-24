@@ -172,6 +172,42 @@ def test_summarize_builds_artifact_canvas_and_side_effects(client, monkeypatch):
     assert "Recap" in art["content"]
 
 
+def test_summarize_closes_room_and_persists_summary(client, monkeypatch):
+    async def fake_summarize(**_kw):
+        return {"empty": False, "summary_markdown": "# Recap\nWe agreed to ship.",
+                "decisions": [], "next_steps": [], "commitments": [], "follow_ups": [], "stub": True}
+    async def fake_structure(**_kw):
+        return {"nodes": [], "edges": [], "table": {"columns": [], "rows": []}}
+    monkeypatch.setattr(rooms_mod, "summarize_meeting", fake_summarize)
+    monkeypatch.setattr(rooms_mod, "structure_meeting", fake_structure)
+    # Pretend an AI agent is live in the room — closing must end it.
+    rid = _data(client.post("/v1/rooms", json={"title": "Deal review"}))["id"]
+    rooms_mod._AVATAR_SESSIONS[rid] = {"provider": "beyond", "conversation_id": "c1"}
+    client.post(f"/v1/rooms/{rid}/messages", json={"text": "ship", "speaker": "You"})
+
+    out = _data(client.post(f"/v1/rooms/{rid}/summarize", json={}))
+    assert out["status"] == "closed" and out["agent_ended"] is True
+    assert rid not in rooms_mod._AVATAR_SESSIONS                # agent left
+    room = _data(client.get(f"/v1/rooms/{rid}"))
+    assert room["status"] == "closed" and "ship" in room["summary"]  # summary persisted
+
+
+def test_council_reviews_summary_only_after_close(client, monkeypatch):
+    # The post-meeting council convenes over the SUMMARY, not the transcript.
+    rid = _data(client.post("/v1/rooms", json={"title": "Q3"}))["id"]
+    client.db.tables["rooms"][0]["transcript"] = [{"speaker": "A", "text": "long raw discussion"}]
+    client.db.tables["rooms"][0]["summary"] = "# Summary\nWe will raise prices 10%."
+
+    room = client.db.tables["rooms"][0]
+    summ = rooms_mod._council_scenario(room, rid, "cfo_review", None, "summary")
+    assert summ["transcript"] == "# Summary\nWe will raise prices 10%."
+    assert summ["primaryUserPrompt"].startswith("Meeting summary:")
+    assert "long raw discussion" not in summ["primaryUserPrompt"]   # transcript never sent
+
+    txt = rooms_mod._council_scenario(room, rid, "cfo_review", None, "transcript")
+    assert "long raw discussion" in txt["transcript"]               # explicit transcript still works
+
+
 def test_summarize_rejects_empty_transcript(client, monkeypatch):
     async def fake_summarize(**_kw):
         return {"empty": True}

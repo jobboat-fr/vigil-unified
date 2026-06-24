@@ -65,6 +65,9 @@ def _public(row: dict[str, Any]) -> dict[str, Any]:
         "lens": row.get("default_lens") or "cfo_review",
         "members": row.get("members") or [],
         "transcript": row.get("transcript") or [],
+        "status": row.get("status") or "active",
+        "summary": row.get("summary") or "",
+        "concluded_at": row.get("concluded_at"),
         "created_at": row.get("created_at"),
     }
 
@@ -227,30 +230,52 @@ def _transcript_text(transcript: list[dict[str, Any]]) -> str:
     return "\n".join(f"{m.get('speaker')}: {m.get('text')}" for m in transcript)
 
 
+def _council_scenario(room: dict[str, Any], room_id: str, lens: str,
+                      question: str | None, source: str) -> dict[str, Any]:
+    """Build the council scenario. With ``source='summary'`` (the post-meeting flow)
+    the council reviews ONLY the meeting summary — far fewer tokens than the full
+    transcript. Falls back to the transcript when no summary exists yet."""
+    summary = (room.get("summary") or "").strip()
+    if source == "summary" and summary:
+        basis, basis_label = summary, "Meeting summary"
+    else:
+        basis, basis_label = _transcript_text(room.get("transcript") or []), "Meeting transcript"
+    primary_user = basis + (f"\n\nFocus question: {question}" if question else "")
+    return {
+        "id": f"room:{room_id}",
+        "transcript": basis,
+        "primarySystemPrompt": ROLE_SYSTEM_PROMPTS.get(lens, ""),
+        "primaryUserPrompt": (
+            f"{basis_label}:\n\n{primary_user}\n\n"
+            "What is your intervention? Respond ONLY with the JSON object."
+        ),
+        "reviewerSystemPrompt": REVIEWER_SYSTEM_PROMPT,
+    }
+
+
 @router.get("/{room_id}/stream")
 async def convene_stream(
     room_id: str,
     task: str | None = Query(default=None, description="Council lens; defaults to the room lens."),
     question: str | None = Query(default=None),
+    source: str = Query(
+        default="transcript",
+        description="What the council reviews: 'summary' (token-economical; the meeting "
+        "summary only) or 'transcript' (the full transcript).",
+    ),
     user: dict = Depends(get_current_user),
 ) -> StreamingResponse:
-    """Convene the council over the room transcript and stream stage events (SSE)."""
+    """Convene the council over the room and stream stage events (SSE).
+
+    The post-meeting flow passes ``source=summary`` so the council (departments'
+    review) runs AFTER summarization on the SUMMARY only — the LLMs never see the
+    whole transcript, which is far cheaper. Falls back to the transcript when there
+    is no summary yet (e.g. a mid-meeting convene)."""
     room = await _owned_row(room_id, _uid(user))
     lens = task or room.get("default_lens") or "cfo_review"
     if lens not in TASK_MATRIX:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail={"error": "unknown_task", "task": lens})
-    transcript = _transcript_text(room.get("transcript") or [])
-    primary_user = transcript + (f"\n\nFocus question: {question}" if question else "")
-    scenario = {
-        "id": f"room:{room_id}",
-        "transcript": transcript,
-        "primarySystemPrompt": ROLE_SYSTEM_PROMPTS.get(lens, ""),
-        "primaryUserPrompt": (
-            f"Meeting transcript:\n\n{primary_user}\n\n"
-            "What is your intervention? Respond ONLY with the JSON object."
-        ),
-        "reviewerSystemPrompt": REVIEWER_SYSTEM_PROMPT,
-    }
+    scenario = _council_scenario(room, room_id, lens, question, source)
     return StreamingResponse(_run_council_sse(lens, scenario), media_type="text/event-stream")
 
 
@@ -323,6 +348,19 @@ async def get_weights(room_id: str, user: dict = Depends(get_current_user)) -> d
 _AVATAR_SESSIONS: dict[str, dict[str, Any]] = {}
 
 
+async def _end_room_agent(room_id: str) -> bool:
+    """End any in-process AI agent (avatar) session for the room — the agent
+    LEAVES when the meeting is closed. Tears down the Tavus conversation if any;
+    the caller clears the room's live_* columns. Returns whether a session existed."""
+    session = _AVATAR_SESSIONS.pop(room_id, None)
+    if session and session.get("provider") == "tavus" and session.get("conversation_id"):
+        try:
+            await avatar_mod.end_tavus_conversation(session["conversation_id"])
+        except Exception as exc:  # noqa: BLE001
+            logger.info("agent.end_failed room=%s: %s", room_id, exc)
+    return bool(session)
+
+
 class AvatarBody(BaseModel):
     persona: str = Field(default="advisor", description="CFO | CTO | COO | CRM | CRO | advisor")
     language: str | None = Field(default=None)
@@ -374,12 +412,10 @@ async def end_avatar(room_id: str, user: dict = Depends(get_current_user)) -> di
     """End the room's active avatar session."""
     uid = _uid(user)
     await _owned_row(room_id, uid)
-    session = _AVATAR_SESSIONS.pop(room_id, None)
-    if session and session.get("provider") == "tavus" and session.get("conversation_id"):
-        await avatar_mod.end_tavus_conversation(session["conversation_id"])
+    had_session = await _end_room_agent(room_id)
     await db_update("rooms", {"live_url": None, "live_provider": None, "live_persona": None},
                     filters={"id": room_id, "user_id": uid})
-    return {"ok": True, "data": {"ended": room_id, "had_session": bool(session)}}
+    return {"ok": True, "data": {"ended": room_id, "had_session": had_session}}
 
 
 @router.get("/meeting/{share_token}")
@@ -571,6 +607,19 @@ async def summarize_room(room_id: str, body: SummarizeBody, user: dict = Depends
             if r:
                 contacts_n += 1
 
+    # Close the meeting: persist the summary (the council later reviews THIS, not
+    # the transcript), mark the room concluded, and make the AI agent leave.
+    from datetime import UTC, datetime
+
+    agent_ended = await _end_room_agent(room_id)
+    await db_update("rooms", {
+        "summary": result["summary_markdown"],
+        "status": "closed",
+        "concluded_at": datetime.now(UTC).isoformat(),
+        "artifact_id": artifact_id,
+        "live_url": None, "live_provider": None, "live_persona": None,
+    }, filters={"id": room_id, "user_id": uid})
+
     return {
         "ok": True,
         "data": {
@@ -583,6 +632,8 @@ async def summarize_room(room_id: str, body: SummarizeBody, user: dict = Depends
             "canvas": canvas,
             "commitments_saved": commitments_n,
             "contacts_saved": contacts_n,
+            "agent_ended": agent_ended,
+            "status": "closed",
             "stub": result.get("stub"),
         },
     }

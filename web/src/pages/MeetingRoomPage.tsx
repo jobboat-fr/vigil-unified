@@ -182,13 +182,13 @@ export default function MeetingRoomPage() {
     await reloadActive(active.id);
   };
 
-  const convene = async (lens: string) => {
+  const convene = async (lens: string, source: "summary" | "transcript" = "transcript") => {
     if (!active || convening) return;
     setConvening(true);
     setEvents([]);
     setRecord(null);
     try {
-      for await (const evt of streamRoomCouncil(active.id, lens)) {
+      for await (const evt of streamRoomCouncil(active.id, lens, undefined, source)) {
         setEvents((prev) => [...prev, evt]);
         if (evt.event === "complete") {
           const rec = (evt.data as { record?: CouncilRecord }).record;
@@ -236,22 +236,37 @@ export default function MeetingRoomPage() {
     setAgentIn(false);
   }, [active?.id]);
 
+  // Close the meeting: summarize (the backend marks the room closed + makes the
+  // AI agent leave) → then convene the departments' council over the SUMMARY only
+  // (token-economical — the council never sees the full transcript). The summary +
+  // the live council both render below.
   const summarizeMeeting = async () => {
     if (!active) return;
     setSummarizing(true);
     try {
       // Fold in any live Google Meet captions first, so closing the meeting
-      // produces the summary artifact whether the call ran in-app or on Meet.
+      // produces the summary whether the call ran in-app or on Meet.
       await pullMeetIntoRoom(active.id);
       const s = await vigil.rooms.summarize(active.id);
       setSummary(s);
-      // Phase 4: drop the host straight onto the editable artifact canvas.
-      if (s.artifact_id) navigate(`/studio?artifact=${s.artifact_id}`);
+      await reloadActive(active.id); // room is now closed + summary persisted
+      setSummarizing(false);
+      // Req: departments review/feedback AFTER summarization, on the summary only.
+      if (s.summary_markdown) {
+        await convene(active.lens || "cfo_review", "summary");
+      }
     } catch (e) {
       setLiveErr((e as Error).message);
-    } finally {
       setSummarizing(false);
     }
+  };
+
+  // Owner ends the meeting: leave the live video and run the close→summary→council
+  // flow. Triggered from the live-meeting "End meeting" control (req: summarize as
+  // soon as the owner closes the meeting).
+  const closeMeeting = async () => {
+    setLiveJoin(null);
+    await summarizeMeeting();
   };
 
   // Start the shared live room: mint the host's LiveKit token + an invite link,
@@ -321,11 +336,47 @@ export default function MeetingRoomPage() {
                 Copy invite link
               </button>
             )}
-            <button onClick={() => setLiveJoin(null)} className="rounded px-2 py-1 text-xs" style={{ color: "#fb7185", border: "1px solid #fb7185" }}>Leave</button>
+            <button onClick={() => setLiveJoin(null)} className="rounded px-2 py-1 text-xs" style={{ color: "#e7e9f3", border: "1px solid #ffffff33" }}>Minimize</button>
+            <button onClick={() => void closeMeeting()} disabled={summarizing} className="rounded px-2 py-1 text-xs font-semibold" style={{ color: "#fff", background: "#fb7185" }}>
+              {summarizing ? "Closing…" : "⏹ End meeting"}
+            </button>
           </div>
         </div>
-        <div className="flex-1 min-h-0">
-          <LiveRoom token={liveJoin.token} url={liveJoin.url} onLeave={() => setLiveJoin(null)} />
+        <div className="flex min-h-0 flex-1">
+          <div className="min-h-0 flex-1"><LiveRoom token={liveJoin.token} url={liveJoin.url} onLeave={() => setLiveJoin(null)} /></div>
+          {/* In-meeting controls — transcription + listening live HERE, not on the dashboard */}
+          <div className="flex w-80 min-w-0 flex-col" style={{ borderLeft: "1px solid #ffffff14", color: "#e7e9f3" }}>
+            <div className="flex items-center justify-between px-3 py-2" style={{ borderBottom: "1px solid #ffffff14" }}>
+              <span className="text-[10px] font-mono uppercase tracking-wide" style={{ opacity: 0.7 }}>Live advisor</span>
+              <button
+                onClick={() => { setLiveAdvisor((v) => !v); setSuggestion(null); }}
+                className="text-xs px-2.5 py-1 rounded-full border"
+                style={{ borderColor: liveAdvisor ? "#00ff8866" : "#ffffff33", color: liveAdvisor ? "#00ff88" : "#e7e9f3", background: liveAdvisor ? "#00ff881a" : "transparent" }}
+              >
+                {liveAdvisor ? "● Listening" : "○ Listen off"}
+              </button>
+            </div>
+            {suggestion?.speak && (
+              <div className="m-3 rounded-lg border p-2.5 space-y-2" style={{ borderColor: "#7c5cff66", background: "#7c5cff14" }}>
+                <div className="flex items-center gap-2"><span className="text-sm">✋</span><span className="text-[10px] font-mono uppercase" style={{ color: "#7c5cff" }}>Advisor wants to speak</span></div>
+                <p className="text-sm">{suggestion.message}</p>
+                <div className="flex gap-2"><Button size="sm" onClick={() => void acceptSuggestion()}>Add</Button><button className="text-xs" style={{ opacity: 0.7 }} onClick={() => setSuggestion(null)}>Dismiss</button></div>
+              </div>
+            )}
+            <div className="min-h-0 flex-1 overflow-y-auto px-3 py-2">
+              <div className="text-[10px] font-mono uppercase tracking-wide mb-1.5" style={{ opacity: 0.7 }}>Transcript · {active?.transcript.length ?? 0}</div>
+              <ul className="space-y-1">
+                {(active?.transcript ?? []).map((m, i) => (
+                  <li key={i} className="text-sm leading-snug"><span className="font-mono" style={{ opacity: 0.9 }}>{m.speaker}:</span> <span style={{ opacity: 0.8 }}>{m.text}</span></li>
+                ))}
+                {(active?.transcript.length ?? 0) === 0 && <li className="text-xs" style={{ opacity: 0.6 }}>Captions and notes appear here.</li>}
+              </ul>
+            </div>
+            <div className="flex gap-2 px-3 py-2" style={{ borderTop: "1px solid #ffffff14" }}>
+              <input value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") void sendMessage(); }} placeholder="Note what was said…" className="flex-1 rounded border bg-transparent px-2 py-1 text-sm" style={{ borderColor: "#ffffff33", color: "#e7e9f3" }} />
+              <Button size="sm" onClick={() => void sendMessage()} disabled={!text.trim()}>Add</Button>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -570,7 +621,11 @@ export default function MeetingRoomPage() {
                 {summary && (
                   <div className="mt-2 rounded-lg border border-current/15 p-3 space-y-2 text-sm">
                     <div className="flex flex-wrap gap-3 text-xs text-text-secondary">
-                      {summary.artifact_id && <span>✓ Saved to Studio</span>}
+                      {summary.artifact_id && (
+                        <button className="underline hover:text-foreground" onClick={() => navigate(`/studio?artifact=${summary.artifact_id}`)}>
+                          ✓ Open in Studio
+                        </button>
+                      )}
                       <span>{summary.commitments_saved} commitments</span>
                       <span>{summary.contacts_saved} guests → CRM</span>
                     </div>

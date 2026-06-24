@@ -756,10 +756,16 @@ function parseFrame(frame: string): SseEvent | null {
 }
 
 /** Convene the council over a room's transcript; yields stage events then `complete`. */
-export function streamRoomCouncil(roomId: string, task?: string, question?: string): AsyncGenerator<SseEvent> {
+export function streamRoomCouncil(
+  roomId: string,
+  task?: string,
+  question?: string,
+  source: "summary" | "transcript" = "transcript",
+): AsyncGenerator<SseEvent> {
   const qs = new URLSearchParams();
   if (task) qs.set("task", task);
   if (question) qs.set("question", question);
+  if (source) qs.set("source", source);
   const suffix = qs.toString() ? `?${qs.toString()}` : "";
   return sseStream(`/v1/rooms/${roomId}/stream${suffix}`, { method: "GET" });
 }
