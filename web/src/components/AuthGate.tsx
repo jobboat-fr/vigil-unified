@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
-import { Spinner } from "@nous-research/ui/ui/components/spinner";
 import { useAuth } from "@/context/AuthContext";
 import PublicSite from "@/components/PublicSite";
+import { BrandLoader } from "@/components/BrandLoader";
 
 /**
  * Gates the whole app behind the VIGIL Supabase session. When there's no
@@ -13,13 +13,7 @@ import PublicSite from "@/components/PublicSite";
 export function AuthGate({ children }: { children: ReactNode }) {
   const { configured, loading, session } = useAuth();
   if (!configured) return <>{children}</>;
-  if (loading) {
-    return (
-      <div className="min-h-dvh flex items-center justify-center">
-        <Spinner />
-      </div>
-    );
-  }
+  if (loading) return <BrandLoader />;
   if (!session) return <PublicSite />;
   return <>{children}</>;
 }

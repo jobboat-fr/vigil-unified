@@ -1,10 +1,11 @@
 import { Routes, Route, Navigate, Link } from "react-router-dom";
-import { Spinner } from "@nous-research/ui/ui/components/spinner";
 import { useAuth } from "@/context/AuthContext";
 import LandingPage from "@/pages/LandingPage";
 import DocsPage from "@/pages/DocsPage.public";
 import AuthPage from "@/pages/AuthPage";
 import GuestMeetingPage from "@/pages/GuestMeetingPage";
+import { BrandLoader } from "@/components/BrandLoader";
+import { BRAND } from "@/lib/brand";
 
 /**
  * The unauthenticated experience: a public marketing site + docs, with the auth
@@ -36,15 +37,11 @@ function AuthCallback() {
   }
   if (authError) {
     return (
-      <div className="flex min-h-dvh flex-col items-center justify-center gap-3 p-6 text-center" style={{ background: "#07080d", color: "#e7e9f3" }}>
-        <p className="text-sm" style={{ color: "#fb7185" }}>{authError}</p>
+      <div className="flex min-h-dvh flex-col items-center justify-center gap-3 p-6 text-center" style={{ background: BRAND.bg, color: BRAND.ink }}>
+        <p className="text-sm" style={{ color: BRAND.rose }}>{authError}</p>
         <Link to="/login" className="text-sm underline">Back to sign in</Link>
       </div>
     );
   }
-  return (
-    <div className="flex min-h-dvh items-center justify-center" style={{ background: "#07080d" }}>
-      <Spinner />
-    </div>
-  );
+  return <BrandLoader label="Signing you in" />;
 }
