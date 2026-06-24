@@ -119,7 +119,12 @@ export default async function handler(req, res) {
   //    bundles). Routed here by the /dashboard-plugins/* rewrite as
   //    __opspath=dashboard-plugins/<…>; relayed straight from OVH with the
   //    correct Content-Type so the browser stops refusing the wrong-MIME 404s.
-  const _op = new URL(req.url || "/", "http://internal").searchParams.get("__opspath") || "";
+  // req.url may arrive as the rewrite destination (?__opspath=…) OR the original
+  // /api/<path> — derive the operator path from whichever is present.
+  const _u0 = new URL(req.url || "/", "http://internal");
+  const _op =
+    _u0.searchParams.get("__opspath") ||
+    _u0.pathname.replace(/^\/+/, "").replace(/^api\//, "");
   if (_op.startsWith("dashboard-plugins/")) {
     await proxyPluginAsset(_op, res);
     return;
