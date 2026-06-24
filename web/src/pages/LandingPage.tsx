@@ -162,6 +162,24 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* FAQ — engagement + long-tail keywords; mirrors the FAQPage JSON-LD in index.html */}
+      <section className="px-5 py-12 md:px-10">
+        <div className="mx-auto max-w-3xl">
+          <h2 className="ll-disp text-center text-3xl font-bold md:text-4xl">Questions, answered</h2>
+          <div className="mt-8 flex flex-col gap-2.5">
+            {FAQS.map((f) => (
+              <details key={f.q} className="ll-card group rounded-lg p-4" style={{ border: `1px solid ${LINE}`, background: PANEL }}>
+                <summary className="ll-disp flex cursor-pointer list-none items-center justify-between gap-3 text-base font-bold">
+                  {f.q}
+                  <span className="ll-mono shrink-0 text-lg leading-none transition-transform group-open:rotate-45" style={{ color: GOLD }}>+</span>
+                </summary>
+                <p className="mt-2.5 text-sm leading-relaxed" style={{ color: `${INK}b0` }}>{f.a}</p>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* CTA */}
       <section className="px-5 py-20 md:px-10">
         <div className="relative mx-auto max-w-3xl overflow-hidden rounded-2xl p-10 text-center" style={{ background: PANEL, border: `1px solid ${GOLD}3a` }}>
@@ -274,4 +292,21 @@ const SURFACES: { title: string; body: string; icon: ReactNode }[] = [
   { title: "Studio", body: "Draft, refine, and crystallize artifacts — proposals, briefs, contracts — grounded in your Vault.", icon: <PenLine className="h-5 w-5" /> },
   { title: "Vault", body: "Your real documents, so the agent cites what your contracts and statements actually say.", icon: <Lock className="h-5 w-5" /> },
   { title: "Audit", body: "A tamper-evident, hash-chained log of everything the agent does. Defensible by design.", icon: <ShieldCheck className="h-5 w-5" /> },
+];
+
+// FAQ — kept IN SYNC with the FAQPage JSON-LD in web/index.html (static HTML is
+// what AI crawlers / answer engines actually read, since they don't run JS).
+const FAQS: { q: string; a: string }[] = [
+  { q: "What is VIGIL?",
+    a: "VIGIL is an AI workspace that deliberates before it acts. It combines a multi-advisor AI council, autonomous AI departments, and a human-in-the-loop crypto trade desk with your finance, CRM, mail, and documents — all under one agent that thinks first and waits for your approval." },
+  { q: "How is VIGIL different from a chatbot or AI assistant?",
+    a: "Unlike a chatbot, VIGIL is built around human-in-the-loop control: every trade passes a single-use approval gate and outbound mail is review-then-send, so nothing with real consequence happens autonomously. It also brainstorms and presents a plan before acting, and grounds answers in your own documents and live data." },
+  { q: "What is the AI council?",
+    a: "The AI council is a panel of advisor lenses — CFO, CTO, Legal, and Product — that debate a decision, score it, and have a chairman synthesize a defensible verdict. It surfaces the bear case and dissent instead of hiding it, and you can always override the verdict." },
+  { q: "Can VIGIL trade crypto automatically?",
+    a: "No. VIGIL proposes trades from data-grounded forecasts, but every order is human-approved and capped at 5% of NAV. You connect your own broker and your API keys never leave your account." },
+  { q: "Is my data private and secure?",
+    a: "Yes. Every record is scoped to your account with row-level security, your broker and API keys stay in your account, and a tamper-evident, hash-chained audit log records everything the agent does." },
+  { q: "What can VIGIL's AI departments do?",
+    a: "VIGIL runs autonomous AI departments for recurring work — support triage, finance reconciliation, revenue follow-ups, lead scouting, and legal review. Each department only counts a task as done when it passes a deterministic effectiveness check, so output is verified, not assumed." },
 ];
