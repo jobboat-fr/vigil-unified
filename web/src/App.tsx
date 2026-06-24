@@ -146,6 +146,7 @@ const CHAT_NAV_ITEM: NavItem = {
   labelKey: "chat",
   label: "Chat",
   icon: Terminal,
+  group: "workspace",
 };
 
 /**
@@ -209,55 +210,56 @@ const BUILTIN_NAV_REST: NavItem[] = [
     labelKey: "sessions",
     label: "Sessions",
     icon: MessageSquare,
+    group: "workspace",
   },
-  // ── VIGIL workspace ──
-  { path: "/ops-team", label: "Ops Team", icon: Network },
-  { path: "/connections", label: "Connections", icon: Plug },
-  { path: "/approvals", label: "Approvals", icon: ShieldCheck },
-  { path: "/meeting-room", label: "Meeting Room", icon: Video },
-  { path: "/studio", label: "Studio", icon: PenLine },
-  { path: "/vault", label: "Vault", icon: Lock },
-  { path: "/finance", label: "Finance", icon: Receipt },
-  { path: "/crm", label: "CRM", icon: Contact },
-  { path: "/mail", label: "Mail", icon: Mail },
-  // ── WinnyWoo workspace ──
-  { path: "/trade-desk", label: "Trade Desk", icon: LineChart },
-  { path: "/signals", label: "Signals", icon: TrendingUp },
-  { path: "/positions", label: "Positions", icon: Wallet },
-  { path: "/orders", label: "Orders", icon: ListOrdered },
-  { path: "/audit", label: "Audit", icon: ScrollText },
-  { path: "/files", label: "Files", icon: FolderOpen },
-  {
-    path: "/analytics",
-    labelKey: "analytics",
-    label: "Analytics",
-    icon: BarChart3,
-  },
-  {
-    path: "/models",
-    labelKey: "models",
-    label: "Models",
-    icon: Cpu,
-  },
-  { path: "/logs", labelKey: "logs", label: "Logs", icon: FileText },
-  { path: "/cron", labelKey: "cron", label: "Cron", icon: Clock },
-  { path: "/skills", labelKey: "skills", label: "Skills", icon: Package },
-  { path: "/plugins", labelKey: "plugins", label: "Plugins", icon: Puzzle },
-  { path: "/mcp", label: "MCP", icon: Plug },
-  { path: "/channels", label: "Channels", icon: Radio },
-  { path: "/webhooks", label: "Webhooks", icon: Webhook },
-  { path: "/pairing", label: "Pairing", icon: ShieldCheck },
-  { path: "/profiles", labelKey: "profiles", label: "Profiles", icon: Users },
-  { path: "/config", labelKey: "config", label: "Config", icon: Settings },
-  { path: "/env", labelKey: "keys", label: "Keys", icon: KeyRound },
-  { path: "/system", label: "System", icon: Wrench },
-  {
-    path: "/docs",
-    labelKey: "documentation",
-    label: "Documentation",
-    icon: BookOpen,
-  },
+  // ── Workspace ──
+  { path: "/ops-team", label: "Ops Team", icon: Network, group: "workspace" },
+  { path: "/connections", label: "Connections", icon: Plug, group: "workspace" },
+  { path: "/approvals", label: "Approvals", icon: ShieldCheck, group: "workspace" },
+  { path: "/meeting-room", label: "Meeting Room", icon: Video, group: "workspace" },
+  { path: "/studio", label: "Studio", icon: PenLine, group: "workspace" },
+  { path: "/vault", label: "Vault", icon: Lock, group: "workspace" },
+  // ── Company ──
+  { path: "/finance", label: "Finance", icon: Receipt, group: "company" },
+  { path: "/crm", label: "CRM", icon: Contact, group: "company" },
+  { path: "/mail", label: "Mail", icon: Mail, group: "company" },
+  // ── Trade desk ──
+  { path: "/trade-desk", label: "Trade Desk", icon: LineChart, group: "desk" },
+  { path: "/signals", label: "Signals", icon: TrendingUp, group: "desk" },
+  { path: "/positions", label: "Positions", icon: Wallet, group: "desk" },
+  { path: "/orders", label: "Orders", icon: ListOrdered, group: "desk" },
+  // ── Insight ──
+  { path: "/audit", label: "Audit", icon: ScrollText, group: "insight" },
+  { path: "/files", label: "Files", icon: FolderOpen, group: "insight" },
+  { path: "/analytics", labelKey: "analytics", label: "Analytics", icon: BarChart3, group: "insight" },
+  { path: "/models", labelKey: "models", label: "Models", icon: Cpu, group: "insight" },
+  { path: "/logs", labelKey: "logs", label: "Logs", icon: FileText, group: "insight" },
+  // ── System ──
+  { path: "/cron", labelKey: "cron", label: "Cron", icon: Clock, group: "system" },
+  { path: "/skills", labelKey: "skills", label: "Skills", icon: Package, group: "system" },
+  { path: "/plugins", labelKey: "plugins", label: "Plugins", icon: Puzzle, group: "system" },
+  { path: "/mcp", label: "MCP", icon: Plug, group: "system" },
+  { path: "/channels", label: "Channels", icon: Radio, group: "system" },
+  { path: "/webhooks", label: "Webhooks", icon: Webhook, group: "system" },
+  { path: "/pairing", label: "Pairing", icon: ShieldCheck, group: "system" },
+  { path: "/profiles", labelKey: "profiles", label: "Profiles", icon: Users, group: "system" },
+  { path: "/config", labelKey: "config", label: "Config", icon: Settings, group: "system" },
+  { path: "/env", labelKey: "keys", label: "Keys", icon: KeyRound, group: "system" },
+  { path: "/system", label: "System", icon: Wrench, group: "system" },
+  { path: "/docs", labelKey: "documentation", label: "Documentation", icon: BookOpen, group: "system" },
 ];
+
+// Sidebar section ordering + labels. Grouping the ~30 destinations into five
+// labelled sections keeps the nav scannable instead of one long confusing list.
+type NavGroupKey = "workspace" | "desk" | "company" | "insight" | "system";
+const NAV_GROUP_ORDER: NavGroupKey[] = ["workspace", "company", "desk", "insight", "system"];
+const NAV_GROUP_LABEL: Record<NavGroupKey, string> = {
+  workspace: "Workspace",
+  company: "Company",
+  desk: "Trade Desk",
+  insight: "Insight",
+  system: "System",
+};
 
 const ICON_MAP: Record<string, ComponentType<{ className?: string }>> = {
   Activity,
@@ -682,18 +684,37 @@ export default function App() {
               className="min-h-0 w-full flex-1 overflow-y-auto overflow-x-hidden border-t border-current/10 py-2"
               aria-label={t.app.navigation}
             >
-              <ul className="flex flex-col">
-                {sidebarNav.coreItems.map((item) => (
-                  <SidebarNavLink
-                    closeMobile={closeMobile}
-                    collapsed={isDesktopCollapsed}
-                    item={item}
-                    key={item.path}
-                    t={t}
-                    tooltipWarmRef={tooltipWarmRef}
-                  />
-                ))}
-              </ul>
+              {NAV_GROUP_ORDER.map((groupKey) => {
+                const groupItems = sidebarNav.coreItems.filter(
+                  (it) => (it.group ?? "system") === groupKey,
+                );
+                if (groupItems.length === 0) return null;
+                return (
+                  <div key={groupKey} role="group" aria-label={NAV_GROUP_LABEL[groupKey]} className="flex flex-col">
+                    <span
+                      className={cn(
+                        "px-5 pt-3 pb-1",
+                        "font-mondwest text-display text-[0.7rem] uppercase tracking-[0.14em] text-text-tertiary",
+                        isDesktopCollapsed && "lg:hidden",
+                      )}
+                    >
+                      {NAV_GROUP_LABEL[groupKey]}
+                    </span>
+                    <ul className="flex flex-col">
+                      {groupItems.map((item) => (
+                        <SidebarNavLink
+                          closeMobile={closeMobile}
+                          collapsed={isDesktopCollapsed}
+                          item={item}
+                          key={item.path}
+                          t={t}
+                          tooltipWarmRef={tooltipWarmRef}
+                        />
+                      ))}
+                    </ul>
+                  </div>
+                );
+              })}
 
               {sidebarNav.pluginItems.length > 0 && (
                 <div
@@ -1246,6 +1267,7 @@ interface NavItem {
   label: string;
   labelKey?: string;
   path: string;
+  group?: NavGroupKey;
 }
 
 interface SidebarIconWithTooltipProps {
