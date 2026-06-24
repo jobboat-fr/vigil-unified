@@ -208,9 +208,9 @@ export default function LandingPage() {
                 The AI workspace that thinks before it acts. One human-in-the-loop agent across your council, desk, and books.
               </p>
             </div>
-            <FooterCol title="Product" links={[["Council & Meetings", "/login"], ["Trade Desk", "/login"], ["Finance & CRM", "/login"], ["Studio & Vault", "/login"]]} />
-            <FooterCol title="Company" links={[["Docs", "/docs"], ["Sign in", "/login"], ["Get started", "/signup"]]} />
-            <FooterCol title="Trust" links={[["Human-in-the-loop", "/docs"], ["Your keys, your data", "/docs"], ["Audit log", "/login"]]} />
+            <FooterCol title="Product" links={[["The AI council", "/docs#surfaces"], ["Trade desk & broker", "/docs#connect-broker"], ["The approval gate", "/docs#approval-gate"], ["Getting started", "/docs#getting-started"]]} />
+            <FooterCol title="Company" links={[["Documentation", "/docs"], ["Sign in", "/login"], ["Get started", "/signup"]]} />
+            <FooterCol title="Trust" links={[["Human-in-the-loop", "/docs#approval-gate"], ["Privacy & your data", "/docs#privacy"], ["FAQ", "/docs#faq"]]} />
           </div>
           <div className="mt-10 flex flex-col items-start justify-between gap-3 border-t pt-6 sm:flex-row sm:items-center" style={{ borderColor: LINE }}>
             <span className="ll-mono text-xs uppercase tracking-widest" style={{ color: `${INK}99` }}>© {new Date().getFullYear()} VIGIL</span>
