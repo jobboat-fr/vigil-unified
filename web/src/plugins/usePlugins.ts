@@ -10,6 +10,21 @@
 import { useState, useEffect, useRef } from "react";
 import { api, HERMES_BASE_PATH } from "@/lib/api";
 import type { PluginManifest, RegisteredPlugin } from "./types";
+
+// Where plugin asset bundles (JS/CSS) are served from.
+//
+// The real Hermes dashboard serves /dashboard-plugins/* directly. The Vercel
+// product has no such static route, so it reaches the assets through the ops
+// proxy at /api/dashboard-plugins/* — web/api/ops.js detects that prefix and
+// forwards to OVH with the gate secret + correct Content-Type. We detect the
+// real dashboard by the globals its server injects into index.html (a session
+// token in loopback mode, or the auth-required flag in gated mode); on the
+// statically-served Vercel build neither is present.
+const ON_HERMES_DASHBOARD =
+  typeof window !== "undefined" &&
+  (window.__HERMES_SESSION_TOKEN__ != null ||
+    window.__HERMES_AUTH_REQUIRED__ != null);
+const PLUGIN_ASSET_BASE = `${HERMES_BASE_PATH}${ON_HERMES_DASHBOARD ? "" : "/api"}/dashboard-plugins`;
 import {
   getPluginComponent,
   onPluginRegistered,
@@ -43,7 +58,7 @@ export function usePlugins() {
     for (const manifest of manifests) {
       // Inject CSS if specified.
       if (manifest.css) {
-        const cssUrl = `${HERMES_BASE_PATH}/dashboard-plugins/${manifest.name}/${manifest.css}`;
+        const cssUrl = `${PLUGIN_ASSET_BASE}/${manifest.name}/${manifest.css}`;
         if (!document.querySelector(`link[href="${cssUrl}"]`)) {
           const link = document.createElement("link");
           link.rel = "stylesheet";
@@ -55,7 +70,7 @@ export function usePlugins() {
       // Load JS bundle. In dev, cache-bust so Vite HMR can clear the
       // in-memory registry while the browser would otherwise never
       // re-execute a previously cached <script> URL.
-      const baseUrl = `${HERMES_BASE_PATH}/dashboard-plugins/${manifest.name}/${manifest.entry}`;
+      const baseUrl = `${PLUGIN_ASSET_BASE}/${manifest.name}/${manifest.entry}`;
       const scriptSrc = import.meta.env.DEV
         ? `${baseUrl}?hermes_dv=${Date.now()}`
         : baseUrl;
