@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/c
 import { Button } from "@nous-research/ui/ui/components/button";
 import { vigil, MAIL_CATEGORIES, type MailMessage, type MailTriageSummary } from "@/lib/vigil";
 import { GatewayError } from "@/lib/ww";
+import { EmptyState } from "@/components/EmptyState";
 
 const CAT_COLOR: Record<string, string> = {
   urgent: "#ef4444", respond: "#f59e0b", fyi: "#3b82f6",
@@ -124,7 +125,7 @@ export default function MailPage() {
       <Card>
         <CardHeader><CardTitle>Inbox</CardTitle></CardHeader>
         <CardContent className="flex flex-col gap-1">
-          {messages.length === 0 && <p className="text-sm text-text-secondary">No messages. Sync a mailbox or ingest one above.</p>}
+          {messages.length === 0 && <EmptyState title="No messages yet" hint="Connect Gmail on the Connections page, or ingest a mailbox above, then triage your inbox." />}
           {messages.map((m) => (
             <div key={m.id} className="flex items-center gap-3 rounded-md border border-current/10 px-3 py-2">
               <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: m.status === "unread" ? "#f59e0b" : "transparent", border: "1px solid currentColor" }} />

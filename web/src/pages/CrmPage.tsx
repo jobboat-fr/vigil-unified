@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/c
 import { Button } from "@nous-research/ui/ui/components/button";
 import { vigil, DEAL_STAGES, type CrmContact, type CrmDeal, type CrmPipeline } from "@/lib/vigil";
 import { GatewayError } from "@/lib/ww";
+import { EmptyState } from "@/components/EmptyState";
 
 const money = (n: number, ccy = "USD") =>
   new Intl.NumberFormat(undefined, { style: "currency", currency: ccy, maximumFractionDigits: 0 }).format(n);
@@ -141,7 +142,7 @@ export default function CrmPage() {
           </div>
           {err && <p className="mb-2 text-xs" style={{ color: "#ff3366" }}>{err}</p>}
           <div className="flex flex-col gap-1">
-            {contacts.length === 0 && <p className="text-sm text-text-secondary">No contacts yet.</p>}
+            {contacts.length === 0 && <EmptyState title="No contacts yet" hint="Add a contact, or connect HubSpot on the Connections page to sync your pipeline." />}
             {contacts.map((c) => (
               <div key={c.id} className="flex items-center justify-between gap-2 rounded-md border border-current/10 px-3 py-2">
                 <div className="min-w-0">
