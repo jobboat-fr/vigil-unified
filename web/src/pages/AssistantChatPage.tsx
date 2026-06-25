@@ -1,15 +1,22 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { Send } from "lucide-react";
 import { streamAssistantChat } from "@/lib/vigil";
 import { GatewayError } from "@/lib/ww";
 
 /**
- * VIGIL assistant chat. Talks to the gateway's /v1/assistant/chat (HTTP SSE,
- * Railway → Hermes) — NOT the embedded TUI PTY, which can't run through the
- * Vercel proxy (no WebSocket support). Branded as VIGIL; streams tokens live.
+ * VIGIL assistant chat, styled like the original embedded TERMINAL (monospace,
+ * dark canvas, shell prompts, blinking cursor) — but backed by the gateway's
+ * /v1/assistant/chat (HTTP SSE: browser → Railway → Hermes /chat/stream). The
+ * PTY-over-WebSocket terminal can't run through the Vercel proxy, so this gives
+ * the same look with a transport that actually works.
  */
 type Msg = { role: "user" | "assistant"; text: string; error?: boolean };
+
+const BG = "#04201d";       // terminal canvas (deep teal-black)
+const FG = "#f0e6d2";       // cream foreground (xterm theme)
+const GOLD = "#ffbd38";     // prompt accent
+const EMER = "#34d399";
+const MONO = "'JetBrains Mono', ui-monospace, 'Cascadia Mono', Menlo, Consolas, monospace";
 
 function newSession(): string {
   return typeof crypto !== "undefined" && "randomUUID" in crypto
@@ -24,6 +31,7 @@ export default function AssistantChatPage() {
   const [busy, setBusy] = useState(false);
   const sessionRef = useRef<string>(newSession());
   const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -45,68 +53,76 @@ export default function AssistantChatPage() {
     try {
       for await (const evt of streamAssistantChat(text, sessionRef.current, { page: pathname })) {
         if (evt.event === "text_delta") appendToLast(String((evt.data as { content?: string }).content ?? ""));
-        else if (evt.event === "error") appendToLast(`\n\n⚠️ ${(evt.data as { message?: string }).message ?? "assistant error"}`, true);
+        else if (evt.event === "error") appendToLast(`\n[error] ${(evt.data as { message?: string }).message ?? "assistant error"}`, true);
         else if (evt.event === "done") break;
       }
     } catch (e) {
-      const msg = e instanceof GatewayError && e.code === "NO_SESSION" ? "Sign in to VIGIL to use the assistant." : (e as Error).message;
-      appendToLast(`\n\n⚠️ ${msg}`, true);
+      const msg = e instanceof GatewayError && e.code === "NO_SESSION" ? "sign in to VIGIL to use the assistant" : (e as Error).message;
+      appendToLast(`\n[error] ${msg}`, true);
     } finally {
       setBusy(false);
+      inputRef.current?.focus();
     }
   };
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto">
-        <div className="mx-auto flex max-w-3xl flex-col gap-4 px-1 py-4">
-          {messages.length === 0 ? (
-            <div className="flex flex-col items-center gap-3 pt-[12vh] text-center">
-              <img src="/vigil-mark.svg" alt="VIGIL" width={48} height={48} />
-              <h1 className="font-mondwest text-display text-2xl tracking-wide text-midground">VIGIL Assistant</h1>
-              <p className="max-w-sm text-sm text-text-secondary">
-                Ask anything — it reasons over your Vault, books, and live data, and thinks before it acts.
-              </p>
-            </div>
-          ) : (
-            messages.map((m, i) => (
-              <div key={i} className={m.role === "user" ? "flex justify-end" : "flex justify-start"}>
-                <div
-                  className="max-w-[85%] whitespace-pre-wrap rounded-lg px-3.5 py-2.5 text-sm leading-relaxed"
-                  style={
-                    m.role === "user"
-                      ? { background: "color-mix(in srgb, currentColor 12%, transparent)", color: "var(--color-foreground)" }
-                      : { border: "1px solid var(--color-border)", color: m.error ? "#fb7185" : "var(--color-foreground)" }
-                  }
-                >
-                  {m.text || (m.role === "assistant" && busy ? "…" : "")}
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
+    <div className="flex min-h-0 flex-1 flex-col p-2 sm:p-3">
+      <style>{`
+        @keyframes vt-blink{0%,49%{opacity:1}50%,100%{opacity:0}}
+        .vt-cursor{display:inline-block;width:.55ch;background:${EMER};animation:vt-blink 1.1s step-end infinite}
+        .vt-scroll::-webkit-scrollbar{width:9px}
+        .vt-scroll::-webkit-scrollbar-thumb{background:${FG}22;border-radius:9px}
+      `}</style>
+      <div
+        ref={scrollRef}
+        onClick={() => inputRef.current?.focus()}
+        className="vt-scroll min-h-0 flex-1 overflow-y-auto rounded-lg p-3 sm:p-4"
+        style={{ background: BG, color: FG, fontFamily: MONO, fontSize: 13.5, lineHeight: 1.5, boxShadow: "0 8px 32px rgba(0,0,0,.4)" }}
+      >
+        {/* Boot banner — our logo, terminal-style (replaces the Hermes ASCII) */}
+        <div style={{ color: GOLD, whiteSpace: "pre" }}>{
+`██╗   ██╗██╗ ██████╗ ██╗██╗
+██║   ██║██║██╔════╝ ██║██║
+██║   ██║██║██║  ███╗██║██║
+╚██╗ ██╔╝██║██║   ██║██║██║
+ ╚████╔╝ ██║╚██████╔╝██║███████╗
+  ╚═══╝  ╚═╝ ╚═════╝ ╚═╝╚══════╝`}</div>
+        <div style={{ opacity: 0.6 }}>VIGIL assistant · thinks before it acts · type below ↵</div>
+        <div style={{ opacity: 0.45, marginBottom: 12 }}>grounded in your vault, books & live data · human-in-the-loop</div>
 
-      <div className="shrink-0 border-t border-current/10 py-3">
-        <div className="mx-auto flex max-w-3xl items-end gap-2 px-1">
+        {messages.map((m, i) => {
+          const isLastAssistant = i === messages.length - 1 && m.role === "assistant";
+          if (m.role === "user") {
+            return (
+              <div key={i} style={{ marginTop: 8, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+                <span style={{ color: GOLD }}>you ❯ </span>{m.text}
+              </div>
+            );
+          }
+          return (
+            <div key={i} style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", color: m.error ? "#fb7185" : FG }}>
+              <span style={{ color: EMER }}>vigil ❯ </span>{m.text}
+              {isLastAssistant && busy && <span className="vt-cursor">&nbsp;</span>}
+            </div>
+          );
+        })}
+
+        {/* Live prompt line */}
+        <div style={{ marginTop: 8, display: "flex" }}>
+          <span style={{ color: GOLD, flexShrink: 0 }}>you ❯&nbsp;</span>
           <textarea
+            ref={inputRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void send(); } }}
             rows={1}
-            placeholder="Message the VIGIL assistant…"
+            autoFocus
             aria-label="Message the VIGIL assistant"
-            className="max-h-40 min-h-[2.5rem] flex-1 resize-none rounded-lg border border-current/20 bg-transparent px-3 py-2 text-sm outline-none focus:border-current/50"
+            placeholder={busy ? "…working" : "ask anything"}
+            disabled={busy}
+            className="flex-1 resize-none bg-transparent outline-none placeholder:opacity-40"
+            style={{ color: FG, fontFamily: MONO, fontSize: 13.5, lineHeight: 1.5, border: "none", caretColor: EMER }}
           />
-          <button
-            onClick={() => void send()}
-            disabled={busy || !input.trim()}
-            aria-label="Send"
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg disabled:opacity-40"
-            style={{ background: "var(--color-foreground)", color: "var(--background-base)" }}
-          >
-            <Send className="h-4 w-4" />
-          </button>
         </div>
       </div>
     </div>
