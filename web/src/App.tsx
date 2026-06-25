@@ -76,6 +76,7 @@ import { useBelowBreakpoint } from "@nous-research/ui/hooks/use-below-breakpoint
 import { useSidebarStatus } from "@/hooks/useSidebarStatus";
 import { AuthWidget } from "@/components/AuthWidget";
 import { OnboardingWizard } from "@/components/OnboardingWizard";
+import AssistantChatPage from "@/pages/AssistantChatPage";
 import { PageHeaderProvider } from "@/contexts/PageHeaderProvider";
 import { ProfileProvider } from "@/contexts/ProfileProvider";
 import { useProfileScope } from "@/contexts/useProfileScope";
@@ -483,19 +484,22 @@ export default function App() {
   const builtinRoutes = useMemo(
     () => ({
       ...BUILTIN_ROUTES_CORE,
-      ...(embeddedChat ? { "/chat": ChatRouteSink } : {}),
+      // Embedded TUI (PTY over WS) when the dashboard serves it; otherwise the
+      // gateway-backed VIGIL assistant (HTTP SSE) — the only chat that works
+      // through the Vercel product.
+      "/chat": embeddedChat ? ChatRouteSink : AssistantChatPage,
     }),
     [embeddedChat],
   );
 
   const builtinNav = useMemo(() => {
-    const base = embeddedChat
-      ? [CHAT_NAV_ITEM, ...BUILTIN_NAV_REST]
-      : BUILTIN_NAV_REST;
+    // Chat is always in the nav now: the embedded TUI when the dashboard serves
+    // it, otherwise the gateway-backed VIGIL assistant.
+    const base = [CHAT_NAV_ITEM, ...BUILTIN_NAV_REST];
     return showTokenAnalytics
       ? base
       : base.filter((n) => n.path !== "/analytics");
-  }, [embeddedChat, showTokenAnalytics]);
+  }, [showTokenAnalytics]);
 
   const sidebarNav = useMemo(
     () => partitionSidebarNav(builtinNav, manifests),

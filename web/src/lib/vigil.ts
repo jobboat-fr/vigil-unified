@@ -775,3 +775,16 @@ export function streamRoomCouncil(
 export function streamOrchestrate(task: string, transcript: string, question?: string): AsyncGenerator<SseEvent> {
   return sseStream("/v1/council/orchestrate/stream", { method: "POST", body: { task, transcript, question } });
 }
+
+/** Stream a turn with the VIGIL assistant (gateway → Hermes, HTTP SSE). Events:
+ *  `text_delta` {content}, `tool_event` {...}, `done` {ok}, `error` {message}. */
+export function streamAssistantChat(
+  message: string,
+  sessionId?: string,
+  pageContext?: Record<string, unknown>,
+): AsyncGenerator<SseEvent> {
+  return sseStream("/v1/assistant/chat", {
+    method: "POST",
+    body: { message, session_id: sessionId, page_context: pageContext },
+  });
+}

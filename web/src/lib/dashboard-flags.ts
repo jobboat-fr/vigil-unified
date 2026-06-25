@@ -20,5 +20,10 @@ declare global {
  * ever becomes conditional again.
  */
 export function isDashboardEmbeddedChatEnabled(): boolean {
-  return true;
+  // The embedded TUI chat needs a server that can hold the /api/pty WebSocket.
+  // On the Vercel product that's impossible (serverless functions can't proxy
+  // WebSockets), so the real Hermes dashboard injects this flag = true ONLY when
+  // it serves the SPA itself. On the product build it's undefined → we fall back
+  // to the gateway assistant (HTTP SSE) at /chat instead of a dead terminal.
+  return typeof window !== "undefined" && window.__HERMES_DASHBOARD_EMBEDDED_CHAT__ === true;
 }
