@@ -813,9 +813,15 @@ export default function App() {
               className={cn(
                 "relative z-2 flex min-w-0 min-h-0 flex-1 flex-col",
                 "px-3 sm:px-6",
+                // Clear the fixed mobile top bar (the <header> is lg:hidden,
+                // fixed top-0, z-40, min-h-14 ≈ 56px). Without this, the bar
+                // overlays the top of every page on < lg widths — which was
+                // hiding the meeting-room action buttons ("Bring in AI" /
+                // "Start live meeting") beneath the nav. Restore the tight
+                // padding at lg where the bar is gone.
                 isChatRoute
-                  ? "pb-0 pt-1 sm:pt-2 lg:pt-4"
-                  : "pt-2 sm:pt-4 lg:pt-6",
+                  ? "pb-0 pt-16 lg:pt-4"
+                  : "pt-16 lg:pt-6",
                 isDocsRoute && "min-h-0 flex-1",
               )}
             >
