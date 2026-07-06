@@ -658,6 +658,51 @@ export const vigil = {
   },
 };
 
+// ── Billing (Stripe Checkout → org subscription) ────────────────────────────
+export interface BillingTier {
+  id: string;
+  name: string;
+  price_eur_cents: number;
+  ops_runs_per_day: number | null;
+  max_connectors: number | null;
+  departments: number;
+  write_actions: boolean;
+  byok: boolean;
+  contact_sales?: boolean;
+  purchasable: boolean;
+}
+
+export interface BillingInfo {
+  plan: string;
+  limits: Record<string, unknown>;
+  usage: {
+    runs_today: number;
+    runs_month: number;
+    cost_usd_month: number;
+    daily_cap: number | null;
+    remaining_today: number | null;
+  };
+  org: { id: string; name?: string } | null;
+  subscription: {
+    plan_tier?: string;
+    status?: string;
+    current_period_end?: string | null;
+    metadata?: { cancel_at_period_end?: boolean };
+  } | null;
+  tiers: BillingTier[];
+  stripe_configured: boolean;
+}
+
+export const billing = {
+  info: () => vigilCall<BillingInfo>("GET", "/v1/billing"),
+  /** Returns the Stripe Checkout URL — redirect the browser there. */
+  checkout: (tier: string) =>
+    vigilCall<{ url: string }>("POST", "/v1/billing/checkout", { tier }),
+  portal: () => vigilCall<{ url: string }>("POST", "/v1/billing/portal"),
+  cancel: () =>
+    vigilCall<{ cancel_at_period_end: boolean }>("POST", "/v1/billing/cancel"),
+};
+
 // ── Google Meet bot ─────────────────────────────────────────────────────────
 // Unlike the rest of this file, these call /api/plugins/google_meet/* — the
 // dashboard plugin API on the OVH Hermes — through the Supabase-gated ops

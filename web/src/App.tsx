@@ -25,6 +25,7 @@ import {
   Cpu,
   Database,
   Download,
+  CreditCard,
   Eye,
   FolderOpen,
   FileText,
@@ -109,6 +110,7 @@ import StudioPage from "@/pages/StudioPage";
 import OpsTeamPage from "@/pages/OpsTeamPage";
 import ConnectionsPage from "@/pages/ConnectionsPage";
 import ApprovalsPage from "@/pages/ApprovalsPage";
+import BillingPage from "@/pages/BillingPage";
 import VaultPage from "@/pages/VaultPage";
 import FinancePage from "@/pages/FinancePage";
 import CrmPage from "@/pages/CrmPage";
@@ -195,6 +197,7 @@ const BUILTIN_ROUTES_CORE: Record<string, ComponentType> = {
   "/profiles/new": ProfileBuilderPage,
   "/config": ConfigPage,
   "/env": EnvPage,
+  "/billing": BillingPage,
   "/docs": DocsPage,
 };
 
@@ -247,6 +250,7 @@ const BUILTIN_NAV_REST: NavItem[] = [
   { path: "/profiles", labelKey: "profiles", label: "Profiles", icon: Users, group: "system" },
   { path: "/config", labelKey: "config", label: "Config", icon: Settings, group: "system" },
   { path: "/env", labelKey: "keys", label: "Keys", icon: KeyRound, group: "system" },
+  { path: "/billing", label: "Billing", icon: CreditCard, group: "system" },
   { path: "/system", label: "System", icon: Wrench, group: "system" },
   { path: "/docs", labelKey: "documentation", label: "Documentation", icon: BookOpen, group: "system" },
 ];
