@@ -8,9 +8,15 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "typecheck": "tsc -p . --noEmit"
+    "typecheck": "tsc -p . --noEmit",
+    "mobile:sync": "cap sync android",
+    "mobile:open": "cap open android",
+    "mobile:run": "cap run android"
   },
   "dependencies": {
+    "@capacitor/app": "^8.1.0",
+    "@capacitor/core": "^8.4.1",
+    "@capacitor/status-bar": "^8.0.2",
     "@livekit/components-react": "^2.9.21",
     "@livekit/components-styles": "^1.2.0",
     "@nous-research/ui": "0.18.2",
@@ -42,6 +48,8 @@
     "unicode-animations": "^1.0.3"
   },
   "devDependencies": {
+    "@capacitor/android": "^8.4.1",
+    "@capacitor/cli": "^8.4.1",
     "@eslint/js": "^9.39.4",
     "@types/node": "^24.13.2",
     "@types/qrcode": "^1.5.6",

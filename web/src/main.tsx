@@ -9,10 +9,14 @@ import { ThemeProvider } from "./themes";
 import { HERMES_BASE_PATH } from "./lib/api";
 import { AuthProvider } from "./context/AuthContext";
 import { AuthGate } from "./components/AuthGate";
+import { initNativeShell } from "./lib/native";
 
 // Expose the plugin SDK before rendering so plugins loaded via <script>
 // can access React, components, etc. immediately.
 exposePluginSDK();
+
+// Capacitor mobile shell (Android back button, status bar) — no-op in browsers.
+void initNativeShell();
 
 // On Vercel the operator API is reached through the Supabase-gated proxy
 // (web/api/[...path].js), not the dashboard's own loopback HTML — so there is
