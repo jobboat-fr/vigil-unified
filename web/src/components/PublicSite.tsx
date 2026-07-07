@@ -5,6 +5,7 @@ import LandingPage from "@/pages/LandingPage";
 import DocsPage from "@/pages/DocsPage.public";
 import AuthPage from "@/pages/AuthPage";
 import GuestMeetingPage from "@/pages/GuestMeetingPage";
+import { TermsPage, PrivacyPage, DisclaimerPage, CookiesPage, MentionsPage } from "@/pages/legal/LegalPages";
 import { BrandLoader } from "@/components/BrandLoader";
 import { BRAND } from "@/lib/brand";
 
@@ -26,6 +27,12 @@ export default function PublicSite() {
     <Routes>
       <Route path="/" element={<LandingPage />} />
       <Route path="/docs" element={<DocsPage />} />
+      {/* Compliance pages — public + prerendered; Play Store requires a live privacy URL. */}
+      <Route path="/legal/terms" element={<TermsPage />} />
+      <Route path="/legal/privacy" element={<PrivacyPage />} />
+      <Route path="/legal/disclaimer" element={<DisclaimerPage />} />
+      <Route path="/legal/cookies" element={<CookiesPage />} />
+      <Route path="/legal/mentions" element={<MentionsPage />} />
       {/* External guests join a live meeting via a share link — no account. */}
       <Route path="/join/:shareToken" element={<GuestMeetingPage />} />
       <Route path="/login" element={<AuthPage initialMode="signin" />} />

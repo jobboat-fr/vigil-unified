@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "xyz.vigilai.app",
+      "sha256_cert_fingerprints": [
+        "DB:65:22:F6:98:30:DA:64:CE:C2:71:59:8C:30:46:2C:1E:1B:04:BA:48:36:F6:F5:7B:68:1F:BF:51:2C:C7:75"
+      ]
+    }
+  }
+]

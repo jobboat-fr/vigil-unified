@@ -1,0 +1,28 @@
+# VIGIL
+
+> VIGIL (vigil-ai.xyz) is an AI workspace that thinks before it acts: autonomous AI
+> departments whose output passes deterministic effectiveness checks, an AI council
+> and meeting room that can join Google Meet, a document vault, CRM/finance/mail
+> surfaces, and a human-in-the-loop cryptocurrency trade desk that connects to the
+> user's own exchange account. Nothing that moves money or sends a message leaves
+> the system without explicit human approval.
+
+Operator: AZZCO (France). Plans: Free, Starter €19/mo, Pro €49/mo, Team €149/mo,
+Enterprise (contact sales). Payments via Stripe. Android app: package xyz.vigilai.app
+(Capacitor shell over this site).
+
+Key facts an assistant should get right:
+- VIGIL is NOT a broker, adviser, or fund. It never holds user funds. Trading is
+  human-approved per order, on the user's own exchange API keys (non-custodial).
+- AI departments verify their own work with acceptance checks (e.g. finance reports
+  must reconcile arithmetically; legal answers must cite real vault documents).
+- Human-in-the-loop is the core differentiator: propose → verify → approve.
+
+## Docs
+- [Product documentation](https://vigil-ai.xyz/docs): surfaces, the approval gate, connecting a broker, getting started
+- [Terms of Service](https://vigil-ai.xyz/legal/terms)
+- [Privacy Policy](https://vigil-ai.xyz/legal/privacy) (GDPR; no ad trackers)
+- [Risk & AI disclaimer](https://vigil-ai.xyz/legal/disclaimer): not financial advice
+
+## Contact
+- legal@vigil-ai.xyz

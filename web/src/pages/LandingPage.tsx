@@ -211,10 +211,11 @@ export default function LandingPage() {
             <FooterCol title="Product" links={[["The AI council", "/docs#surfaces"], ["Trade desk & broker", "/docs#connect-broker"], ["The approval gate", "/docs#approval-gate"], ["Getting started", "/docs#getting-started"]]} />
             <FooterCol title="Company" links={[["Documentation", "/docs"], ["Sign in", "/login"], ["Get started", "/signup"]]} />
             <FooterCol title="Trust" links={[["Human-in-the-loop", "/docs#approval-gate"], ["Privacy & your data", "/docs#privacy"], ["FAQ", "/docs#faq"]]} />
+            <FooterCol title="Legal" links={[["Terms of Service", "/legal/terms"], ["Privacy Policy", "/legal/privacy"], ["Risk disclaimer", "/legal/disclaimer"], ["Cookies", "/legal/cookies"], ["Mentions légales", "/legal/mentions"]]} />
           </div>
           <div className="mt-10 flex flex-col items-start justify-between gap-3 border-t pt-6 sm:flex-row sm:items-center" style={{ borderColor: LINE }}>
             <span className="ll-mono text-xs uppercase tracking-widest" style={{ color: `${INK}99` }}>© {new Date().getFullYear()} VIGIL</span>
-            <span className="text-xs" style={{ color: `${INK}99` }}>Not financial, tax, or legal advice.</span>
+            <span className="text-xs" style={{ color: `${INK}99` }}>Not financial, tax, or legal advice. <a href="/legal/disclaimer" className="underline">Risk disclaimer</a></span>
           </div>
         </div>
       </footer>

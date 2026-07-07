@@ -46,6 +46,8 @@
           {
             "@type": "Organization",
             "name": "VIGIL",
+            "legalName": "AZZCO",
+            "email": "legal@vigil-ai.xyz",
             "url": "https://vigil-ai.xyz/",
             "logo": "https://vigil-ai.xyz/vigil-mark.svg"
           },
@@ -55,8 +57,21 @@
             "applicationCategory": "BusinessApplication",
             "operatingSystem": "Web",
             "description": "An AI workspace that deliberates before acting: a multi-advisor council, a data-grounded crypto desk, and a finance, CRM, mail and document studio — all human-in-the-loop.",
-            "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" },
+            "offers": [
+              { "@type": "Offer", "name": "Free", "price": "0", "priceCurrency": "EUR" },
+              { "@type": "Offer", "name": "Starter", "price": "19", "priceCurrency": "EUR", "description": "Monthly subscription" },
+              { "@type": "Offer", "name": "Pro", "price": "49", "priceCurrency": "EUR", "description": "Monthly subscription" },
+              { "@type": "Offer", "name": "Team", "price": "149", "priceCurrency": "EUR", "description": "Monthly subscription" }
+            ],
             "featureList": ["Multi-advisor AI council", "Autonomous AI departments", "Human-in-the-loop crypto trade desk", "Finance, CRM, mail and document studio", "Tamper-evident audit log"]
+          },
+          {
+            "@type": "MobileApplication",
+            "name": "VIGIL",
+            "applicationCategory": "BusinessApplication",
+            "operatingSystem": "Android",
+            "description": "The VIGIL AI workspace on Android — the same human-in-the-loop council, departments and trade desk, in your pocket.",
+            "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" }
           },
           {
             "@type": "WebSite",
