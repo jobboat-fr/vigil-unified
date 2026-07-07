@@ -11,7 +11,12 @@ import { useSeo } from "@/lib/seo";
  */
 export const OPERATOR = {
   brand: "VIGIL",
-  legalName: "AZZCO", // TODO: confirm registered legal name + form (SAS/SARL/EI)
+  legalName: "AZZ&CO LABS", // SAS — Kbis à jour au 07/02/2026 (greffe de Versailles)
+  form: "Société par actions simplifiée (SAS) au capital de 200,00 €",
+  rcs: "100 667 021 R.C.S. Versailles",
+  euid: "FR7803.100667021",
+  address: "Bâtiment Fougères, Rue de Guyenne, 78840 Freneuse, France",
+  publisher: "Azer Rached (Président)",
   country: "France",
   contact: "legal@vigil-ai.xyz",
   dpo: "privacy@vigil-ai.xyz",
@@ -252,10 +257,14 @@ export function MentionsPage() {
   return (
     <LegalLayout title="Mentions légales">
       <h2>Éditeur</h2>
-      <p>
-        {OPERATOR.legalName}, {OPERATOR.country}. Contact : <a href={`mailto:${OPERATOR.contact}`}>{OPERATOR.contact}</a>.
-        {/* TODO: compléter forme juridique, capital, SIREN/SIRET, siège social, directeur de la publication, n° TVA. */}
-      </p>
+      <ul>
+        <li>Dénomination : <strong>{OPERATOR.legalName}</strong> (sigle AZ LABS)</li>
+        <li>Forme : {OPERATOR.form}</li>
+        <li>Immatriculation : {OPERATOR.rcs} — EUID {OPERATOR.euid}</li>
+        <li>Siège social : {OPERATOR.address}</li>
+        <li>Directeur de la publication : {OPERATOR.publisher}</li>
+        <li>Contact : <a href={`mailto:${OPERATOR.contact}`}>{OPERATOR.contact}</a></li>
+      </ul>
       <h2>Hébergement</h2>
       <ul>
         <li>Site web : Vercel Inc., 440 N Barranca Ave #4133, Covina, CA 91723, USA — vercel.com</li>
