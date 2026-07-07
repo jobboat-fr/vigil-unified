@@ -18,7 +18,7 @@ Env:
   STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET
   STRIPE_PRICE_ID_STARTER / STRIPE_PRICE_ID_PRO / STRIPE_PRICE_ID_TEAM
   (legacy STRIPE_PRO_PRICE_ID still honoured for pro)
-  APP_URL — checkout return host (default https://dev.vigil-ai.xyz)
+  APP_URL — checkout return host (default https://vigil-ai.xyz)
 
 Data model notes (verified against prod Supabase 2026-07-07):
   * subscriptions.org_id → organizations.id (FK repointed by migration
@@ -50,7 +50,7 @@ router = APIRouter(prefix="/api/v1/billing", tags=["billing"])
 
 STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY", "")
 STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
-APP_URL = os.environ.get("APP_URL", "https://dev.vigil-ai.xyz").rstrip("/")
+APP_URL = os.environ.get("APP_URL", "https://vigil-ai.xyz").rstrip("/")
 
 # Tiers a customer can buy self-serve. `free` is the default; `enterprise`
 # is contact-sales (no price id on purpose).

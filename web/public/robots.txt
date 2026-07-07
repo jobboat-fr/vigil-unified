@@ -8,4 +8,4 @@ Disallow: /signup
 Disallow: /auth
 Disallow: /join/
 
-Sitemap: https://dev.vigil-ai.xyz/sitemap.xml
+Sitemap: https://vigil-ai.xyz/sitemap.xml

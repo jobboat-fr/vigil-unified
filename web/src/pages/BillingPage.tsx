@@ -54,8 +54,14 @@ function TierCard({
             Current plan
           </div>
         ) : tier.contact_sales ? (
-          <Button variant="outline" className="mt-3" asChild>
-            <a href="mailto:sales@vigil-ai.xyz?subject=VIGIL%20Enterprise">Contact sales</a>
+          <Button
+            outlined
+            className="mt-3"
+            onClick={() => {
+              window.location.href = "mailto:sales@vigil-ai.xyz?subject=VIGIL%20Enterprise";
+            }}
+          >
+            Contact sales
           </Button>
         ) : tier.purchasable ? (
           <Button
@@ -176,7 +182,7 @@ export default function BillingPage() {
               </span>
             )}
             {sub && (
-              <Button variant="outline" size="sm" disabled={portalBusy} onClick={() => void openPortal()}>
+              <Button outlined size="sm" disabled={portalBusy} onClick={() => void openPortal()}>
                 {portalBusy ? "Opening…" : "Manage subscription"}
               </Button>
             )}

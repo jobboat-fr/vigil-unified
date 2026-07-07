@@ -9,7 +9,7 @@ import { useEffect } from "react";
  * Base URL is overridable at build time via VITE_SITE_URL.
  */
 const SITE_URL = (import.meta.env.VITE_SITE_URL as string | undefined)?.replace(/\/$/, "")
-  || "https://dev.vigil-ai.xyz";
+  || "https://vigil-ai.xyz";
 
 function upsertMeta(selector: string, attr: "name" | "property", key: string, content: string) {
   let el = document.head.querySelector<HTMLMetaElement>(selector);

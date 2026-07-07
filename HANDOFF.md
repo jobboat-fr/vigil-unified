@@ -31,7 +31,7 @@ A fork of the Hermes agent that also carries the product code. Top-level:
 
 ```
 vigil-unified/
-├─ web/                     # Vite + React SPA → VERCEL (dev.vigil-ai.xyz)
+├─ web/                     # Vite + React SPA → VERCEL (vigil-ai.xyz)
 │  ├─ src/
 │  │  ├─ App.tsx            # app shell: grouped sidebar nav, routing, chat host
 │  │  ├─ pages/  (38)       # one per route (OpsTeamPage, MeetingRoomPage, TradeDeskPage, …)
@@ -99,7 +99,7 @@ winny woo/
 ## 2. Runtime topology & request/auth flow
 
 ```
-Browser (dev.vigil-ai.xyz, Vite SPA)
+Browser (vigil-ai.xyz, Vite SPA)
   │  Supabase session (storage key "vigil-auth")
   ├─ product data  → fetch winnywoo-production.up.railway.app  (Bearer Supabase JWT)
   │                     → gateway auth.py validates ES256 via JWKS → routes (RLS via service role, user_id-scoped)
@@ -252,7 +252,7 @@ Safe — data is in Supabase (managed); Vercel/Railway are PaaS. Only the **OVH 
 - **OAuth-broker connectors** (QuickBooks/Square/DocuSign/Outreach/Box) — batch behind one shared OAuth callback service.
 - **Secret rotation** (launch blocker) — rotate keys exposed in chat history.
 - **Frontend bundle** ~2.8 MB single chunk — code-split for LCP; full SSR/prerender for `/` and `/docs` is still pending (meta/OG/sitemap shipped).
-- `web/index.html` SEO base URL + `OPS_DASHBOARD_URL` hard-code the current `dev.vigil-ai.xyz` / nip.io host — update on domain change.
+- `web/index.html` SEO base URL + `OPS_DASHBOARD_URL` hard-code the current `vigil-ai.xyz` / nip.io host — update on domain change.
 
 ---
 
