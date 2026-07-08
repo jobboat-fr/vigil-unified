@@ -34,9 +34,9 @@ function TierCard({
       style={current ? { borderColor: EMER } : highlight ? { borderColor: GOLD } : undefined}
     >
       <CardHeader className="pb-2">
-        <CardTitle className="flex items-baseline justify-between text-base">
-          <span>{tier.name}</span>
-          <span style={{ color: highlight ? GOLD : undefined }}>
+        <CardTitle className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-3 gap-y-1 text-base">
+          <span className="truncate">{tier.name}</span>
+          <span className="shrink-0 whitespace-nowrap" style={{ color: highlight ? GOLD : undefined }}>
             {tier.contact_sales ? "Custom" : `${eur(tier.price_eur_cents)}/mo`}
           </span>
         </CardTitle>
@@ -196,7 +196,8 @@ export default function BillingPage() {
         </div>
       )}
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+      {/* auto-fit keeps every card in-frame at any width instead of forcing 5 columns */}
+      <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))" }}>
         {info?.tiers.map((t) => (
           <TierCard
             key={t.id}
