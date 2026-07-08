@@ -694,13 +694,13 @@ export interface BillingInfo {
 }
 
 export const billing = {
-  info: () => vigilCall<BillingInfo>("GET", "/v1/billing"),
+  info: () => vigilCall<BillingInfo>("GET", "/api/v1/billing"),
   /** Returns the Stripe Checkout URL — redirect the browser there. */
   checkout: (tier: string) =>
-    vigilCall<{ url: string }>("POST", "/v1/billing/checkout", { tier }),
-  portal: () => vigilCall<{ url: string }>("POST", "/v1/billing/portal"),
+    vigilCall<{ url: string }>("POST", "/api/v1/billing/checkout", { tier }),
+  portal: () => vigilCall<{ url: string }>("POST", "/api/v1/billing/portal"),
   cancel: () =>
-    vigilCall<{ cancel_at_period_end: boolean }>("POST", "/v1/billing/cancel"),
+    vigilCall<{ cancel_at_period_end: boolean }>("POST", "/api/v1/billing/cancel"),
 };
 
 // ── Google Meet bot ─────────────────────────────────────────────────────────
