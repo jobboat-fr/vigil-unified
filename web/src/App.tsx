@@ -654,7 +654,15 @@ export default function App() {
                   className="font-bold text-[1.05rem] leading-[0.95] tracking-[0.045rem] text-midground"
                   style={{ mixBlendMode: "plus-lighter" }}
                 >
-                  VIGIL
+                  <span className="inline-flex items-center gap-1.5">
+                    VIGIL
+                    <span
+                      className="rounded-full px-1.5 py-px text-[0.5rem] font-bold uppercase tracking-[0.12em]"
+                      style={{ color: "#041c1c", background: "#ffbd38" }}
+                    >
+                      Beta
+                    </span>
+                  </span>
                   <br />
                   <span className="text-[0.8rem] opacity-70">× WinnyWoo</span>
                 </Typography>
