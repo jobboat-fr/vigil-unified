@@ -840,6 +840,8 @@ export default function App() {
                 )}
               >
                 <ProfileKeyedRoutes>
+                  {/* key re-triggers the enter animation per navigation (delight.css) */}
+                  <div key={pathname} className="vigil-page-enter min-h-0 min-w-0 flex-1 flex flex-col">
                   <Routes>
                     {routes.map(({ key, path, element }) => (
                       <Route key={key} path={path} element={element} />
@@ -851,6 +853,7 @@ export default function App() {
                       }
                     />
                   </Routes>
+                  </div>
                 </ProfileKeyedRoutes>
 
                 {embeddedChat &&

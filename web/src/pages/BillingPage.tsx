@@ -30,9 +30,10 @@ function TierCard({
   const highlight = tier.id === "pro";
   return (
     <Card
-      className="flex min-w-0 flex-1 flex-col"
+      className={`vigil-lift relative flex min-w-0 flex-1 flex-col ${current ? "vigil-current-plan" : ""}`}
       style={current ? { borderColor: EMER } : highlight ? { borderColor: GOLD } : undefined}
     >
+      {highlight && !current && <span className="vigil-ribbon">Most popular</span>}
       <CardHeader className="pb-2">
         <CardTitle className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-3 gap-y-1 text-base">
           <span className="truncate">{tier.name}</span>

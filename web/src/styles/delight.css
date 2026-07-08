@@ -1,0 +1,88 @@
+/* ── VIGIL delight layer ──────────────────────────────────────────────────
+   Global micro-interactions that make the app feel alive without touching
+   component logic. Everything animated is gated behind prefers-reduced-motion
+   so accessibility stays intact (a11y audit is green — keep it green).
+   Brand: teal #041c1c · cream #ffe6cb · gold #ffbd38 · emerald #34d399. */
+
+/* Route content enters with a soft rise — re-triggered per navigation via
+   the key on the routed container in App.tsx. */
+@media (prefers-reduced-motion: no-preference) {
+  .vigil-page-enter {
+    animation: vigil-rise 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  @keyframes vigil-rise {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  /* Cards lift toward the cursor. Applies to the shared Card primitive and
+     anything opting in via .vigil-lift. */
+  .vigil-lift {
+    transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+  }
+  .vigil-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px -12px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 230, 203, 0.07);
+  }
+
+  /* Buttons press down — tactile confirmation on every click. */
+  button:active:not(:disabled) { transform: translateY(1px) scale(0.985); }
+  button { transition: transform 120ms ease, box-shadow 150ms ease, opacity 150ms ease; }
+
+  /* Live/status dots breathe instead of sitting dead. */
+  .vigil-breathe { animation: vigil-breathe 2.4s ease-in-out infinite; }
+  @keyframes vigil-breathe {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.45; }
+  }
+
+  /* Skeletons shimmer subtly (reads as "working", not "stuck"). */
+  .vigil-shimmer {
+    background-image: linear-gradient(100deg, transparent 30%, rgba(255, 230, 203, 0.06) 50%, transparent 70%);
+    background-size: 220% 100%;
+    animation: vigil-shimmer 1.6s linear infinite;
+  }
+  @keyframes vigil-shimmer { from { background-position: 130% 0; } to { background-position: -90% 0; } }
+}
+
+/* Keyboard focus is a first-class citizen: emerald ring, never suppressed. */
+:focus-visible {
+  outline: 2px solid #34d399 !important;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Selection in brand gold — tiny, but everyone notices. */
+::selection { background: #ffbd38; color: #041c1c; }
+
+/* Smooth in-page anchor scrolling (docs TOC, landing sections). */
+@media (prefers-reduced-motion: no-preference) {
+  html { scroll-behavior: smooth; }
+}
+
+/* The "most popular" ribbon on pricing cards. */
+.vigil-ribbon {
+  position: absolute;
+  top: -11px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 2px 12px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #041c1c;
+  background: linear-gradient(90deg, #ffbd38, #ffd77a);
+  border-radius: 999px;
+  box-shadow: 0 4px 14px -4px rgba(255, 189, 56, 0.5);
+  white-space: nowrap;
+}
+
+/* Current-plan card gets a living emerald edge. */
+@media (prefers-reduced-motion: no-preference) {
+  .vigil-current-plan { animation: vigil-edge 3s ease-in-out infinite; }
+  @keyframes vigil-edge {
+    0%, 100% { box-shadow: 0 0 0 1px rgba(52, 211, 153, 0.55); }
+    50% { box-shadow: 0 0 18px 1px rgba(52, 211, 153, 0.35); }
+  }
+}
