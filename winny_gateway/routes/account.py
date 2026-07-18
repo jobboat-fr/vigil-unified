@@ -16,6 +16,7 @@ returns them inline (and audit-logs the request).
 
 from __future__ import annotations
 
+import os
 from datetime import datetime, timezone
 from typing import Any
 
@@ -134,8 +135,48 @@ async def delete_account(
     except Exception as exc:  # noqa: BLE001
         logger.warning("support_messages erase failed: %s", exc)
 
+    # Cancel any live Stripe subscription BEFORE tearing down the org/rows —
+    # otherwise a deleted account keeps getting billed (real money bug).
+    stripe_cancelled: list[str] = []
+    try:
+        members = await db_select("org_members", filters={"user_id": uid}, limit=5)
+        org_ids = [m["org_id"] for m in members if m.get("org_id")]
+        for org_id in org_ids:
+            subs = await db_select(
+                "subscriptions", filters={"org_id": org_id, "provider": "stripe"}, limit=10,
+            )
+            for s in subs:
+                ext = str(s.get("external_id") or "")
+                if s.get("status") in ("active", "trialing") and ext and not ext.startswith(("dev_", "cs_")):
+                    try:
+                        import stripe as _stripe
+
+                        key = os.environ.get("STRIPE_SECRET_KEY", "")
+                        if key:
+                            _stripe.api_key = key
+                            _stripe.Subscription.cancel(ext)
+                            stripe_cancelled.append(ext)
+                    except Exception as exc:  # noqa: BLE001
+                        logger.warning("stripe cancel-on-delete failed sub=%s: %s", ext, exc)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("stripe cancel-on-delete lookup failed: %s", exc)
+
     for table in _USER_DATA_TABLES:
         await db_delete(table, filters={"user_id": uid})
+
+    # Delete the Supabase auth user via the admin API (service-role). Without
+    # this the login/identity survives erasure — GDPR Art.17 is incomplete and
+    # the email can't be reused.
+    auth_deleted = False
+    try:
+        from winny_gateway.db import get_admin_client
+
+        admin = get_admin_client()
+        admin.auth.admin.delete_user(uid)
+        auth_deleted = True
+    except Exception as exc:  # noqa: BLE001
+        logger.error("Supabase auth user delete failed uid=%s: %s", uid, exc,
+                     extra={"component": "gdpr"})
 
     # Log the deletion event (retained for compliance)
     await audit_log(
@@ -143,15 +184,21 @@ async def delete_account(
         event_type="gdpr",
         action="account_deleted",
         component="account",
-        details={"tables_cleared": _USER_DATA_TABLES},
+        details={
+            "tables_cleared": _USER_DATA_TABLES,
+            "auth_user_deleted": auth_deleted,
+            "stripe_subscriptions_cancelled": stripe_cancelled,
+        },
     )
-
-    # TODO: Delete Supabase auth user via admin API
-    # TODO: Cancel Stripe subscription if active
 
     return {
         "ok": True,
-        "data": {"status": "deleted", "message": "Your account and all data have been permanently deleted."},
+        "data": {
+            "status": "deleted",
+            "auth_user_deleted": auth_deleted,
+            "stripe_subscriptions_cancelled": len(stripe_cancelled),
+            "message": "Your account and all data have been permanently deleted.",
+        },
     }
 
 
