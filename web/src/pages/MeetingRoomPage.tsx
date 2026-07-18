@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/components/card";
 import { Button } from "@nous-research/ui/ui/components/button";
-import { vigil, googleMeet, streamRoomCouncil, type Room, type CouncilRecord, type SseEvent, type LiveIntervention, type MeetingSummary, type MeetBotStatus } from "@/lib/vigil";
+import { vigil, googleMeet, streamRoomCouncil, type Room, type CouncilRecord, type SseEvent, type LiveIntervention, type MeetingSummary, type MeetBotStatus, type AvatarSession } from "@/lib/vigil";
 import { LiveRoom } from "@/components/LiveRoom";
 
 const PERSONAS = ["CFO", "CTO", "COO", "CRM", "CRO", "advisor"] as const;
@@ -46,6 +46,7 @@ export default function MeetingRoomPage() {
   const [liveErr, setLiveErr] = useState<string>("");
   const [agentBusy, setAgentBusy] = useState(false);
   const [agentIn, setAgentIn] = useState(false);
+  const [avatarSession, setAvatarSession] = useState<AvatarSession | null>(null);
   const [summary, setSummary] = useState<MeetingSummary | null>(null);
   const [summarizing, setSummarizing] = useState(false);
   // Real Google Meet bot (Playwright on OVH, via the ops proxy).
@@ -234,6 +235,7 @@ export default function MeetingRoomPage() {
     setLiveErr("");
     setSummary(null);
     setAgentIn(false);
+    setAvatarSession(null);
   }, [active?.id]);
 
   // Close the meeting: summarize (the backend marks the room closed + makes the
@@ -287,19 +289,38 @@ export default function MeetingRoomPage() {
     }
   };
 
-  // Dispatch the AI model into the live call as a participant.
+  // Bring the AI advisor avatar into the meeting: Tavus primary → Beyond
+  // Presence fallback (gateway avatar.py). The returned session is rendered as
+  // a real video presence (Tavus CVI iframe, or Beyond's embeddable URL).
   const bringAgentIn = async () => {
     if (!active) return;
     setAgentBusy(true);
+    setLiveErr("");
     try {
       const evidence = active.transcript.map((m) => `${m.speaker}: ${m.text}`).join("\n");
-      await vigil.rooms.bringAgent(active.id, persona, evidence || undefined);
+      const session = await vigil.rooms.startAvatar(active.id, {
+        persona,
+        evidence: evidence || undefined,
+      });
+      if (!session.conversation_url && !session.livekit_url) {
+        throw new Error(
+          `Avatar started (${session.provider}) but returned no join URL. ` +
+            `Fallback chain: ${JSON.stringify(session.fallback_chain ?? [])}`,
+        );
+      }
+      setAvatarSession(session);
       setAgentIn(true);
     } catch (e) {
       setLiveErr((e as Error).message);
     } finally {
       setAgentBusy(false);
     }
+  };
+
+  const dismissAvatar = async () => {
+    setAvatarSession(null);
+    setAgentIn(false);
+    if (active) await vigil.rooms.endAvatar(active.id).catch(() => {});
   };
 
   if (authError) {
@@ -343,7 +364,29 @@ export default function MeetingRoomPage() {
           </div>
         </div>
         <div className="flex min-h-0 flex-1">
-          <div className="min-h-0 flex-1"><LiveRoom token={liveJoin.token} url={liveJoin.url} onLeave={() => setLiveJoin(null)} /></div>
+          <div className="flex min-h-0 flex-1 flex-col md:flex-row">
+            <div className="min-h-0 flex-1"><LiveRoom token={liveJoin.token} url={liveJoin.url} onLeave={() => setLiveJoin(null)} /></div>
+            {avatarSession && (
+              <div className="relative min-h-0 flex-1" style={{ borderLeft: "1px solid #ffffff14", background: "#000" }}>
+                <div className="absolute left-2 top-2 z-10 flex items-center gap-2 rounded-full px-2 py-1 text-[10px] font-semibold" style={{ background: "#041c1ccc", color: "#34d399" }}>
+                  <span className="vigil-breathe">●</span> AI {persona} · {avatarSession.provider === "tavus" ? "Tavus" : "Beyond Presence"}
+                  <button onClick={() => void dismissAvatar()} className="ml-1 opacity-70 hover:opacity-100" title="Remove avatar">✕</button>
+                </div>
+                {avatarSession.conversation_url ? (
+                  <iframe
+                    title={`AI ${persona} avatar`}
+                    src={avatarSession.conversation_url}
+                    className="h-full w-full border-0"
+                    allow="camera; microphone; autoplay; display-capture; fullscreen"
+                  />
+                ) : (
+                  <div className="flex h-full items-center justify-center p-4 text-center text-xs" style={{ color: "#e7e9f3aa" }}>
+                    Avatar is live on {avatarSession.provider} but returned no embeddable URL.
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
           {/* In-meeting controls — transcription + listening live HERE, not on the dashboard */}
           <div className="flex w-80 min-w-0 flex-col" style={{ borderLeft: "1px solid #ffffff14", color: "#e7e9f3" }}>
             <div className="flex items-center justify-between px-3 py-2" style={{ borderBottom: "1px solid #ffffff14" }}>
