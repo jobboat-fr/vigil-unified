@@ -144,3 +144,7 @@ mcp_pipe_out.txt
 graphify-out/
 meet-debug*.png
 meet_auth_state.json
+
+# LEARN local credentials — never commit
+.env.learn
+.env.*.local

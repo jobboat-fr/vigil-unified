@@ -47,6 +47,7 @@ dependencies = [
   "python-dotenv==1.2.2",
   "fire==0.7.1",
   "httpx[socks]==0.28.1",
+  "asyncpg==0.31.0",  # LEARN: direct Postgres so RLS is enforced, not bypassed
   "rich==14.3.3",
   "tenacity==9.1.4",
   "pyyaml==6.0.3",

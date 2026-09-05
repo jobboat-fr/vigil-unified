@@ -120,6 +120,8 @@ import SignalsPage from "@/pages/SignalsPage";
 import PositionsPage from "@/pages/PositionsPage";
 import OrdersPage from "@/pages/OrdersPage";
 import AuditPage from "@/pages/AuditPage";
+import LearnCalendarPage from "@/pages/LearnCalendarPage";
+import LearnDashboardPage from "@/pages/LearnDashboardPage";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { useI18n } from "@/i18n";
@@ -175,6 +177,10 @@ const BUILTIN_ROUTES_CORE: Record<string, ComponentType> = {
   "/finance": FinancePage,
   "/crm": CrmPage,
   "/mail": MailPage,
+  // LEARN — training platform (AZZ&CO)
+  "/learn": LearnDashboardPage,
+  "/learn/calendar": LearnCalendarPage,
+
   // WinnyWoo workspace
   "/trade-desk": TradeDeskPage,
   "/signals": SignalsPage,
@@ -235,6 +241,8 @@ const BUILTIN_NAV_REST: NavItem[] = [
   { path: "/orders", label: "Orders", icon: ListOrdered, group: "desk" },
   // ── Insight ──
   { path: "/audit", label: "Audit", icon: ScrollText, group: "insight" },
+  { path: "/learn", label: "Formation", icon: ScrollText, group: "insight" },
+  { path: "/learn/calendar", label: "Calendrier", icon: ScrollText, group: "insight" },
   { path: "/files", label: "Files", icon: FolderOpen, group: "insight" },
   { path: "/analytics", labelKey: "analytics", label: "Analytics", icon: BarChart3, group: "insight" },
   { path: "/models", labelKey: "models", label: "Models", icon: Cpu, group: "insight" },
