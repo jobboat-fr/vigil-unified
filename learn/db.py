@@ -95,6 +95,52 @@ async def scoped(actor: Actor) -> AsyncIterator[Any]:
 
 
 @asynccontextmanager
+async def public_scope(tenant_id: str) -> AsyncIterator[Any]:
+    """The unauthenticated funnel — the only path into the database without a login.
+
+    It is not `scoped()` with a blank actor. Three things differ, and each is the reason
+    the other two are not enough on their own:
+
+    * the role is `prospect`, so `learn_capabilities` answers what a visitor may do in the
+      same place it answers that question for everyone else;
+    * the tenant comes from the URL slug resolved *by us*, never from the body, and the
+      restrictive floor from 0001 then confines the whole transaction to that organisme;
+    * the connection drops into `learn_public`, which holds INSERT on exactly one table.
+      `learn_app` can write every table in the product, so the funnel must not run as it.
+
+    `tenant_id` must already be a resolved id from `learn_tenants`, not a slug.
+    """
+    p = await pool()
+    async with p.acquire() as conn:
+        async with conn.transaction():
+            await conn.execute(
+                """
+                select set_config('learn.user_id',    '',        true),
+                       set_config('learn.role',       'prospect', true),
+                       set_config('learn.tenant_id',  $1,        true),
+                       set_config('learn.company_id', '',        true),
+                       set_config('learn.principal',  'human',   true)
+                """,
+                tenant_id,
+            )
+            await conn.execute("set local role learn_public")
+            yield conn
+
+
+async def resolve_tenant(slug: str) -> dict[str, Any] | None:
+    """Slug → tenant, before any session context exists.
+
+    The chicken-and-egg of the public funnel: the tenant floor needs a tenant id, and the
+    only thing the caller gave us is a slug. `learn_tenant_by_slug()` is SECURITY DEFINER
+    for exactly this one lookup and returns nothing but an id and a display name.
+    """
+    p = await pool()
+    async with p.acquire() as conn:
+        row = await conn.fetchrow("select * from learn_tenant_by_slug($1)", slug)
+    return dict(row) if row else None
+
+
+@asynccontextmanager
 async def bootstrap() -> AsyncIterator[Any]:
     """Migrations and tenant provisioning only — opts past the hierarchy trigger.
 
@@ -120,6 +166,7 @@ TENANT_SCOPED = frozenset({
     "learn_attendance_signatures", "learn_absences", "learn_courses", "learn_modules",
     "learn_lessons", "learn_lesson_progress", "learn_documents", "learn_doc_templates",
     "learn_vault_objects", "learn_access_log", "learn_evaluations", "learn_reclamations",
+    "learn_leads", "learn_lead_events", "learn_lead_tokens",
 })
 
 

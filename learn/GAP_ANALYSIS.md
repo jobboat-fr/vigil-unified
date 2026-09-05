@@ -27,12 +27,18 @@ Legend — **A** in the artifact · **P** in the plan · **B** built (code exist
 | Agent delegation with read/write ceilings | ✅ | ✅ | ✅ roles.py |
 | Agent may never sign, issue or grant | ✅ | ✅ | ✅ `learn_no_agent_writes()` |
 | Planning: sessions, créneaux, conflicts | ✅ | ✅ | ✅ 0004 |
-| Site vitrine → funnel → inscription | ✅ | ⚠️ thin | ⏳ P10 |
-| Positioning quiz (indicator 8) | ✅ | ✅ | ⏳ P4 |
+| Site vitrine → funnel → inscription | ✅ | ⚠️ thin | ✅ 0016/0017 + vitrine |
+| Positioning quiz (indicator 8) | ✅ | ✅ | ✅ 0010, and takeable without an account since 0016 |
 
-The artifact is **ahead of the plan** in one place: the acquisition funnel. It was drawn
+The artifact was **ahead of the plan** in one place: the acquisition funnel. It was drawn
 in detail — public page, form, tunnel, quiz, account, enrolment, convocation — before
-`PLAN_V2.md` had more than a sentence about it. Treat the artifact as the spec for P10.
+`PLAN_V2.md` had more than a sentence about it, and the artifact was used as the spec.
+
+**Built 2026-09-05.** The one thing the drawing got wrong is worth recording: it showed the
+quiz taken *after* an account exists. Indicator 8 requires the level to be established
+before enrolling, so the test had to become takeable by someone the platform has never met —
+which is why the funnel has its own role, its own database role, and a single-use token
+instead of a login.
 
 ---
 

@@ -187,6 +187,7 @@ def create_app(config: GatewayConfig | None = None) -> FastAPI:
         from learn.routes import calendar as learn_calendar
         from learn.routes import content as learn_content
         from learn.routes import documents as learn_documents
+        from learn.routes import funnel as learn_funnel
         from learn.routes import planning as learn_planning
         from learn.routes import platform as learn_platform
         from learn.routes import reporting as learn_reporting
@@ -201,6 +202,7 @@ def create_app(config: GatewayConfig | None = None) -> FastAPI:
         app.include_router(learn_content.router)
         app.include_router(learn_reporting.router)
         app.include_router(learn_platform.router)
+        app.include_router(learn_funnel.router)
     except Exception as exc:  # pragma: no cover - optional subsystem
         logger.warning(
             "LEARN routes not mounted: %s", exc,

@@ -1,11 +1,12 @@
-"""LEARN — importer, tenant-#2 gate, réversibilité, tunnel public.
+"""LEARN — importer, tenant-#2 gate, réversibilité.
 
 Proven live: the readiness gate reports `DPA signé = false` and the reversibility manifest
 counts ten datasets including the émargements with their hash chain.
 
 Covered here: that an import cannot be applied unseen, that imported attendance is never
-converted into a signature, that the gate refuses rather than merely reports, and that the
-public funnel creates a request rather than an account.
+converted into a signature, and that the gate refuses rather than merely reports.
+
+The public funnel moved out of this module in migration 0016 — see test_funnel.py.
 """
 
 from __future__ import annotations
@@ -174,47 +175,5 @@ def test_reversibility_ships_the_chain_not_just_the_rows():
     assert "survit à l'abonnement" in body["note"]
 
 
-# ------------------------------------------------------------------ the funnel
-
-def test_the_public_catalogue_publishes_its_population():
-    conn = FakeConn([
-        {"id": TENANT, "name": "HBS FORMATION"},
-        {"satisfaction": 4.6, "responses": 71, "response_rate": 74.0,
-         "learners": 96, "year": 2026},
-    ])
-    conn._rows = [{"id": TENANT, "name": "HBS FORMATION"}]
-
-    seq = [
-        {"id": TENANT, "name": "HBS FORMATION"},
-        {"satisfaction": 4.6, "responses": 71, "response_rate": 74.0,
-         "learners": 96, "year": 2026},
-    ]
-
-    async def fetchrow(q, *a):
-        conn.sql.append(q)
-        return seq.pop(0) if seq else None
-    conn.fetchrow = fetchrow
-
-    c = build(conn, admin())
-    body = c.get(f"/api/v1/learn/public/programs/hbs").json()
-    assert body["indicateurs"]["responses"] == 71
-    assert "population" in body["mention"]
-
-
-def test_a_lead_creates_a_request_not_an_account():
-    """An open endpoint that minted accounts would be a spam surface with a login page."""
-    conn = FakeConn([{"id": TENANT}, {"id": "r1", "received_at": None}])
-    c = build(conn, admin())
-    r = c.post("/api/v1/learn/public/leads/hbs",
-               json={"full_name": "Nadia Cherif", "email": "n@delta-log.fr"})
-    assert r.status_code == 201
-    assert "positionnement" in r.json()["next"]
-    written = " ".join(conn.sql)
-    assert "insert into learn_profiles" not in written
-
-
-def test_a_lead_needs_a_real_address():
-    c = build(FakeConn([]), admin())
-    r = c.post("/api/v1/learn/public/leads/hbs",
-               json={"full_name": "X Y", "email": "pas-une-adresse"})
-    assert r.status_code == 422
+# The funnel used to be tested here. It has its own module and its own table since
+# migration 0016 — see test_funnel.py.

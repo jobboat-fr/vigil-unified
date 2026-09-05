@@ -16,18 +16,18 @@ therefore a refusal surface, not a checklist widget.
 Leaving without their evidence would make them non-compliant, so the export is a duty
 before it is a sales answer to the lock-in objection.
 
-**The public funnel.** The three unauthenticated endpoints that turn a visitor on the
-vitrine into an enrolled learner.
+The public funnel used to be a fourth section here; it now has its own module and its own
+table (`funnel.py`, migration 0016).
 """
 
 from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Request
-from pydantic import BaseModel, EmailStr, Field
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel, Field
 
-from ..db import available, pool, scoped, translate
+from ..db import available, scoped, translate
 from ..roles import Actor, current_actor
 
 router = APIRouter(prefix="/api/v1/learn", tags=["learn:platform"])
@@ -172,80 +172,10 @@ async def reversibility(actor: Actor = Depends(current_actor)):
     }
 
 
-# ------------------------------------------------------------------ the public funnel
-
-class LeadIn(BaseModel):
-    full_name: str = Field(min_length=2, max_length=200)
-    email: EmailStr
-    company: str | None = None
-    session_id: str | None = None
-    program_id: str | None = None
-    message: str | None = Field(None, max_length=2000)
-
-
-@router.get("/public/programs/{tenant_slug}")
-async def public_catalogue(tenant_slug: str):
-    """The vitrine's catalogue, and the indicators it is required to publish.
-
-    Unauthenticated by necessity — this is the page a stranger reads. Every figure ships
-    with the population behind it, because V10 indicator 1 requires a published statistic
-    to be verifiable.
-    """
-    _guard()
-    p = await pool()
-    async with p.acquire() as conn:
-        tenant = await conn.fetchrow(
-            "select id, name from learn_tenants where slug = $1", tenant_slug)
-        if tenant is None:
-            raise HTTPException(404, {"error": "not_found"})
-        programs = await conn.fetch(
-            """select pr.id, pr.title, pr.duration_hours, pr.modality, pr.objectives,
-                      pr.prerequisites, pr.certifiante, pr.rncp_code,
-                      (select min(s.starts_on) from learn_sessions s
-                        where s.program_id = pr.id and s.starts_on >= current_date
-                          and s.status = 'planned') as next_session
-                 from learn_programs pr
-                where pr.tenant_id = $1 and pr.published order by pr.title""", tenant["id"])
-        ind = await conn.fetchrow(
-            """select satisfaction, responses, response_rate, learners, year
-                 from learn_quality_indicators where tenant_id = $1
-                order by year desc limit 1""", tenant["id"])
-    return {
-        "organisme": tenant["name"],
-        "programmes": [dict(r) for r in programs],
-        "indicateurs": dict(ind) if ind else None,
-        "mention": "chaque taux est publié avec la population qui l'a produit",
-    }
-
-
-@router.post("/public/leads/{tenant_slug}", status_code=201)
-async def submit_lead(tenant_slug: str, body: LeadIn, request: Request):
-    """A visitor asks for a place — the moment they cross into the system.
-
-    Creates a demande, not an account. Nobody becomes a learner until a positioning test
-    is taken and an admin confirms; an open endpoint that minted accounts would be a
-    spam surface with a login page attached.
-    """
-    _guard()
-    p = await pool()
-    async with p.acquire() as conn:
-        tenant = await conn.fetchrow(
-            "select id from learn_tenants where slug = $1", tenant_slug)
-        if tenant is None:
-            raise HTTPException(404, {"error": "not_found"})
-        row = await conn.fetchrow(
-            """insert into learn_reclamations
-                 (tenant_id, subject, body, raised_by_kind, raised_by_name, severity, status)
-               values ($1,$2,$3,'autre',$4,'faible','ouverte')
-               returning id, received_at""",
-            tenant["id"],
-            f"Demande d'inscription — {body.full_name}",
-            _json({"email": str(body.email), "company": body.company,
-                   "session_id": body.session_id, "program_id": body.program_id,
-                   "message": body.message}),
-            body.full_name)
-    return {"id": row["id"], "received_at": row["received_at"],
-            "next": "un test de positionnement vous sera envoyé par e-mail"}
+# The public funnel used to live here and filed each demande as a `learn_reclamations` row.
+# That polluted the réclamations register — the artefact an auditor reads for indicator 30,
+# the most-failed indicator nationally — with rows that are not complaints. It moved to
+# `funnel.py` and to a table of its own in migration 0016.
 
 
 def _json(v: Any) -> str:

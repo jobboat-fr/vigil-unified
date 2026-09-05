@@ -70,11 +70,27 @@ async def two_tenants(conn):
 
 # --------------------------------------------------------------- the catalogue
 
-async def test_six_roles_seeded(conn):
+async def test_seven_roles_seeded(conn):
+    """Six people plus `prospect` — the visitor in the public tunnel (0016).
+
+    `prospect` is a role rather than a special case inside a policy so that "what may an
+    unauthenticated visitor do?" is answered by `learn_capabilities`, where every other
+    role's answer already lives.
+    """
     rows = await conn.fetch("select role, level, is_read_only from learn_roles order by level")
     assert [r["role"] for r in rows] == [
-        "super_admin", "admin", "formateur", "entreprise", "auditeur", "apprenant"]
+        "super_admin", "admin", "formateur", "entreprise", "auditeur", "apprenant",
+        "prospect"]
     assert [r["role"] for r in rows if r["is_read_only"]] == ["auditeur"]
+
+
+async def test_a_prospect_holds_exactly_three_capabilities(conn):
+    """The public surface is the whole reason to check this one by name."""
+    rows = await conn.fetch(
+        "select resource, action from learn_capabilities where role='prospect' "
+        "order by resource, action")
+    assert [(r["resource"], r["action"]) for r in rows] == [
+        ("lead", "create"), ("positionnement", "create"), ("program", "read")]
 
 
 async def test_only_two_roles_may_sign(conn):

@@ -69,10 +69,31 @@ Nothing under `winny/`, `hermes_*`, `agent/` or the trading routes is modified.
 | **Importer** | ✅ | dry-run before apply; imported attendance archived, never converted to a signature |
 | **Tenant-#2 gate** | ✅ | `DPA signé = false` blocks readiness; sub-processors + registre seeded |
 | **P9 Front end** | ✅ | `learn.ts` client, dashboard + calendrier pages, routed, `tsc --noEmit` clean |
-| **P10 Vitrine funnel** | ✅ | public catalogue with its population, lead creates a demande not an account |
+| **P10 Vitrine funnel** | ✅ | rebuilt in 0016/0017 — own table, 7th role, single-use test link; driven live end to end |
 | **P11 Mobile** | ✅ | offline queue; `signed_at` stays server-side, device time is evidence |
 
-**71 endpoints · 15 migrations · 104 tests (95 pass, 9 skip without a DSN) · 38 tables, all with forced RLS and a policy.**
+**91 operations over 77 paths · 17 migrations · 133 tests (123 pass, 10 skip without a DSN) · 41 tables, all with forced RLS and a policy.**
+
+### The tunnel, rebuilt
+
+P10 was marked done with two endpoints that filed each inscription request as a row in
+`learn_reclamations`. That polluted the register an auditor reads for **indicator 30 — the
+most-failed indicator nationally** — with rows that are not complaints. Migrations 0016 and
+0017 gave the funnel its own table and its own module (`routes/funnel.py`), and made the
+public half genuinely unprivileged:
+
+| | |
+|---|---|
+| `prospect` | a 7th role holding exactly three capabilities, so "what may a visitor do?" is answered by `learn_capabilities` like every other role |
+| `learn_public` | a database role with INSERT on **one** table; `learn_app` can write every table in the product, so the funnel must not run as it |
+| the tenant | resolved from the URL slug by us, then SET LOCAL — the 0001 floor confines the whole transaction to one organisme |
+| the token | sha256 only, single use, expiring; a leaked backup hands nobody a working link |
+| the marking | `learn_grade_positioning()`, using the same set-equality expression as `learn_grade_attempt()` — a score computed where the candidate can reach it is a score the candidate chose |
+
+Driven against the live database by `tools/verify_funnel.sql` (submit · four refusals ·
+dedupe · throttle · paper without answers · grading · token replay · conversion ·
+idempotence · append-only journal · cross-tenant read), and against a browser through the
+vitrine.
 
 ### The reorder, and why
 
@@ -114,15 +135,24 @@ Two things also missing from the roadmap entirely, both from `GAP_ANALYSIS.md` �
 | 0013 | export d'audit, notifications, signalement | the manifest reports absence as loudly as presence |
 | 0014 | reprise de données, DPA, registre, réversibilité | imported attendance is never a signature |
 | 0015 | évidence d'émargement différé | both times visible, device clock never authoritative |
+| 0016 | le tunnel : rôle `prospect`, `learn_leads`, jetons, étranglement | une demande n'est pas une réclamation |
+| 0017 | repair: submit a demande without reading one back | `INSERT … RETURNING` applies the SELECT policy |
 
-Four of fifteen are repairs, all found by executing against a real database rather than by
-reading. That ratio is the argument for not deferring verification.
+Five of seventeen are repairs, all found by executing against a real database rather than
+by reading. 0017 is the clearest case: the public path was written as if it could see what
+it had just written, and three separate grants had to fail before that was obvious. That
+ratio is the argument for not deferring verification.
 
 ### Open
 
-- **Routes have not been driven over HTTP** — needs `LEARN_DATABASE_URL`; host, port,
-  database and user are known, the password is not.
-- **Nothing is committed.** `learn/` is untracked and `winny_gateway/app.py` is modified.
+- **Most routes have not been driven over HTTP** — needs `LEARN_DATABASE_URL`; host, port,
+  database and user are known, the password is not. The funnel is the exception: its SQL was
+  executed against the live database, and its HTTP half was driven through a browser against
+  the vitrine with the LEARN responses stubbed at the shapes that run produced.
+- **Conversion needs an auth user id.** `learn_profiles.id` *is* the Supabase auth id, so
+  `learn_convert_lead()` takes it and `learn/invite.py` obtains it. Without
+  `LEARN_SUPABASE_SERVICE_KEY` the route answers 503 and asks for `auth_user_id` — it does
+  not fail on a constraint.
 - **Sharing a database with the live HBS site.** No collisions, site data untouched, but
   the wrong permanent home for a product licensed to several organismes.
 - **The product has no name.** `learn` is a package name standing in for one.
@@ -199,9 +229,11 @@ forecasting, the signalement channel required by V10 indicator 12.
 Six role dashboards on the existing React shell (`AuthGate`, sidebar, design tokens,
 20-locale i18n already present). WCAG AA — required by indicator 26 and by any public buyer.
 
-### P10 · Vitrine redirect
-`hbs-formation.fr` → this app: the enrolment funnel. Public formation page → demande →
-positioning quiz → account → enrolment → convocation. Deep links with campaign attribution.
+### P10 · Vitrine redirect — **done, see "The tunnel, rebuilt" above**
+`hbs-formation.fr` → this app. On the vitrine: `/preinscription` (the demande),
+`/positionnement/[token]` (the test), and `/api/learn/*` proxying server-side so the
+platform's address and token never reach a browser. `/quiz`, which had promised the test
+"bientôt", now redirects to where the parcours actually starts.
 
 ### P11 · Mobile
 Capacitor is already wired (`npm run mobile:sync android`). The mobile-specific feature is
