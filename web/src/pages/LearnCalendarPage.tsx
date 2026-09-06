@@ -6,6 +6,7 @@ import {
   CardTitle,
 } from "@nous-research/ui/ui/components/card";
 import { getCalendar, LearnError, type Slot } from "@/lib/learn";
+import { isoDay } from "@/lib/day";
 
 /**
  * The calendar — one component for every profile.
@@ -30,7 +31,9 @@ function mondayOf(d: Date) {
   return x;
 }
 
-const iso = (d: Date) => d.toISOString().slice(0, 10);
+// Voir `lib/day.ts` : `toISOString()` bascule en UTC et décale la journée d'un cran
+// dans tout fuseau à l'est de Greenwich.
+const iso = isoDay;
 
 const hhmm = (s: string) =>
   new Date(s).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });

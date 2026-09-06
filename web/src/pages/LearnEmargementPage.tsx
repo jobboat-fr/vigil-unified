@@ -14,6 +14,7 @@ import {
   type Slot,
   type SheetRow,
 } from "@/lib/learn";
+import { isoDay } from "@/lib/day";
 
 /**
  * Émargement — signer avant et après chaque demi-journée.
@@ -35,7 +36,9 @@ export default function LearnEmargementPage() {
 
   const load = useCallback(async () => {
     setError(null);
-    const today = new Date().toISOString().slice(0, 10);
+    // Date civile locale : `toISOString()` renvoyait la veille entre minuit et 2 h
+    // du matin à Paris. Voir `lib/day.ts`.
+    const today = isoDay();
     try {
       const r = await getCalendar(today, today);
       setSlots(r.items);
