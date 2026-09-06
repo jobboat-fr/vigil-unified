@@ -508,3 +508,58 @@ export const getActions = (status?: string) =>
     "GET",
     `/actions${status ? `?status=${encodeURIComponent(status)}` : ""}`,
   );
+
+// ---------------------------------------------------------------- Le Noyau
+
+export interface NoyauMeta {
+  slug: string;
+  title: string;
+  version: number;
+  bytes: number;
+  updated_at: string;
+  tenant_id: string | null;
+  /** Le modèle éditable, ou `null` quand c'est celui du fichier qui fait foi. */
+  model: Record<string, unknown> | null;
+}
+
+/** Les métadonnées du document, sans son contenu — la page a besoin de savoir qu'il
+ *  existe avant de télécharger cent kilo-octets. */
+export const getNoyauMeta = (slug = "noyau") =>
+  call<NoyauMeta>("GET", `/noyau/${encodeURIComponent(slug)}`);
+
+/**
+ * L'URL du document lui-même, avec le jeton en paramètre.
+ *
+ * Une iframe ne porte pas d'en-tête `Authorization` : le navigateur charge son `src`
+ * lui-même, sans passer par le code qui poserait le jeton. Le jeton voyage donc dans
+ * l'URL — ce qui n'est pas anodin, et pourquoi la réponse est `private, no-store` et
+ * `noindex`. L'alternative — charger le HTML en `fetch` puis le poser en `srcdoc` — évite
+ * le jeton dans l'URL et c'est ce que fait la page : cette fonction reste pour le cas où
+ * l'on voudrait ouvrir le document dans un onglet.
+ */
+export const noyauHtmlUrl = (slug: string, token: string) =>
+  `${BASE}/noyau/${encodeURIComponent(slug)}/html?access_token=${encodeURIComponent(token)}`;
+
+/** Le document, récupéré avec le jeton en en-tête puis posé en `srcdoc`. */
+export async function getNoyauHtml(slug = "noyau"): Promise<string> {
+  const token = await getAccessToken();
+  if (!token) throw new GatewayError("Session expirée — reconnectez-vous.", "NO_SESSION");
+  const res = await fetch(`${BASE}/noyau/${encodeURIComponent(slug)}/html`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new LearnError(
+      res.status === 404
+        ? "Ce document n'est pas accessible avec votre profil."
+        : "Chargement impossible.",
+      res.status, undefined, body);
+  }
+  return res.text();
+}
+
+/** Enregistrer le modèle éditable. Le super_admin seul — la base tranche. */
+export const putNoyauModel = (model: Record<string, unknown>, slug = "noyau") =>
+  call<{ slug: string; version: number; updated_at: string }>(
+    "PUT", `/noyau/${encodeURIComponent(slug)}/model`, { model },
+  );

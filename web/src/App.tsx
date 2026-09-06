@@ -162,6 +162,10 @@ const CHAT_NAV_ITEM: NavItem = {
   label: "Vigil",
   icon: Terminal,
   group: "workspace",
+  // Ni l'apprenant ni l'auditeur. Un stagiaire s'adresse à son formateur : une réponse
+  // automatique sur son parcours engagerait l'organisme. Un auditeur qui pourrait faire
+  // travailler l'assistant de l'organisme qu'il contrôle ne serait plus un auditeur.
+  roles: ["super_admin", "admin", "formateur"],
 };
 
 /**
@@ -273,7 +277,7 @@ const BUILTIN_NAV_REST: NavItem[] = [
   { path: "/env", labelKey: "keys", label: "Keys", icon: KeyRound, group: "system" , roles: ["super_admin", "admin"] },
   { path: "/billing", label: "Facturation", icon: CreditCard, group: "system" , roles: ["super_admin", "admin"] },
   { path: "/system", label: "Système", icon: Wrench, group: "system" , roles: ["super_admin", "admin"] },
-  { path: "/noyau", label: "Le Noyau", icon: BookOpen, group: "system", roles: ["super_admin", "admin"] },
+  { path: "/noyau", label: "Le Noyau", icon: BookOpen, group: "system", roles: ["super_admin", "formateur"] },
 ];
 
 // Sidebar section ordering + labels. Grouping the ~30 destinations into five
@@ -504,7 +508,7 @@ export default function App() {
   // Drives which nav entries appear and which routes resolve. Null while the session
   // loads and for signed-out users, so gated entries stay hidden until a role is known —
   // failing closed rather than flashing a link that then disappears.
-  const learnRole = useLearnRole();
+  const { role: learnRole, resolu: roleResolu } = useLearnRole();
 
   const chatOverriddenByPlugin = useMemo(
     () => manifests.some((m) => m.tab.override === "/chat"),
@@ -514,23 +518,28 @@ export default function App() {
   const builtinRoutes = useMemo(
     () => ({
       ...BUILTIN_ROUTES_CORE,
-      // Hiding a link stops nobody who can type a URL. Logs and Files expose operational
-      // traces and raw stored objects across the platform, so the route resolves to a
-      // redirect for anyone below super_admin — and the gateway refuses them regardless.
-      // Hidden links stop nobody who can type a URL, so each gated path resolves to a
-      // redirect for anyone outside its allowlist. The gateway refuses them regardless;
-      // this is what stops the page rendering an empty shell before that refusal lands.
-      ...Object.fromEntries(
-        BUILTIN_NAV_REST.filter(
-          (n) => n.roles && !(learnRole && n.roles.includes(learnRole)),
-        ).map((n) => [n.path, RootRedirect]),
-      ),
       // Embedded TUI (PTY over WS) when the dashboard serves it; otherwise the
       // gateway-backed VIGIL assistant (HTTP SSE) — the only chat that works
       // through the Vercel product.
       "/chat": embeddedChat ? ChatRouteSink : AssistantChatPage,
+      //
+      // `CHAT_NAV_ITEM` est dans cette liste et pas seulement dans la navigation : il vit
+      // hors de `BUILTIN_NAV_REST`, si bien que le garde l'oubliait. Le lien disparaissait
+      // pour l'apprenant et l'auditeur, et /chat restait atteignable en le tapant.
+      //
+      // Tant que le rôle n'est pas connu, aucune redirection : `learnRole` vaut `null`
+      // pendant la lecture de la session, ce qui est indiscernable de « aucun rôle ».
+      // Rediriger là-dessus renvoyait un super_admin ouvrant /noyau directement vers le
+      // tableau de bord, avant même que son rôle n'arrive.
+      ...(roleResolu
+        ? Object.fromEntries(
+            [CHAT_NAV_ITEM, ...BUILTIN_NAV_REST].filter(
+              (n) => n.roles && !(learnRole && n.roles.includes(learnRole)),
+            ).map((n) => [n.path, RootRedirect]),
+          )
+        : {}),
     }),
-    [embeddedChat, learnRole],
+    [embeddedChat, learnRole, roleResolu],
   );
 
   const builtinNav = useMemo(() => {

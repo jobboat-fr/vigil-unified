@@ -39,22 +39,32 @@ export async function getAccessToken(): Promise<string | null> {
 }
 
 /**
- * The caller's LEARN role, or null when signed out / not yet loaded.
+ * Le rôle LEARN de l'appelant, et le fait qu'on le connaisse.
  *
- * Read from `app_metadata`, never `user_metadata`: the latter is writable by the account's
- * own owner, so a role taken from it would let anyone promote themselves. The API applies
- * the same rule server-side, which is what actually enforces it — this exists only so the
- * navigation can hide what a caller cannot use.
+ * Lu dans `app_metadata`, jamais dans `user_metadata` : ce dernier est modifiable par le
+ * titulaire du compte, donc un rôle qui en viendrait laisserait chacun se promouvoir. La
+ * règle est appliquée côté serveur, qui est ce qui la tient réellement ; ceci n'existe que
+ * pour que la navigation cache ce qu'un appelant ne peut pas utiliser.
+ *
+ * `resolu` compte autant que `role`, et son absence était un vrai défaut : pendant le
+ * temps de lecture de la session, `role` valait `null`, indiscernable de « aucun rôle ».
+ * Les gardes de route en concluaient « hors liste » et redirigeaient — si bien qu'un
+ * super_admin qui ouvrait /noyau directement se retrouvait renvoyé au tableau de bord
+ * avant même que son rôle ne soit connu.
  */
-export function useLearnRole(): string | null {
-  const [role, setRole] = useState<string | null>(null);
+export function useLearnRole(): { role: string | null; resolu: boolean } {
+  const [state, setState] = useState<{ role: string | null; resolu: boolean }>({
+    role: null,
+    // Sans Supabase configuré il n'y a rien à attendre : autant le dire tout de suite.
+    resolu: !supabase,
+  });
   useEffect(() => {
     if (!supabase) return;
     let alive = true;
     const read = (s: { user?: { app_metadata?: Record<string, unknown> } } | null) => {
       if (!alive) return;
       const meta = (s?.user?.app_metadata ?? {}) as Record<string, unknown>;
-      setRole((meta.learn_role as string | undefined) ?? null);
+      setState({ role: (meta.learn_role as string | undefined) ?? null, resolu: true });
     };
     supabase.auth.getSession().then(({ data }) => read(data.session));
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => read(s));
@@ -63,5 +73,5 @@ export function useLearnRole(): string | null {
       sub.subscription.unsubscribe();
     };
   }, []);
-  return role;
+  return state;
 }

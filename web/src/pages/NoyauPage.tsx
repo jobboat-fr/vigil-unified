@@ -1,164 +1,153 @@
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@nous-research/ui/ui/components/card";
+  getNoyauHtml,
+  getNoyauMeta,
+  putNoyauModel,
+  LearnError,
+  type NoyauMeta,
+} from "@/lib/learn";
 
 /**
- * Le Noyau — ce que la plateforme tient, et pourquoi.
+ * Le Noyau — la description de l'installation, servie depuis la base.
  *
- * Remplace la page Documentation, qui décrivait l'agent Hermes et pas ce produit. Réservée
- * à la direction et à l'éditeur : c'est une page de doctrine, pas un mode d'emploi.
+ * La page n'écrit pas la doctrine : elle la va chercher. Le document vit dans
+ * `learn_noyau_docs` (migrations 0024 et 0025) et se corrige sans redéployer
+ * l'application, ce qui est la seule façon qu'une description d'architecture reste vraie
+ * plus de quelques semaines. L'assistant lit la même ligne, ce qui lui évite de deviner.
  *
- * Elle existe pour une raison précise. Les règles ci-dessous sont tenues par la base de
- * données, pas par l'application — et quelqu'un qui ne le sait pas finit par les
- * réimplémenter dans le code, où elles divergent. Écrire une fois ce qui est déjà garanti
- * évite la deuxième copie.
+ * Le document est posé en `srcdoc` dans une iframe en bac à sable. Trois raisons, dans cet
+ * ordre :
+ *
+ *   * c'est un document autonome — styles, scène 3D, éditeur — et l'insérer dans le DOM de
+ *     l'application ferait entrer en collision deux feuilles de style qui s'ignorent ;
+ *   * `sandbox` sans `allow-same-origin` le prive de la session : il ne peut ni lire le
+ *     jeton, ni appeler l'API en votre nom. C'est le point important — c'est du contenu
+ *     stocké, pas du code de l'application ;
+ *   * `srcdoc` plutôt qu'un `src` : une iframe ne porte pas d'en-tête `Authorization`, si
+ *     bien qu'un `src` obligerait à faire voyager le jeton dans l'URL.
+ *
+ * Ce bac à sable a un corollaire : le document ne peut rien enregistrer lui-même. Son
+ * éditeur envoie donc le modèle ici, et c'est cette page qui écrit — en base, pour tout le
+ * monde, plutôt que dans le `localStorage` d'un seul navigateur. La base refuse si
+ * l'appelant n'est pas super_admin, et le refus repart vers le document tel quel.
+ *
+ * L'accès est décidé par la base, pas ici. Un profil qui n'y a pas droit reçoit 404, et
+ * cette page l'affiche tel quel : « ce document n'existe pas pour vous » est la bonne
+ * réponse à donner à quelqu'un qui n'a pas à savoir qu'il existe.
  */
 
-type Rule = { title: string; body: string; where: string };
+/** Le marqueur que le document réserve pour le modèle enregistré en base. */
+const MARQUEUR = "/*MODEL_OVERRIDE*/null";
 
-const INVARIANTS: Rule[] = [
-  {
-    title: "Un organisme ne voit jamais les données d'un autre",
-    body:
-      "La lecture croisée renvoie zéro ligne ; l'écriture croisée lève cross_tenant_violation. "
-      + "Ce n'est pas un filtre dans une requête : c'est un plancher restrictif que rien ne peut élargir.",
-    where: "learn_tenant_table() — plancher RLS sur chacune des 46 tables",
-  },
-  {
-    title: "Un émargement ne se modifie pas",
-    body:
-      "Ni correction, ni suppression, par personne — super administrateur compris. Une présence "
-      + "modifiable après coup ne prouve rien, et c'est précisément ce qu'un audit vient vérifier.",
-    where: "learn_append_only() — UPDATE et DELETE révoqués, pas seulement inutilisés",
-  },
-  {
-    title: "Un assistant ne signe pas, n'émet pas, n'inscrit pas",
-    body:
-      "Il prépare et propose ; un humain nommé valide. La règle vaut pour l'émargement, pour "
-      + "l'envoi d'un message au nom de l'organisme et pour la création d'un compte.",
-    where: "learn_no_agent_writes() + AGENT_FORBIDDEN dans roles.py",
-  },
-  {
-    title: "Une action d'amélioration nomme sa cause",
-    body:
-      "source_kind et source_id sont obligatoires. C'est l'indicateur 30 — la non-conformité la "
-      + "plus fréquente au niveau national — et la seule preuve qu'un retour a produit quelque chose.",
-    where: "learn_improvement_actions — colonnes NOT NULL",
-  },
-  {
-    title: "Une pièce sous conservation ne se supprime pas",
-    body:
-      "L'obligation de conservation va de 3 à 10 ans selon le financement, et elle survit à "
-      + "l'abonnement. Un client qui part emporte ses preuves, sinon c'est lui qui devient non conforme.",
-    where: "learn_vault_guard() + learn_retention_until()",
-  },
-  {
-    title: "Le niveau est établi avant l'inscription",
-    body:
-      "Le test de positionnement est passable sans compte, par un lien à usage unique. "
-      + "L'indicateur 8 demande que le niveau soit connu avant d'inscrire, pas après.",
-    where: "learn_grade_positioning() — correction en base, jamais côté client",
-  },
-];
-
-const AXES = [
-  {
-    name: "Portée",
-    body: "Quelles lignes le profil voit : la plateforme, l'organisme, ses sessions, son entreprise, ou lui-même.",
-  },
-  {
-    name: "Hiérarchie",
-    body: "Qui peut créer qui. Une liste blanche explicite, pas une comparaison de niveaux.",
-  },
-  {
-    name: "Capacité",
-    body: "Ce que le profil peut faire à une ressource. C'est le troisième axe, et c'est celui qu'on oublie.",
-  },
-];
+function injecter(html: string, model: unknown): string {
+  if (!model) return html;
+  // `JSON.stringify` ne protège pas contre `</script>` dans une chaîne : le parseur HTML
+  // fermerait le bloc avant que le JS ne soit lu. On échappe la barre oblique, ce qui est
+  // sans effet en JSON et neutralise la fermeture prématurée.
+  const json = JSON.stringify(model).replace(/<\//g, "<\\/");
+  return html.replace(MARQUEUR, json);
+}
 
 export default function NoyauPage() {
-  return (
-    <div className="space-y-6 p-6">
-      <header className="max-w-3xl">
-        <h1 className="text-2xl font-semibold">Le Noyau</h1>
-        <p className="mt-2 text-sm leading-relaxed opacity-80">
-          Ce que la plateforme garantit, et où la garantie est tenue. Chaque règle ci-dessous
-          est appliquée par la base de données. L&apos;interface les reflète ; elle ne les
-          décide pas, et elle ne doit jamais en contenir une deuxième version.
-        </p>
-      </header>
+  const [html, setHtml] = useState<string | null>(null);
+  const [meta, setMeta] = useState<NoyauMeta | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const frame = useRef<HTMLIFrameElement>(null);
 
-      <section>
-        <h2 className="mb-3 text-[11px] font-semibold uppercase tracking-wider opacity-60">
-          Les invariants
-        </h2>
-        <div className="grid gap-4 lg:grid-cols-2">
-          {INVARIANTS.map((r) => (
-            <Card key={r.title}>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base">{r.title}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3 text-sm">
-                <p className="leading-relaxed opacity-80">{r.body}</p>
-                <p className="text-xs opacity-60">
-                  <span className="font-medium">Tenu par : </span>
-                  {r.where}
-                </p>
-              </CardContent>
-            </Card>
-          ))}
+  const charger = useCallback(async () => {
+    const [m, h] = await Promise.all([getNoyauMeta().catch(() => null), getNoyauHtml()]);
+    setMeta(m);
+    setHtml(injecter(h, m?.model ?? null));
+  }, []);
+
+  useEffect(() => {
+    let vivant = true;
+    void (async () => {
+      try {
+        await charger();
+      } catch (e) {
+        if (!vivant) return;
+        setError(
+          e instanceof LearnError ? e.message : "Le document n'a pas pu être chargé.",
+        );
+      }
+    })();
+    return () => { vivant = false; };
+  }, [charger]);
+
+  // L'éditeur du document parle par messages, faute de pouvoir écrire lui-même.
+  useEffect(() => {
+    function onMessage(ev: MessageEvent) {
+      // L'iframe est en origine opaque : son `ev.origin` vaut "null". On ne peut donc pas
+      // filtrer sur l'origine — on filtre sur la fenêtre émettrice, qui est la seule chose
+      // qu'un tiers ne peut pas usurper.
+      if (!frame.current || ev.source !== frame.current.contentWindow) return;
+      const d = ev.data as { type?: string; model?: Record<string, unknown> | null };
+      if (!d || d.type !== "vtlvs:noyau:model") return;
+
+      const repondre = (ok: boolean, err?: string) =>
+        frame.current?.contentWindow?.postMessage(
+          { type: "vtlvs:noyau:saved", ok, error: err }, "*",
+        );
+
+      void (async () => {
+        try {
+          // `null` demande le retour à la version du fichier : on écrit un modèle vide,
+          // que le document interprète comme « pas d'injection ».
+          await putNoyauModel(d.model ?? ({} as Record<string, unknown>));
+          repondre(true);
+          await charger();
+        } catch (e) {
+          repondre(false, e instanceof LearnError ? e.message : "écriture refusée");
+        }
+      })();
+    }
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, [charger]);
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <div className="max-w-lg rounded-xl border border-current/15 p-5">
+          <h1 className="text-lg font-semibold">Le Noyau</h1>
+          <p className="mt-2 text-sm opacity-70">{error}</p>
+          <p className="mt-3 text-xs leading-relaxed opacity-55">
+            Ce document est réservé à l&apos;éditeur de la plateforme, aux formateurs et à
+            l&apos;assistant. Le refus vient de la base de données, pas de cet écran.
+          </p>
         </div>
-      </section>
+      </div>
+    );
+  }
 
-      <section>
-        <h2 className="mb-3 text-[11px] font-semibold uppercase tracking-wider opacity-60">
-          L&apos;autorisation a trois axes
-        </h2>
-        <Card>
-          <CardContent className="space-y-4 p-5 text-sm">
-            <p className="leading-relaxed opacity-80">
-              Le niveau hiérarchique ne suffit pas, et s&apos;en contenter produit un vrai
-              défaut : un auditeur (niveau 4) est au-dessus d&apos;un apprenant (niveau 5), donc
-              une règle fondée sur le seul niveau laisserait un profil en lecture seule créer
-              des comptes.
-            </p>
-            <ul className="divide-y divide-current/10">
-              {AXES.map((a) => (
-                <li key={a.name} className="py-2.5">
-                  <span className="font-medium">{a.name}</span>
-                  <span className="opacity-80"> — {a.body}</span>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
-      </section>
+  if (html === null) {
+    return <p className="p-6 text-sm opacity-60">Chargement du document…</p>;
+  }
 
-      <section>
-        <h2 className="mb-3 text-[11px] font-semibold uppercase tracking-wider opacity-60">
-          Ce que la plateforme n&apos;est pas
-        </h2>
-        <Card>
-          <CardContent className="space-y-2 p-5 text-sm leading-relaxed opacity-80">
-            <p>
-              Elle ne certifie pas à la place de l&apos;organisme : elle produit les preuves
-              qu&apos;un audit demande, elle ne remplace pas l&apos;audit.
-            </p>
-            <p>
-              Elle n&apos;envoie rien au nom de l&apos;organisme sans qu&apos;un humain nommé
-              l&apos;ait validé — y compris lorsque c&apos;est l&apos;assistant qui a rédigé.
-            </p>
-            <p>
-              Elle n&apos;invente aucun chiffre publiable : chaque taux est calculé et publié
-              avec la population qui l&apos;a produit, parce que l&apos;indicateur 1 exige
-              qu&apos;il soit vérifiable.
-            </p>
-          </CardContent>
-        </Card>
-      </section>
+  // Le document se dimensionne en `100dvh` : dans une iframe, cela vaut la hauteur de
+  // l'iframe, pas celle de la fenêtre. Sans hauteur explicite ici, le conteneur de route
+  // se réduit au contenu et l'iframe faisait cent pixels de haut.
+  return (
+    <div className="flex flex-col" style={{ height: "calc(100dvh - 5.5rem)" }}>
+      <iframe
+        ref={frame}
+        title="Le Noyau"
+        srcDoc={html}
+        // Ni `allow-same-origin` ni `allow-forms` : le document a besoin d'exécuter son
+        // propre script — la scène et l'éditeur — et de rien d'autre.
+        sandbox="allow-scripts"
+        className="w-full flex-1 border-0"
+        style={{ background: "var(--color-card)" }}
+      />
+      {meta && (
+        <p className="shrink-0 px-4 py-1.5 text-[11px] opacity-45">
+          Version {meta.version} · {Math.round(meta.bytes / 1024)} Ko · mis à jour le{" "}
+          {new Date(meta.updated_at).toLocaleDateString("fr-FR")}
+          {meta.model ? " · modèle édité en base" : " · modèle du fichier"} · servi depuis
+          la base, pas depuis le bundle
+        </p>
+      )}
     </div>
   );
 }
