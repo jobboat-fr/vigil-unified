@@ -132,10 +132,14 @@ import { isDashboardEmbeddedChatEnabled } from "@/lib/dashboard-flags";
 import { api } from "@/lib/api";
 import type { StatusResponse } from "@/lib/api";
 
+/** Où atterrit quelqu'un qui n'a rien demandé de précis — ou qui a demandé une page
+ *  que son rôle ne lui ouvre pas.
+ *
+ *  Le tableau de bord Formation, pas la salle de réunion : c'est la page que tous les
+ *  rôles peuvent voir, et c'est le métier. Se retrouver dans une salle de visioconférence
+ *  après un refus d'accès ne dit rien d'utile à qui vient de taper /finance. */
 function RootRedirect() {
-  // Land on a product surface (works against the Railway gateway), not the
-  // Hermes operator Sessions page (needs a Hermes backend not deployed here).
-  return <Navigate to="/meeting-room" replace />;
+  return <Navigate to="/learn" replace />;
 }
 
 function UnknownRouteFallback({ pluginsLoading }: { pluginsLoading: boolean }) {
@@ -143,7 +147,7 @@ function UnknownRouteFallback({ pluginsLoading }: { pluginsLoading: boolean }) {
     // Render nothing during the plugin-load window — a spinner here would just flash.
     return null;
   }
-  return <Navigate to="/meeting-room" replace />;
+  return <Navigate to="/learn" replace />;
 }
 
 // L'assistant garde le nom VIGIL : c'est l'agent, pas l'application. VTLVS est le
