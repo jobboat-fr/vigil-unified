@@ -9,10 +9,10 @@ import { GatewayError } from "@/lib/ww";
 // departments then sync + work the tenant's live data.
 
 const PROVIDER_LABEL: Record<string, { name: string; hint: string; account?: string }> = {
-  github: { name: "GitHub", hint: "Personal access token (repo, read:org)" },
-  hubspot: { name: "HubSpot", hint: "Private-app access token" },
-  stripe: { name: "Stripe", hint: "Restricted/secret key (read)" },
-  gmail: { name: "Gmail", hint: "App password (16 chars, 2FA required)", account: "you@gmail.com" },
+  github: { name: "GitHub", hint: "Jeton d'accès personnel (repo, read:org)" },
+  hubspot: { name: "HubSpot", hint: "Jeton d'application privée" },
+  stripe: { name: "Stripe", hint: "Clé restreinte (lecture seule)" },
+  gmail: { name: "Gmail", hint: "Mot de passe d'application (16 caractères, 2FA requise)", account: "you@gmail.com" },
   notion: { name: "Notion", hint: "Internal integration token (secret_…)" },
 };
 
@@ -30,7 +30,7 @@ export default function ConnectionsPage() {
       setStatus(await vigil.connect.status());
       setAuthError(null);
     } catch (e) {
-      if (e instanceof GatewayError && e.code === "NO_SESSION") setAuthError("Sign in to connect your systems.");
+      if (e instanceof GatewayError && e.code === "NO_SESSION") setAuthError("Connectez-vous pour relier vos outils.");
       else setAuthError((e as Error).message);
     }
   }, []);
@@ -80,7 +80,7 @@ export default function ConnectionsPage() {
     setBusy(c.id + ":dc");
     try {
       await vigil.connect.disconnect(c.id);
-      note(c.provider, "Disconnected.");
+      note(c.provider, "Déconnecté.");
       await refresh();
     } finally {
       setBusy("");
@@ -92,9 +92,9 @@ export default function ConnectionsPage() {
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
       <header className="flex flex-col gap-1">
-        <h1 className="text-xl font-bold tracking-tight">Connections</h1>
+        <h1 className="text-xl font-bold tracking-tight">Connexions</h1>
         <p className="text-sm text-text-secondary">
-          Link your systems of record. Tokens are encrypted at rest and never shown again; your departments sync and work the live data.
+          Reliez vos outils métier. Les jetons sont chiffrés au repos et ne sont jamais réaffichés ; l'assistant travaille sur les données réelles, sans copie.
         </p>
       </header>
 
@@ -102,7 +102,7 @@ export default function ConnectionsPage() {
 
       <div className="grid gap-4 md:grid-cols-2">
         {status?.providers.map((p) => {
-          const label = PROVIDER_LABEL[p.id] || { name: p.id, hint: "API token" };
+          const label = PROVIDER_LABEL[p.id] || { name: p.id, hint: "Jeton d'API" };
           const conns = status.connections.filter((c) => c.provider === p.id);
           return (
             <Card key={p.id}>

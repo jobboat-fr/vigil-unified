@@ -9,7 +9,7 @@ import { WW_BASE, GatewayError } from "./ww";
 
 async function vigilCall<T = unknown>(method: string, path: string, body?: unknown): Promise<T> {
   const token = await getAccessToken();
-  if (!token) throw new GatewayError("not signed in to VIGIL", "NO_SESSION");
+  if (!token) throw new GatewayError("Session expirée — reconnectez-vous.", "NO_SESSION");
   let res: Response;
   try {
     res = await fetch(`${WW_BASE}${path}`, {
@@ -757,7 +757,7 @@ async function* sseStream(
   init: { method: string; body?: unknown },
 ): AsyncGenerator<SseEvent> {
   const token = await getAccessToken();
-  if (!token) throw new GatewayError("not signed in to VIGIL", "NO_SESSION");
+  if (!token) throw new GatewayError("Session expirée — reconnectez-vous.", "NO_SESSION");
   const res = await fetch(`${WW_BASE}${path}`, {
     method: init.method,
     headers: {

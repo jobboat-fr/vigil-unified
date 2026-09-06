@@ -400,7 +400,7 @@ export default function ChatPage({ isActive = true }: { isActive?: boolean }) {
         if (sel) {
           // Direct writeText inside the keydown handler preserves the user
           // gesture — async round-trips through OSC 52 can lose activation
-          // and fail with "Document is not focused".
+          // and fail with "La page n'a pas le focus".
           navigator.clipboard.writeText(sel).catch((err) => {
             console.warn("[dashboard clipboard] direct copy failed:", err.message);
           });
@@ -623,7 +623,7 @@ export default function ChatPage({ isActive = true }: { isActive?: boolean }) {
         setBanner(
           ev.reason
             ? `Auth failed (${ev.reason}). Reload to refresh the session.`
-            : "Auth failed. Reload the page to refresh the session token.",
+            : "Authentification échouée. Rechargez la page pour renouveler le jeton de session.",
         );
         return;
       }
@@ -632,13 +632,13 @@ export default function ChatPage({ isActive = true }: { isActive?: boolean }) {
         setBanner(
           ev.reason
             ? `Refused: ${ev.reason}.`
-            : "Refused: request host/origin doesn't match the dashboard.",
+            : "Refusé : l'origine de la requête ne correspond pas au tableau de bord.",
         );
         return;
       }
       if (ev.code === 4404) {
         setBanner(
-          "Embedded chat is disabled on this server (start it with --tui).",
+          "Le chat intégré est désactivé sur ce serveur (démarrez-le avec --tui).",
         );
         return;
       }
@@ -646,7 +646,7 @@ export default function ChatPage({ isActive = true }: { isActive?: boolean }) {
         setBanner(
           ev.reason
             ? `Refused: ${ev.reason}.`
-            : "Refused: your client isn't permitted (server bound to localhost only).",
+            : "Refusé : ce client n'est pas autorisé (le serveur n'écoute qu'en local).",
         );
         return;
       }
@@ -897,8 +897,8 @@ export default function ChatPage({ isActive = true }: { isActive?: boolean }) {
           <Button
             ghost
             onClick={handleCopyLast}
-            title="Copy last assistant response as raw markdown"
-            aria-label="Copy last assistant response"
+            title="Copier la dernière réponse en markdown brut"
+            aria-label="Copier la dernière réponse"
             className={cn(
               "absolute z-10",
               "normal-case tracking-normal font-normal",

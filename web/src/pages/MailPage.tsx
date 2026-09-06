@@ -31,7 +31,7 @@ export default function MailPage() {
       setMessages(m.messages);
       setAuthError(null);
     } catch (e) {
-      if (e instanceof GatewayError && e.code === "NO_SESSION") setAuthError("Sign in to VIGIL to use Mail.");
+      if (e instanceof GatewayError && e.code === "NO_SESSION") setAuthError("Connectez-vous pour ouvrir la messagerie.");
       else setErr((e as Error).message);
     }
   }, []);
@@ -92,9 +92,9 @@ export default function MailPage() {
       <header className="flex items-start justify-between gap-2">
         <div className="flex flex-col gap-1">
           <h1 className="text-xl font-bold tracking-tight">Mail</h1>
-          <p className="text-sm text-text-secondary">Inbox triage over the himalaya transport. Outbound is review-then-send — never auto-sent.</p>
+          <p className="text-sm text-text-secondary">Tri du courrier entrant. Rien ne part sans relecture : aucun message n'est envoyé automatiquement au nom de l'organisme.</p>
         </div>
-        <Button onClick={() => void sync()} disabled={syncing}>{syncing ? "Syncing…" : "Sync mailbox"}</Button>
+        <Button onClick={() => void sync()} disabled={syncing}>{syncing ? "Syncing…" : "Synchroniser la boîte"}</Button>
       </header>
 
       {authError && <Card><CardContent className="py-4 text-sm" style={{ color: "#f59e0b" }}>{authError}</CardContent></Card>}
@@ -112,7 +112,7 @@ export default function MailPage() {
       )}
 
       <Card>
-        <CardHeader><CardTitle>Manual ingest</CardTitle></CardHeader>
+        <CardHeader><CardTitle>Import manuel</CardTitle></CardHeader>
         <CardContent className="flex flex-col gap-2 sm:flex-row">
           <input className={inputCls} placeholder="From" value={from} onChange={(e) => setFrom(e.target.value)} />
           <input className={inputCls} placeholder="Subject" value={subject} onChange={(e) => setSubject(e.target.value)} />
@@ -125,7 +125,7 @@ export default function MailPage() {
       <Card>
         <CardHeader><CardTitle>Inbox</CardTitle></CardHeader>
         <CardContent className="flex flex-col gap-1">
-          {messages.length === 0 && <EmptyState title="No messages yet" hint="Connect Gmail on the Connections page, or ingest a mailbox above, then triage your inbox." />}
+          {messages.length === 0 && <EmptyState title="Aucun message" hint="Reliez Gmail depuis la page Connexions, ou importez une boîte ci-dessus, puis triez votre courrier." />}
           {messages.map((m) => (
             <div key={m.id} className="flex items-center gap-3 rounded-md border border-current/10 px-3 py-2">
               <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: m.status === "unread" ? "#f59e0b" : "transparent", border: "1px solid currentColor" }} />
@@ -145,7 +145,7 @@ export default function MailPage() {
                 <option value="" disabled>category…</option>
                 {MAIL_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
-              <Button ghost className="text-xs" disabled={triaging === m.id} onClick={() => void triage(m.id)}>{triaging === m.id ? "…" : "AI triage"}</Button>
+              <Button ghost className="text-xs" disabled={triaging === m.id} onClick={() => void triage(m.id)}>{triaging === m.id ? "…" : "Tri assisté"}</Button>
               <button type="button" onClick={() => void remove(m.id)} className="text-xs text-text-secondary hover:text-foreground">✕</button>
             </div>
           ))}

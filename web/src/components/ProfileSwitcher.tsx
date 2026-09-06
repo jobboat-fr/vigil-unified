@@ -25,7 +25,7 @@ export function ProfileSwitcher({ collapsed }: { collapsed?: boolean }) {
         "flex items-center gap-2 border-b border-current/10 px-3 py-2",
         collapsed && "lg:justify-center lg:px-0",
       )}
-      title={t.app.managingProfile ?? "Managing profile"}
+      title={t.app.managingProfile ?? "Profil administré"}
     >
       <Users
         className={cn(
@@ -34,7 +34,7 @@ export function ProfileSwitcher({ collapsed }: { collapsed?: boolean }) {
         )}
       />
       <select
-        aria-label={t.app.managingProfile ?? "Managing profile"}
+        aria-label={t.app.managingProfile ?? "Profil administré"}
         className={cn(
           "h-7 w-full min-w-0 rounded-none border bg-background px-1 text-xs",
           isOther

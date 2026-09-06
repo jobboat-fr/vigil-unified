@@ -41,17 +41,17 @@ const PERIODS = [
 
 // Must match _AUX_TASK_SLOTS in hermes_cli/web_server.py.
 const AUX_TASKS: readonly { key: string; label: string; hint: string }[] = [
-  { key: "vision", label: "Vision", hint: "Image analysis" },
-  { key: "web_extract", label: "Web Extract", hint: "Page summarization" },
-  { key: "compression", label: "Compression", hint: "Context compaction" },
-  { key: "skills_hub", label: "Skills Hub", hint: "Skill search" },
-  { key: "approval", label: "Approval", hint: "Smart auto-approve" },
-  { key: "mcp", label: "MCP", hint: "MCP tool routing" },
-  { key: "title_generation", label: "Title Gen", hint: "Session titles" },
-  { key: "triage_specifier", label: "Triage Specifier", hint: "Kanban spec fleshing" },
-  { key: "kanban_decomposer", label: "Kanban Decomposer", hint: "Task decomposition" },
-  { key: "profile_describer", label: "Profile Describer", hint: "Auto profile descriptions" },
-  { key: "curator", label: "Curator", hint: "Skill-usage review" },
+  { key: "vision", label: "Vision", hint: "Analyse d'image" },
+  { key: "web_extract", label: "Extraction web", hint: "Résumé de page" },
+  { key: "compression", label: "Compression", hint: "Compactage du contexte" },
+  { key: "skills_hub", label: "Bibliothèque de compétences", hint: "Recherche de compétence" },
+  { key: "approval", label: "Approval", hint: "Approbation automatique assistée" },
+  { key: "mcp", label: "MCP", hint: "Routage des outils MCP" },
+  { key: "title_generation", label: "Génération de titre", hint: "Titres de session" },
+  { key: "triage_specifier", label: "Qualification des demandes", hint: "Étoffement de spécification" },
+  { key: "kanban_decomposer", label: "Découpage des tâches", hint: "Découpage des tâches" },
+  { key: "profile_describer", label: "Description de profil", hint: "Descriptions de profil automatiques" },
+  { key: "curator", label: "Curator", hint: "Revue d'usage des compétences" },
 ] as const;
 
 function formatTokens(n: number): string {
@@ -102,7 +102,7 @@ function TokenBar({
   // color-mix on the same value so themes don't need to ship two
   // separate hex literals.
   const segments: Array<{ color: string; label: string; value: number }> = [
-    { value: cacheRead, color: "#60a5fa", label: "Cache Read" }, // tailwind blue-400
+    { value: cacheRead, color: "#60a5fa", label: "Lecture de cache" }, // tailwind blue-400
     { value: reasoning, color: "#c084fc", label: "Reasoning" }, // tailwind purple-400
     { value: input, color: "var(--series-input-token)", label: "Input" },
     { value: output, color: "var(--series-output-token)", label: "Output" },
@@ -188,7 +188,7 @@ function CapabilityBadges({
 }
 
 /* ──────────────────────────────────────────────────────────────────── */
-/*  Per-card "Use as" menu                                              */
+/*  Per-card "Utiliser comme" menu                                              */
 /* ──────────────────────────────────────────────────────────────────── */
 
 function UseAsMenu({
@@ -221,7 +221,7 @@ function UseAsMenu({
     confirmExpensiveModel = false,
   ) => {
     if (!provider || !model) {
-      setError("Missing provider/model");
+      setError("Fournisseur ou modèle manquant");
       return;
     }
     setBusy(true);
@@ -240,7 +240,7 @@ function UseAsMenu({
           task,
           message:
             result.confirm_message ||
-            "This model has unusually high known pricing.",
+            "Le tarif connu de ce modèle est inhabituellement élevé.",
         });
         return;
       }
@@ -274,7 +274,7 @@ function UseAsMenu({
         className="h-6 px-2 text-xs uppercase"
         prefix={busy ? <Spinner /> : null}
       >
-        Use as <ChevronDown className="h-3 w-3" />
+        Utiliser comme <ChevronDown className="h-3 w-3" />
       </Button>
       {open && (
         <div className="absolute right-0 top-full mt-1 z-50 min-w-[220px] border border-border bg-card shadow-lg">
@@ -286,7 +286,7 @@ function UseAsMenu({
           >
             <span className="flex items-center gap-2">
               <Star className="h-3 w-3" />
-              Main model
+              Modèle principal
             </span>
             {isMain && (
               <span className="text-display text-xs tracking-wider text-primary">
@@ -296,7 +296,7 @@ function UseAsMenu({
           </button>
 
           <div className="border-t border-border/50 px-3 py-1.5 text-display text-xs tracking-wider text-text-tertiary">
-            Auxiliary task
+            Tâche auxiliaire
           </div>
 
           <button
@@ -305,7 +305,7 @@ function UseAsMenu({
             disabled={busy}
             className="flex w-full items-center justify-between px-3 py-1.5 text-xs uppercase hover:bg-muted/50 disabled:opacity-40"
           >
-            <span>All auxiliary tasks</span>
+            <span>Toutes les tâches auxiliaires</span>
           </button>
 
           {AUX_TASKS.map((t) => (
@@ -334,10 +334,10 @@ function UseAsMenu({
       )}
       <ConfirmDialog
         open={!!pendingConfirm}
-        title="Expensive Model Warning"
+        title="Modèle coûteux"
         description={pendingConfirm?.message}
         destructive
-        confirmLabel="Switch anyway"
+        confirmLabel="Changer quand même"
         cancelLabel="Cancel"
         loading={busy}
         onCancel={() => setPendingConfirm(null)}
@@ -526,7 +526,7 @@ function ModelCard({
 }
 
 /* ──────────────────────────────────────────────────────────────────── */
-/*  Model Settings panel (top of page)                                  */
+/*  Réglages des modèles panel (top of page)                                  */
 /* ──────────────────────────────────────────────────────────────────── */
 
 type PickerTarget =
@@ -591,7 +591,7 @@ function AuxiliaryTasksModal({
               id="aux-modal-title"
               className="font-mondwest text-display text-base tracking-wider"
             >
-              Auxiliary Tasks
+              Tâches auxiliaires
             </h2>
             <Button
               size="sm"
@@ -601,11 +601,11 @@ function AuxiliaryTasksModal({
               className="h-6 text-xs uppercase"
               prefix={resetBusy ? <Spinner /> : null}
             >
-              Reset all to auto
+              Tout remettre sur auto
             </Button>
           </div>
           <p className="text-xs text-text-secondary mt-2">
-            Auxiliary tasks handle side-jobs like vision, session search, and
+            Tâches auxiliaires handle side-jobs like vision, session search, and
             compression. <span className="font-mono">auto</span> means
             &quot;use the main model&quot;. Override per-task when you want a
             cheap/fast model for a specific job.
@@ -675,10 +675,10 @@ function AuxiliaryTasksModal({
           open={confirmReset}
           onCancel={() => setConfirmReset(false)}
           onConfirm={() => void resetAllAux()}
-          title="Reset auxiliary models"
-          description="Reset every auxiliary task to 'auto'? This overrides any per-task overrides you've set."
+          title="Réinitialiser les modèles auxiliaires"
+          description="Remettre toutes les tâches auxiliaires sur « auto » ? Les réglages par tâche seront perdus."
           destructive
-          confirmLabel="Reset all"
+          confirmLabel="Tout réinitialiser"
           loading={resetBusy}
         />
       </div>
@@ -735,7 +735,7 @@ function ModelSettingsPanel({
       <CardHeader className="min-w-0 pb-3">
         <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
           <Settings2 className="h-4 w-4 shrink-0 text-muted-foreground" />
-          <CardTitle className="text-sm">Model Settings</CardTitle>
+          <CardTitle className="text-sm">Réglages des modèles</CardTitle>
           <span className="max-w-full min-w-0 text-xs text-text-secondary [overflow-wrap:anywhere]">
             applies to new sessions
           </span>
@@ -749,7 +749,7 @@ function ModelSettingsPanel({
             <div className="flex items-center gap-2 mb-0.5">
               <Star className="h-3 w-3 text-primary" />
               <span className="text-display text-xs font-medium tracking-wider">
-                Main model
+                Modèle principal
               </span>
             </div>
             <div className="text-xs font-mono text-text-secondary truncate">
@@ -767,13 +767,13 @@ function ModelSettingsPanel({
           </Button>
         </div>
 
-        {/* Auxiliary tasks summary + open modal */}
+        {/* Tâches auxiliaires summary + open modal */}
         <div className="flex min-w-0 flex-col gap-2 bg-muted/20 border border-border/50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 mb-0.5">
               <Cpu className="h-3 w-3 text-text-tertiary" />
               <span className="text-display text-xs font-medium tracking-wider">
-                Auxiliary tasks
+                Tâches auxiliaires
               </span>
             </div>
             <div className="text-xs font-mono text-text-secondary truncate">
@@ -797,7 +797,7 @@ function ModelSettingsPanel({
             key={`picker-${refreshKey}`}
             loader={api.getModelOptions}
             alwaysGlobal
-            title="Set Main Model"
+            title="Définir le modèle principal"
             onApply={({ provider, model, confirmExpensiveModel }) =>
               applyAssignment({
                 confirmExpensiveModel,

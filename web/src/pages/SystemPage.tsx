@@ -125,7 +125,7 @@ function ActionLogViewer({
               </Badge>
             )}
           </div>
-          <Button ghost size="icon" onClick={onClose} aria-label="Close log">
+          <Button ghost size="icon" onClick={onClose} aria-label="Fermer le journal">
             <X />
           </Button>
         </div>
@@ -236,7 +236,7 @@ export default function SystemPage() {
     if (!curator) return;
     try {
       await api.setCuratorPaused(!curator.paused);
-      showToast(curator.paused ? "Curator resumed" : "Curator paused", "success");
+      showToast(curator.paused ? "Curation reprise" : "Curation suspendue", "success");
       loadAll();
     } catch (e) {
       showToast(`Curator toggle failed: ${e}`, "error");
@@ -268,7 +268,7 @@ export default function SystemPage() {
   // ── Credential pool ────────────────────────────────────────────────
   const addCredential = async () => {
     if (!credProvider.trim() || !credKey.trim()) {
-      showToast("Provider and API key required", "error");
+      showToast("Fournisseur et clé d'API requis", "error");
       return;
     }
     setAddingCred(true);
@@ -278,7 +278,7 @@ export default function SystemPage() {
         credKey.trim(),
         credLabel.trim() || undefined,
       );
-      showToast("Credential added", "success");
+      showToast("Identifiant ajouté", "success");
       setCredKey("");
       setCredLabel("");
       loadAll();
@@ -295,7 +295,7 @@ export default function SystemPage() {
         const [provider, idxStr] = key.split("|");
         try {
           await api.removeCredentialPoolEntry(provider, Number(idxStr));
-          showToast("Credential removed", "success");
+          showToast("Identifiant retiré", "success");
           loadAll();
         } catch (e) {
           showToast(`Failed to remove: ${e}`, "error");
@@ -338,7 +338,7 @@ export default function SystemPage() {
           1500,
         );
       } catch {
-        showToast("Couldn't copy to clipboard", "error");
+        showToast("Copie dans le presse-papiers impossible", "error");
       }
     },
     [showToast],
@@ -377,11 +377,11 @@ export default function SystemPage() {
             showToast(
               info.behind && info.behind > 0
                 ? `Update available — ${info.behind} commit${info.behind === 1 ? "" : "s"} behind`
-                : "Update available",
+                : "Mise à jour disponible",
               "success",
             );
           } else if (info.behind === 0) {
-            showToast("You're on the latest version", "success");
+            showToast("Vous êtes à jour", "success");
           } else if (info.message) {
             showToast(info.message, "error");
           }
@@ -396,7 +396,7 @@ export default function SystemPage() {
   );
 
   // Auto-check (cached) runs inside loadAll on mount; this is the
-  // user-triggered forced re-check from the "Check for updates" button.
+  // user-triggered forced re-check from the "Rechercher des mises à jour" button.
   const applyUpdate = async () => {
     setUpdateConfirmOpen(false);
     try {
@@ -404,13 +404,13 @@ export default function SystemPage() {
       if (!resp.ok && resp.error === "docker_update_unsupported") {
         showToast(
           resp.message ??
-            "Updates don't apply inside Docker — re-pull the image instead.",
+            "Les mises à jour ne s'appliquent pas dans Docker — retirez plutôt l'image à nouveau.",
           "error",
         );
         return;
       }
       setActiveAction(resp.name ?? "hermes-update");
-      showToast("Update started", "success");
+      showToast("Mise à jour lancée", "success");
     } catch (e) {
       showToast(`Update failed: ${e}`, "error");
     }
@@ -421,7 +421,7 @@ export default function SystemPage() {
       try {
         const res = await api.pruneCheckpoints();
         setActiveAction(res.name);
-        showToast("Checkpoint prune started", "success");
+        showToast("Purge des points de restauration lancée", "success");
       } catch (e) {
         showToast(`Prune failed: ${e}`, "error");
         throw e;
@@ -432,7 +432,7 @@ export default function SystemPage() {
   // ── Hooks ──────────────────────────────────────────────────────────
   const createHook = async () => {
     if (!hookCommand.trim()) {
-      showToast("Command is required", "error");
+      showToast("La commande est requise", "error");
       return;
     }
     setCreatingHook(true);
@@ -444,7 +444,7 @@ export default function SystemPage() {
         timeout: hookTimeout.trim() ? Number(hookTimeout) : undefined,
         approve: hookApprove,
       });
-      showToast("Hook created", "success");
+      showToast("Déclencheur créé", "success");
       setHookCommand("");
       setHookMatcher("");
       setHookTimeout("");
@@ -465,7 +465,7 @@ export default function SystemPage() {
         const command = key.slice(sep + 1);
         try {
           await api.deleteHook(event, command);
-          showToast("Hook removed", "success");
+          showToast("Déclencheur retiré", "success");
           loadAll();
         } catch (e) {
           showToast(`Failed to remove hook: ${e}`, "error");
@@ -497,45 +497,45 @@ export default function SystemPage() {
         open={updateConfirmOpen}
         onCancel={() => setUpdateConfirmOpen(false)}
         onConfirm={() => void applyUpdate()}
-        title="Update Hermes?"
+        title="Mettre à jour l'assistant ?"
         description={
           updateInfo && updateInfo.behind && updateInfo.behind > 0
             ? `This will run 'hermes update' (${updateInfo.update_command}) and pull ${updateInfo.behind} new commit${updateInfo.behind === 1 ? "" : "s"}. The gateway restarts when the update finishes; the current session keeps its prompt cache until then.`
             : `This will run 'hermes update' (${updateInfo?.update_command ?? "hermes update"}) and restart the gateway when it finishes.`
         }
-        confirmLabel="Update now"
+        confirmLabel="Mettre à jour"
       />
 
       <DeleteConfirmDialog
         open={memoryReset.isOpen}
         onCancel={memoryReset.cancel}
         onConfirm={memoryReset.confirm}
-        title="Reset memory"
-        description="This permanently erases the selected built-in memory files. This cannot be undone."
+        title="Réinitialiser la mémoire"
+        description="Les fichiers de mémoire sélectionnés seront effacés définitivement. L'opération est irréversible."
         loading={memoryReset.isDeleting}
       />
       <DeleteConfirmDialog
         open={credDelete.isOpen}
         onCancel={credDelete.cancel}
         onConfirm={credDelete.confirm}
-        title="Remove credential"
-        description="Remove this pooled API key? The agent will no longer rotate through it."
+        title="Retirer l'identifiant"
+        description="Retirer cette clé du pool ? L'assistant cessera de l'utiliser en rotation."
         loading={credDelete.isDeleting}
       />
       <DeleteConfirmDialog
         open={checkpointsPrune.isOpen}
         onCancel={checkpointsPrune.cancel}
         onConfirm={checkpointsPrune.confirm}
-        title="Prune checkpoints"
-        description="Delete the rollback checkpoint shadow store? Existing /rollback points will be lost."
+        title="Purger les points de restauration"
+        description="Supprimer le magasin de points de restauration ? Les points existants seront perdus."
         loading={checkpointsPrune.isDeleting}
       />
       <DeleteConfirmDialog
         open={hookDelete.isOpen}
         onCancel={hookDelete.cancel}
         onConfirm={hookDelete.confirm}
-        title="Remove shell hook"
-        description="Remove this hook from config and revoke its consent? It stops firing on the next restart."
+        title="Retirer le déclencheur shell"
+        description="Retirer ce déclencheur de la configuration et révoquer son autorisation ? Il cesse de se déclencher au prochain démarrage."
         loading={hookDelete.isDeleting}
       />
 
@@ -579,7 +579,7 @@ export default function SystemPage() {
                 </Select>
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="hook-command">Command (absolute path)</Label>
+                <Label htmlFor="hook-command">Commande (chemin absolu)</Label>
                 <Input
                   id="hook-command"
                   autoFocus
@@ -590,7 +590,7 @@ export default function SystemPage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="hook-matcher">Matcher (optional)</Label>
+                  <Label htmlFor="hook-matcher">Filtre (facultatif)</Label>
                   <Input
                     id="hook-matcher"
                     placeholder="e.g. terminal"
@@ -599,7 +599,7 @@ export default function SystemPage() {
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="hook-timeout">Timeout (s)</Label>
+                  <Label htmlFor="hook-timeout">Délai (s)</Label>
                   <Input
                     id="hook-timeout"
                     placeholder="10"
@@ -629,7 +629,7 @@ export default function SystemPage() {
                   disabled={creatingHook}
                   prefix={creatingHook ? <Spinner /> : undefined}
                 >
-                  {creatingHook ? "Creating" : "Create hook"}
+                  {creatingHook ? "Creating" : "Créer le déclencheur"}
                 </Button>
               </div>
             </div>
@@ -698,7 +698,7 @@ export default function SystemPage() {
               </div>
               {stats?.memory && (
                 <div>
-                  <div className="text-xs uppercase tracking-wider text-muted-foreground">Memory</div>
+                  <div className="text-xs uppercase tracking-wider text-muted-foreground">Mémoire</div>
                   <div>
                     {formatBytes(stats.memory.used)} / {formatBytes(stats.memory.total)} ({stats.memory.percent}%)
                   </div>
@@ -722,7 +722,7 @@ export default function SystemPage() {
               )}
               {stats?.load_avg && stats.load_avg.length >= 3 && (
                 <div>
-                  <div className="text-xs uppercase tracking-wider text-muted-foreground">Load avg</div>
+                  <div className="text-xs uppercase tracking-wider text-muted-foreground">Charge moyenne</div>
                   <div>{stats.load_avg.map((n) => n.toFixed(2)).join(" / ")}</div>
                 </div>
               )}
@@ -816,7 +816,7 @@ export default function SystemPage() {
             )}
             {!portal?.logged_in && (
               <p className="text-xs text-muted-foreground">
-                Log in with <span className="font-mono">hermes portal</span>.
+                Se connecter avec <span className="font-mono">hermes portal</span>.
               </p>
             )}
           </CardContent>
@@ -826,7 +826,7 @@ export default function SystemPage() {
       {/* ── Curator ───────────────────────────────────────────────── */}
       <section className="flex flex-col gap-3">
         <H2 variant="sm" className="flex items-center gap-2 text-muted-foreground">
-          <Sparkles className="h-4 w-4" /> Skill curator
+          <Sparkles className="h-4 w-4" /> Curation des compétences
         </H2>
         <Card>
           <CardContent className="flex items-center justify-between py-4">
@@ -836,7 +836,7 @@ export default function SystemPage() {
               </Badge>
               <span className="text-sm text-muted-foreground">
                 {curator?.interval_hours ? `every ${curator.interval_hours}h` : ""}
-                {curator?.last_run_at ? ` · last run ${new Date(curator.last_run_at).toLocaleString()}` : " · never run"}
+                {curator?.last_run_at ? ` · dernière exécution ${new Date(curator.last_run_at).toLocaleString("fr-FR")}` : " · jamais exécuté"}
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -847,7 +847,7 @@ export default function SystemPage() {
                 size="sm"
                 ghost
                 prefix={<Play className="h-3.5 w-3.5" />}
-                onClick={() => runOp(api.runCurator, "Curator review")}
+                onClick={() => runOp(api.runCurator, "Revue de curation")}
               >
                 Run now
               </Button>
@@ -886,13 +886,13 @@ export default function SystemPage() {
       {/* ── Memory ────────────────────────────────────────────────── */}
       <section className="flex flex-col gap-3">
         <H2 variant="sm" className="flex items-center gap-2 text-muted-foreground">
-          <Brain className="h-4 w-4" /> Memory
+          <Brain className="h-4 w-4" /> Mémoire
         </H2>
         <Card>
           <CardContent className="flex flex-col gap-4 py-4">
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
               <span>
-                External provider:{" "}
+                Fournisseur externe :{" "}
                 <span className="font-mono text-foreground">
                   {memory?.active || "built-in only"}
                 </span>
@@ -901,7 +901,7 @@ export default function SystemPage() {
                 Change in Plugins →
               </Link>
               <span className="ml-auto">
-                New credentials:{" "}
+                Nouveaux identifiants :{" "}
                 <span className="font-mono">hermes memory setup</span>
               </span>
             </div>
@@ -941,7 +941,7 @@ export default function SystemPage() {
                 <Input id="cred-provider" value={credProvider} onChange={(e) => setCredProvider(e.target.value)} placeholder="openrouter" />
               </div>
               <div className="grid gap-2 sm:col-span-2">
-                <Label htmlFor="cred-key">API key</Label>
+                <Label htmlFor="cred-key">Clé d'API</Label>
                 <Input id="cred-key" type="password" value={credKey} onChange={(e) => setCredKey(e.target.value)} placeholder="sk-…" />
               </div>
               <div className="grid gap-2">
@@ -970,7 +970,7 @@ export default function SystemPage() {
                     <span className="font-mono text-xs text-muted-foreground">{entry.token_preview}</span>
                     <Badge tone="outline">{entry.auth_type}</Badge>
                     {entry.last_status && <Badge tone="secondary">{entry.last_status}</Badge>}
-                    <Button ghost size="icon" className="ml-auto text-destructive" aria-label="Remove credential" onClick={() => credDelete.requestDelete(`${prov.provider}|${entry.index}`)}>
+                    <Button ghost size="icon" className="ml-auto text-destructive" aria-label="Retirer l'identifiant" onClick={() => credDelete.requestDelete(`${prov.provider}|${entry.index}`)}>
                       <Trash2 />
                     </Button>
                   </div>
@@ -989,25 +989,25 @@ export default function SystemPage() {
         <Card>
           <CardContent className="flex flex-wrap gap-2 py-4">
             <Button size="sm" ghost prefix={<Stethoscope className="h-3.5 w-3.5" />} onClick={() => runOp(api.runDoctor, "Doctor")}>
-              Run doctor
+              Lancer le diagnostic
             </Button>
-            <Button size="sm" ghost prefix={<ShieldCheck className="h-3.5 w-3.5" />} onClick={() => runOp(api.runSecurityAudit, "Security audit")}>
-              Security audit
+            <Button size="sm" ghost prefix={<ShieldCheck className="h-3.5 w-3.5" />} onClick={() => runOp(api.runSecurityAudit, "Audit de sécurité")}>
+              Audit de sécurité
             </Button>
             <Button size="sm" ghost prefix={<Database className="h-3.5 w-3.5" />} onClick={() => runOp(() => api.runBackup(), "Backup")}>
-              Create backup
+              Créer une sauvegarde
             </Button>
-            <Button size="sm" ghost prefix={<RotateCw className="h-3.5 w-3.5" />} onClick={() => runOp(api.updateSkillsFromHub, "Skills update")}>
-              Update skills
+            <Button size="sm" ghost prefix={<RotateCw className="h-3.5 w-3.5" />} onClick={() => runOp(api.updateSkillsFromHub, "Mise à jour des compétences")}>
+              Mettre à jour les compétences
             </Button>
-            <Button size="sm" ghost prefix={<Activity className="h-3.5 w-3.5" />} onClick={() => runOp(api.runPromptSize, "Prompt size")}>
-              Prompt size
+            <Button size="sm" ghost prefix={<Activity className="h-3.5 w-3.5" />} onClick={() => runOp(api.runPromptSize, "Taille de l'invite")}>
+              Taille de l'invite
             </Button>
             <Button size="sm" ghost prefix={<Database className="h-3.5 w-3.5" />} onClick={() => runOp(api.runDump, "Support dump")}>
               Support dump
             </Button>
-            <Button size="sm" ghost prefix={<RotateCw className="h-3.5 w-3.5" />} onClick={() => runOp(api.runConfigMigrate, "Config migrate")}>
-              Migrate config
+            <Button size="sm" ghost prefix={<RotateCw className="h-3.5 w-3.5" />} onClick={() => runOp(api.runConfigMigrate, "Migrer la configuration")}>
+              Migrer la configuration
             </Button>
           </CardContent>
         </Card>
@@ -1021,7 +1021,7 @@ export default function SystemPage() {
               <div className="flex items-start gap-2">
                 <Share2 className="h-4 w-4 mt-0.5 text-muted-foreground" />
                 <div className="flex flex-col">
-                  <span className="text-sm font-medium">Share debug report</span>
+                  <span className="text-sm font-medium">Partager un rapport de diagnostic</span>
                   <span className="text-xs text-muted-foreground max-w-prose">
                     Uploads system info + logs to a public paste service and
                     returns links to send the Hermes team. Pastes auto-delete
@@ -1041,7 +1041,7 @@ export default function SystemPage() {
                 }
                 onClick={() => void runDebugShare()}
               >
-                {sharing ? "Uploading…" : "Generate share link"}
+                {sharing ? "Uploading…" : "Générer un lien de partage"}
               </Button>
             </div>
 
@@ -1053,7 +1053,7 @@ export default function SystemPage() {
                 disabled={sharing}
                 onChange={(e) => setShareRedact(e.target.checked)}
               />
-              Redact credential-shaped tokens before upload (recommended)
+              Masquer les jetons ressemblant à des identifiants avant l'envoi (recommandé)
             </label>
 
             {shareResult && (
@@ -1137,7 +1137,7 @@ export default function SystemPage() {
         <Card>
           <CardContent className="flex flex-col gap-3 py-4 sm:flex-row sm:items-end">
             <div className="grid gap-2 flex-1">
-              <Label htmlFor="import-path">Restore from backup archive</Label>
+              <Label htmlFor="import-path">Restaurer depuis une archive</Label>
               <Input id="import-path" value={importPath} onChange={(e) => setImportPath(e.target.value)} placeholder="/path/to/hermes-backup.zip" />
             </div>
             <Button
@@ -1153,7 +1153,7 @@ export default function SystemPage() {
             </Button>
             <ConfirmDialog
               open={importConfirmOpen}
-              title="Restore from backup?"
+              title="Restaurer depuis une sauvegarde ?"
               description={`This will overwrite your current Hermes configuration, skills, sessions, and data with the contents of ${importPath.trim() || "the archive"}. This cannot be undone.`}
               destructive
               confirmLabel="Restore"
@@ -1199,7 +1199,7 @@ export default function SystemPage() {
         {(!hooks || hooks.hooks.length === 0) && (
           <Card>
             <CardContent className="py-6 text-center text-sm text-muted-foreground">
-              No shell hooks configured.
+              Aucun déclencheur shell configuré.
             </CardContent>
           </Card>
         )}
@@ -1221,7 +1221,7 @@ export default function SystemPage() {
                 ghost
                 size="icon"
                 className="text-destructive"
-                aria-label="Remove hook"
+                aria-label="Retirer le déclencheur"
                 onClick={() =>
                   hookDelete.requestDelete(`${h.event}|${h.command ?? ""}`)
                 }

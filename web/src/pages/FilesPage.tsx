@@ -63,9 +63,9 @@ function readAsDataUrl(file: globalThis.File): Promise<string> {
     const reader = new FileReader();
     reader.addEventListener("load", () => {
       if (typeof reader.result === "string") resolve(reader.result);
-      else reject(new Error("Could not read file"));
+      else reject(new Error("Lecture du fichier impossible"));
     });
-    reader.addEventListener("error", () => reject(reader.error ?? new Error("Could not read file")));
+    reader.addEventListener("error", () => reject(reader.error ?? new Error("Lecture du fichier impossible")));
     reader.readAsDataURL(file);
   });
 }
@@ -149,7 +149,7 @@ export default function FilesPage() {
           type="button"
           onClick={() => void load()}
           disabled={loading}
-          aria-label="Refresh files"
+          aria-label="Actualiser"
         >
           {loading ? <Spinner /> : <RefreshCw />}
         </Button>
@@ -170,7 +170,7 @@ export default function FilesPage() {
   const goToPath = async () => {
     const nextPath = pathInput.trim();
     if (!nextPath) {
-      showToast("Path required", "error");
+      showToast("Chemin requis", "error");
       return;
     }
     await load(nextPath);
@@ -179,11 +179,11 @@ export default function FilesPage() {
   const createDirectory = async () => {
     const name = folderName.trim();
     if (!activePath) {
-      showToast("Directory unavailable", "error");
+      showToast("Dossier indisponible", "error");
       return;
     }
     if (!name) {
-      showToast("Folder name required", "error");
+      showToast("Nom de dossier requis", "error");
       return;
     }
     setCreating(true);
@@ -191,7 +191,7 @@ export default function FilesPage() {
       await api.createDirectory(joinPath(activePath, name));
       setFolderName("");
       setCreateDialogOpen(false);
-      showToast("Folder created", "success");
+      showToast("Dossier créé", "success");
       await load();
     } catch (e) {
       showToast(`Create failed: ${e}`, "error");
@@ -344,7 +344,7 @@ export default function FilesPage() {
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         disabled={!canUpload}
-        aria-label="Upload files"
+        aria-label="Téléverser"
         className={`flex min-h-20 w-full min-w-0 items-center justify-between gap-4 border border-dashed px-4 py-3 text-left transition ${
           draggingFiles
             ? "border-primary bg-primary/10 text-foreground"
@@ -357,7 +357,7 @@ export default function FilesPage() {
           </span>
           <span className="min-w-0">
             <span className="block text-sm font-semibold uppercase tracking-[0.08em] text-foreground">
-              {uploading ? "Uploading" : draggingFiles ? "Release to upload" : "Drop files here"}
+              {uploading ? "Uploading" : draggingFiles ? "Relâchez pour téléverser" : "Déposez les fichiers ici"}
             </span>
             <span className="block truncate font-mono text-xs text-text-secondary" title={activePath}>
               {activePath || "Loading"}
@@ -365,7 +365,7 @@ export default function FilesPage() {
           </span>
         </span>
         <span className="hidden shrink-0 text-xs font-semibold uppercase tracking-[0.08em] text-text-tertiary sm:block">
-          Choose files
+          Choisir des fichiers
         </span>
       </button>
 
@@ -403,10 +403,10 @@ export default function FilesPage() {
           {loading && !listing ? (
             <div className="flex items-center justify-center gap-2 py-12 text-sm text-muted-foreground">
               <Spinner />
-              Loading files...
+              Chargement des fichiers…
             </div>
           ) : listing && listing.entries.length === 0 ? (
-            <div className="py-12 text-center text-sm text-muted-foreground">No files</div>
+            <div className="py-12 text-center text-sm text-muted-foreground">Aucun fichier</div>
           ) : (
             listing?.entries.map((entry) => (
               <div
@@ -480,7 +480,7 @@ export default function FilesPage() {
       >
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Create folder</DialogTitle>
+            <DialogTitle>Créer un dossier</DialogTitle>
             <DialogDescription>
               Target: {activePath || "Loading"}
             </DialogDescription>
@@ -493,7 +493,7 @@ export default function FilesPage() {
               onKeyDown={(event) => {
                 if (event.key === "Enter") void createDirectory();
               }}
-              placeholder="Folder name"
+              placeholder="Nom du dossier"
               disabled={creating}
             />
           </div>
@@ -526,11 +526,11 @@ export default function FilesPage() {
         loading={deleting}
         onCancel={() => setPendingDelete(null)}
         onConfirm={() => void confirmDelete()}
-        title={pendingDelete ? `Delete ${pendingDelete.name}?` : "Delete item?"}
+        title={pendingDelete ? `Delete ${pendingDelete.name}?` : "Supprimer cet élément ?"}
         description={
           pendingDelete?.is_directory
-            ? "This removes the folder and everything inside it."
-            : "This removes the file."
+            ? "Le dossier et tout son contenu seront supprimés."
+            : "Le fichier sera supprimé."
         }
       />
     </div>

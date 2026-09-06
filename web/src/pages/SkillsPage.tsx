@@ -75,7 +75,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   "mlops/training": "MLOps / Training",
   "mlops/vector-databases": "MLOps / Vector DBs",
   mcp: "MCP",
-  "red-teaming": "Red Teaming",
+  "red-teaming": "Red teaming",
   ocr: "OCR",
   p5js: "p5.js",
   ai: "AI",
@@ -383,7 +383,7 @@ export default function SkillsPage() {
                 />
                 <PanelItem
                   icon={Search}
-                  label="Browse hub"
+                  label="Parcourir la bibliothèque"
                   active={view === "hub"}
                   onClick={() => {
                     setView("hub");
@@ -499,7 +499,7 @@ export default function SkillsPage() {
                       onClick={openCreateEditor}
                       prefix={<Plus />}
                     >
-                      New skill
+                      Nouvelle compétence
                     </Button>
                   </div>
                 </div>
@@ -670,7 +670,7 @@ function SkillRow({
         ghost
         size="icon"
         className="shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 hover:text-foreground"
-        title="Edit SKILL.md"
+        title="Modifier SKILL.md"
         aria-label={`Edit ${skill.name}`}
         onClick={onEdit}
       >
@@ -745,7 +745,7 @@ function verdictVisual(verdict: string): {
     case "caution":
       return { tone: "warning", Icon: ShieldAlert, label: "Caution" };
     case "dangerous":
-      return { tone: "destructive", Icon: ShieldAlert, label: "Dangerous" };
+      return { tone: "destructive", Icon: ShieldAlert, label: "Dangereux" };
     default:
       return { tone: "warning", Icon: ShieldQuestion, label: verdict };
   }
@@ -779,7 +779,7 @@ function HubBrowser({
   const [featured, setFeatured] = useState<SkillHubResult[]>([]);
   const [sourcesLoading, setSourcesLoading] = useState(true);
 
-  // identifier -> installed entry (drives "Installed" badges).
+  // identifier -> installed entry (drives "Installée" badges).
   const [installed, setInstalled] = useState<Record<string, SkillHubInstalledEntry>>({});
 
   // Live action log for the most recent install/update.
@@ -877,7 +877,7 @@ function HubBrowser({
         setAction(res.name);
         setDetail(null);
       } catch (e) {
-        showToast(`Install failed: ${e}`, "error");
+        showToast(`Installation impossible: ${e}`, "error");
       }
     },
     [showToast, profile],
@@ -934,7 +934,7 @@ function HubBrowser({
               onClick={() => void updateAll()}
               prefix={<RefreshCw className="h-3.5 w-3.5" />}
             >
-              Update all
+              Tout mettre à jour
             </Button>
           </div>
 
@@ -986,7 +986,7 @@ function HubBrowser({
               <div className="flex items-center gap-2 px-1">
                 <Sparkles className="h-3.5 w-3.5 text-primary" />
                 <span className="font-mondwest text-display text-xs tracking-[0.12em] text-text-secondary uppercase">
-                  Featured skills
+                  Compétences mises en avant
                 </span>
                 <span className="text-xs text-text-tertiary">
                   from the Hermes index — search above for thousands more
@@ -1032,7 +1032,7 @@ function HubBrowser({
           {results.length === 0 ? (
             <Card className="rounded-none">
               <CardContent className="py-8 text-center text-sm text-muted-foreground">
-                No matching skills found in the hub.
+                Aucune compétence correspondante dans la bibliothèque.
               </CardContent>
             </Card>
           ) : (
@@ -1088,7 +1088,7 @@ function ConnectedHubs({
     <div className="flex flex-wrap items-center gap-1.5">
       <span className="flex items-center gap-1 text-xs text-text-tertiary">
         <Globe className="h-3 w-3" />
-        Connected hubs:
+        Bibliothèques reliées :
       </span>
       {sources.map((s) => {
         const down =
@@ -1103,7 +1103,7 @@ function ConnectedHubs({
               s.id === "github" && s.rate_limited
                 ? "GitHub API rate-limited — set GITHUB_TOKEN to raise the limit"
                 : s.id === "hermes-index" && s.available === false
-                  ? "Centralized index unavailable — falling back to live sources"
+                  ? "Index central indisponible — repli sur les sources directes"
                   : undefined
             }
           >
@@ -1220,7 +1220,7 @@ function HubResultCard({
           </Button>
           {installed ? (
             <Button size="sm" ghost disabled prefix={<CheckCircle2 className="h-3.5 w-3.5" />}>
-              Installed
+              Installée
             </Button>
           ) : (
             <Button
@@ -1326,7 +1326,7 @@ function SkillDetailDialog({
             onClick={() => setTab("readme")}
             prefix={<FileText className="h-3.5 w-3.5" />}
           >
-            Read SKILL.md
+            Lire SKILL.md
           </Button>
           <Button
             size="sm"
@@ -1341,7 +1341,7 @@ function SkillDetailDialog({
               )
             }
           >
-            {scan ? "Re-scan" : "Security scan"}
+            {scan ? "Re-scan" : "Analyse de sécurité"}
           </Button>
           <div className="ml-auto flex items-center gap-3">
             {result.repo && (
@@ -1357,7 +1357,7 @@ function SkillDetailDialog({
             )}
             {installed ? (
               <Button size="sm" ghost disabled prefix={<CheckCircle2 className="h-3.5 w-3.5" />}>
-                Installed
+                Installée
               </Button>
             ) : (
               <Button
@@ -1406,7 +1406,7 @@ function SkillDetailDialog({
               </div>
             ) : (
               <p className="text-sm text-muted-foreground text-center py-10">
-                Couldn't load the skill source.
+                Chargement de la source impossible.
               </p>
             )
           ) : (
@@ -1454,10 +1454,10 @@ function ScanPanel({
         : "destructive";
   const policyLabel =
     scan.policy === "allow"
-      ? "Install allowed"
+      ? "Installation autorisée"
       : scan.policy === "ask"
-        ? "Needs confirmation"
-        : "Install blocked";
+        ? "Confirmation requise"
+        : "Installation bloquée";
 
   return (
     <div className="flex flex-col gap-3">
@@ -1504,7 +1504,7 @@ function ScanPanel({
         {scan.findings.length === 0 && (
           <span className="flex items-center gap-1 text-xs text-emerald-400">
             <CheckCircle2 className="h-3.5 w-3.5" />
-            No risky patterns detected
+            Aucun motif à risque détecté
           </span>
         )}
       </div>

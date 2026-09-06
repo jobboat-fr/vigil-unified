@@ -102,11 +102,11 @@ function EditorBody({
   const handleSave = async () => {
     setError(null);
     if (!isEdit && !name.trim()) {
-      setError("Skill name is required.");
+      setError("Le nom de la compétence est requis.");
       return;
     }
     if (!content.trim()) {
-      setError("SKILL.md content is required.");
+      setError("Le contenu de SKILL.md est requis.");
       return;
     }
     setSaving(true);
@@ -138,12 +138,12 @@ function EditorBody({
     <>
       <DialogHeader>
         <DialogTitle>
-          {isEdit ? `Edit skill: ${editName}` : "New skill"}
+          {isEdit ? `Edit skill: ${editName}` : "Nouvelle compétence"}
         </DialogTitle>
         <DialogDescription>
           {isEdit
-            ? "Rewrite this skill's SKILL.md. Frontmatter (name, description) is validated on save."
-            : "Author a custom skill — YAML frontmatter plus markdown instructions. It becomes available to the agent and attachable to cron jobs."}
+            ? "Réécrivez le SKILL.md de cette compétence. L'en-tête (nom, description) est validé à l'enregistrement."
+            : "Rédigez une compétence : en-tête YAML puis instructions en markdown. Elle devient disponible pour l'assistant et attachable à une tâche planifiée."}
         </DialogDescription>
       </DialogHeader>
 
@@ -161,7 +161,7 @@ function EditorBody({
               />
             </div>
             <div className="grid gap-1.5">
-              <Label htmlFor="skill-editor-category">Category (optional)</Label>
+              <Label htmlFor="skill-editor-category">Catégorie (facultatif)</Label>
               <Input
                 id="skill-editor-category"
                 placeholder="devops"
@@ -206,7 +206,7 @@ function EditorBody({
             disabled={saving || loading}
             prefix={saving ? <Spinner /> : undefined}
           >
-            {saving ? "Saving…" : isEdit ? "Save changes" : "Create skill"}
+            {saving ? "Saving…" : isEdit ? "Enregistrer" : "Créer la compétence"}
           </Button>
         </div>
       </div>

@@ -21,7 +21,7 @@ export default function AuditPage() {
           </CardHeader>
           <CardContent>
             {events.length === 0 ? (
-              <p className="text-text-secondary text-sm py-6 text-center">No audit events yet.</p>
+              <p className="text-text-secondary text-sm py-6 text-center">Aucun évènement d'audit.</p>
             ) : (
               <ul className="space-y-1 max-h-[72vh] overflow-y-auto pr-1 font-mono text-xs">
                 {events.map((e, i) => (

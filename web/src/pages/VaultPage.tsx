@@ -38,7 +38,7 @@ export default function VaultPage() {
           <CardContent>
             {docs.length === 0 ? (
               <p className="text-text-secondary text-sm py-6 text-center">
-                No documents yet — upload contracts, invoices, or legal/finance papers to ground the agent.
+                Aucun document. Déposez conventions, devis ou pièces administratives pour que l'assistant s'appuie dessus.
               </p>
             ) : (
               <ul className="space-y-2 max-h-[72vh] overflow-y-auto pr-1">

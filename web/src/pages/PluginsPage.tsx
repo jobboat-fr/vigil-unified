@@ -94,7 +94,7 @@ export default function PluginsPage() {
       setInstallId("");
       await loadHub();
     } catch (e) {
-      showToast(e instanceof Error ? e.message : "Install failed", "error");
+      showToast(e instanceof Error ? e.message : "Installation impossible", "error");
     } finally {
       setInstallBusy(false);
     }
@@ -110,7 +110,7 @@ export default function PluginsPage() {
       );
       await loadHub();
     } catch (e) {
-      showToast(e instanceof Error ? e.message : "Rescan failed", "error");
+      showToast(e instanceof Error ? e.message : "Nouvelle analyse impossible", "error");
     } finally {
       setRescanBusy(false);
     }
@@ -127,7 +127,7 @@ export default function PluginsPage() {
       showToast(t.pluginsPage.savedProviders, "success");
       await loadHub();
     } catch (e) {
-      showToast(e instanceof Error ? e.message : "Save failed", "error");
+      showToast(e instanceof Error ? e.message : "Enregistrement impossible", "error");
     } finally {
       setProviderBusy(false);
     }
@@ -240,7 +240,7 @@ export default function PluginsPage() {
               <Input
                 className="font-mono-ui lowercase"
                 id="install-url"
-                placeholder="owner/repo, owner/repo/subdir, or https://..."
+                placeholder="owner/repo, owner/repo/sous-dossier, ou https://…"
                 spellCheck={false}
                 value={installId}
                 onChange={(e) => setInstallId(e.target.value)}

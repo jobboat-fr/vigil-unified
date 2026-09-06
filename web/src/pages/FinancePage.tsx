@@ -27,7 +27,7 @@ export default function FinancePage() {
       setTxns(t.transactions);
       setAuthError(null);
     } catch (e) {
-      if (e instanceof GatewayError && e.code === "NO_SESSION") setAuthError("Sign in to VIGIL to use Finance.");
+      if (e instanceof GatewayError && e.code === "NO_SESSION") setAuthError("Connectez-vous pour ouvrir la finance.");
       else setErr((e as Error).message);
     }
   }, []);
@@ -85,7 +85,7 @@ export default function FinancePage() {
           <Stat label="Income" value={money(summary.income)} color="#059669" />
           <Stat label="Expense" value={money(summary.expense)} color="#ef4444" />
           <Stat label="Net" value={money(summary.net)} color={summary.net >= 0 ? "#059669" : "#ef4444"} />
-          <Stat label="Reconciled" value={`${Math.round(summary.reconcile_progress * 100)}%`} sub={`${summary.reconciled_count}/${summary.transaction_count}`} />
+          <Stat label="Rapproché" value={`${Math.round(summary.reconcile_progress * 100)}%`} sub={`${summary.reconciled_count}/${summary.transaction_count}`} />
         </div>
       )}
 
@@ -94,7 +94,7 @@ export default function FinancePage() {
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
         <div className="flex flex-col gap-4">
           <Card>
-            <CardHeader><CardTitle>Capture a transaction</CardTitle></CardHeader>
+            <CardHeader><CardTitle>Saisir une opération</CardTitle></CardHeader>
             <CardContent className="flex flex-col gap-3">
               <div className="flex gap-2">
                 <button type="button" onClick={() => setSign(-1)} className="flex-1 rounded-md px-3 py-2 text-sm" style={{ border: "1px solid currentColor", opacity: sign === -1 ? 1 : 0.4 }}>− Expense</button>
@@ -102,15 +102,15 @@ export default function FinancePage() {
               </div>
               <input className={inputCls} type="number" inputMode="decimal" placeholder="Amount" value={amount} onChange={(e) => setAmount(e.target.value)} />
               <input className={inputCls} placeholder="Description" value={desc} onChange={(e) => setDesc(e.target.value)} />
-              <input className={inputCls} placeholder="Category (optional)" value={category} onChange={(e) => setCategory(e.target.value)} />
-              <Button onClick={() => void capture()} disabled={busy || !amount} className="w-full">{busy ? "…" : "Add to ledger"}</Button>
+              <input className={inputCls} placeholder="Catégorie (facultatif)" value={category} onChange={(e) => setCategory(e.target.value)} />
+              <Button onClick={() => void capture()} disabled={busy || !amount} className="w-full">{busy ? "…" : "Ajouter à l'écriture"}</Button>
               {err && <p className="text-xs" style={{ color: "#ff3366" }}>{err}</p>}
             </CardContent>
           </Card>
 
           {summary && Object.keys(summary.by_category).length > 0 && (
             <Card>
-              <CardHeader><CardTitle>By category</CardTitle></CardHeader>
+              <CardHeader><CardTitle>Par catégorie</CardTitle></CardHeader>
               <CardContent className="flex flex-col gap-1">
                 {Object.entries(summary.by_category).sort((a, b) => a[1] - b[1]).map(([cat, val]) => (
                   <div key={cat} className="flex justify-between text-sm">
@@ -126,7 +126,7 @@ export default function FinancePage() {
         <Card>
           <CardHeader><CardTitle>Ledger</CardTitle></CardHeader>
           <CardContent className="flex flex-col gap-1">
-            {txns.length === 0 && <p className="text-sm text-text-secondary">No transactions yet.</p>}
+            {txns.length === 0 && <p className="text-sm text-text-secondary">Aucune opération.</p>}
             {txns.map((t) => (
               <div key={t.id} className="flex items-center gap-3 rounded-md border border-current/10 px-3 py-2">
                 <div className="min-w-0 flex-1">
@@ -136,7 +136,7 @@ export default function FinancePage() {
                   </div>
                   <span className="text-xs text-text-secondary">{t.txn_date}</span>
                 </div>
-                <button type="button" onClick={() => void cycleStatus(t)} className="rounded px-2 py-0.5 text-[10px] uppercase" style={{ color: statusColor[t.status] || "#888", border: `1px solid ${statusColor[t.status] || "#888"}` }} title="Toggle reconciled">{t.status}</button>
+                <button type="button" onClick={() => void cycleStatus(t)} className="rounded px-2 py-0.5 text-[10px] uppercase" style={{ color: statusColor[t.status] || "#888", border: `1px solid ${statusColor[t.status] || "#888"}` }} title="Basculer le rapprochement">{t.status}</button>
                 <span className="w-24 text-right text-sm tabular-nums" style={{ color: t.amount >= 0 ? "#059669" : "#ef4444" }}>{money(t.amount, t.currency)}</span>
                 <button type="button" onClick={() => void remove(t.id)} className="text-xs text-text-secondary hover:text-foreground">✕</button>
               </div>
@@ -210,7 +210,7 @@ function ConnectPanel({ onSynced }: { onSynced: () => void }) {
         {/* Keys editor — enter platform keys from the UI (stored encrypted) */}
         {plaid && (
           <details open={!plaid.configured}>
-            <summary className="cursor-pointer text-xs text-text-secondary">{plaid.configured ? "Update Plaid keys" : "Set Plaid keys"}</summary>
+            <summary className="cursor-pointer text-xs text-text-secondary">{plaid.configured ? "Mettre à jour les clés Plaid" : "Définir les clés Plaid"}</summary>
             <div className="mt-2 flex flex-col gap-2">
               {plaid.required_keys.map((k) =>
                 k.name.endsWith("_ENV") ? (
@@ -242,7 +242,7 @@ function ConnectPanel({ onSynced }: { onSynced: () => void }) {
                   return `Saved ${r.saved} key${r.saved === 1 ? "" : "s"}.`;
                 })}
               >
-                {busy === "keys" ? "Saving…" : "Save keys"}
+                {busy === "keys" ? "Saving…" : "Enregistrer les clés"}
               </Button>
             </div>
           </details>
@@ -255,7 +255,7 @@ function ConnectPanel({ onSynced }: { onSynced: () => void }) {
               <div key={c.id} className="flex items-center gap-2 rounded-md border border-current/10 px-3 py-2 text-sm">
                 <span className="flex-1 truncate">{c.institution || c.provider} · <span className="text-text-secondary">{c.accounts_count} accts · {c.token_masked}</span></span>
                 <span className="text-[10px] uppercase" style={{ color: c.status === "active" ? "#059669" : "#ef4444" }}>{c.status}</span>
-                <button type="button" className="text-xs text-text-secondary hover:text-foreground" onClick={() => void wrap("dc" + c.id, async () => { await vigil.finance.connect.disconnect(c.id); return "Disconnected."; })}>✕</button>
+                <button type="button" className="text-xs text-text-secondary hover:text-foreground" onClick={() => void wrap("dc" + c.id, async () => { await vigil.finance.connect.disconnect(c.id); return "Déconnecté."; })}>✕</button>
               </div>
             ))}
           </div>
@@ -264,7 +264,7 @@ function ConnectPanel({ onSynced }: { onSynced: () => void }) {
         <div className="flex flex-wrap gap-2">
           {canSandbox && (
             <Button disabled={!!busy} onClick={() => void wrap("sandbox", async () => { const r = await vigil.finance.connect.sandbox(); return `Connected ${r.connection.institution || "bank"}.`; })}>
-              {busy === "sandbox" ? "Connecting…" : "Connect sandbox bank"}
+              {busy === "sandbox" ? "Connecting…" : "Relier une banque de test"}
             </Button>
           )}
           <Button ghost disabled={!!busy || !status?.connections.length} onClick={() => void wrap("sync", async () => { const r = await vigil.finance.connect.sync(); return `Synced ${r.transactions_added} transactions from ${r.connections} connection(s).`; })}>

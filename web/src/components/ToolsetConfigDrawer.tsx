@@ -31,7 +31,7 @@ interface Props {
 /**
  * Full configuration surface for a single toolset's backends — the dashboard
  * equivalent of selecting a toolset in the `hermes tools` curses UI: toggle
- * the toolset on/off, pick a provider, enter API keys, and run a provider's
+ * the toolset on/off, pick a provider, enter Clé d'APIs, and run a provider's
  * post-setup install hook (npm/pip/binary) with a live log tail.
  */
 export function ToolsetConfigDrawer({ toolset, profile, onClose, onChanged }: Props) {
@@ -73,7 +73,7 @@ export function ToolsetConfigDrawer({ toolset, profile, onClose, onChanged }: Pr
         }
         setIsSet(seed);
       })
-      .catch(() => showToast("Failed to load toolset config", "error"))
+      .catch(() => showToast("Chargement de la configuration impossible", "error"))
       .finally(() => setLoading(false));
   }, [toolset.name, profile, showToast]);
 
@@ -99,7 +99,7 @@ export function ToolsetConfigDrawer({ toolset, profile, onClose, onChanged }: Pr
           setPostSetupRunning(false);
           const ok = st.exit_code === 0;
           showToast(
-            ok ? "Post-setup complete" : "Post-setup finished with errors",
+            ok ? "Post-configuration terminée" : "Post-configuration terminée avec des erreurs",
             ok ? "success" : "error",
           );
           // Refresh — a backend may now report itself configured/available.
@@ -109,7 +109,7 @@ export function ToolsetConfigDrawer({ toolset, profile, onClose, onChanged }: Pr
       } catch {
         if (!cancelled) {
           setPostSetupRunning(false);
-          showToast("Lost track of the post-setup process", "error");
+          showToast("Suivi de la post-configuration perdu", "error");
         }
       }
     };
@@ -132,7 +132,7 @@ export function ToolsetConfigDrawer({ toolset, profile, onClose, onChanged }: Pr
       );
       onChanged();
     } catch {
-      showToast("Failed to toggle toolset", "error");
+      showToast("Basculement impossible", "error");
     } finally {
       setToggling(false);
     }
@@ -147,7 +147,7 @@ export function ToolsetConfigDrawer({ toolset, profile, onClose, onChanged }: Pr
       onChanged();
     } catch (e) {
       showToast(
-        e instanceof Error ? e.message : "Failed to select provider",
+        e instanceof Error ? e.message : "Sélection du fournisseur impossible",
         "error",
       );
     } finally {
@@ -162,7 +162,7 @@ export function ToolsetConfigDrawer({ toolset, profile, onClose, onChanged }: Pr
       if (v && v.trim()) env[e.key] = v.trim();
     }
     if (Object.keys(env).length === 0) {
-      showToast("Enter at least one value to save", "error");
+      showToast("Saisissez au moins une valeur", "error");
       return;
     }
     setSavingProvider(provider.name);
@@ -178,13 +178,13 @@ export function ToolsetConfigDrawer({ toolset, profile, onClose, onChanged }: Pr
       showToast(
         res.saved.length
           ? `Saved ${res.saved.length} key${res.saved.length > 1 ? "s" : ""}`
-          : "Nothing to save",
+          : "Rien à enregistrer",
         "success",
       );
       onChanged();
     } catch (e) {
       showToast(
-        e instanceof Error ? e.message : "Failed to save keys",
+        e instanceof Error ? e.message : "Enregistrement des clés impossible",
         "error",
       );
     } finally {
@@ -204,7 +204,7 @@ export function ToolsetConfigDrawer({ toolset, profile, onClose, onChanged }: Pr
     } catch (e) {
       setPostSetupRunning(false);
       showToast(
-        e instanceof Error ? e.message : "Failed to start post-setup",
+        e instanceof Error ? e.message : "Démarrage de la post-configuration impossible",
         "error",
       );
     }
@@ -253,10 +253,10 @@ export function ToolsetConfigDrawer({ toolset, profile, onClose, onChanged }: Pr
               checked={enabled}
               onCheckedChange={(v) => void handleToggle(v)}
               disabled={toggling}
-              aria-label="Enable toolset"
+              aria-label="Activer la boîte à outils"
             />
             <span className="text-xs text-muted-foreground">
-              {enabled ? "Enabled for the agent" : "Disabled"}
+              {enabled ? "Activée pour l'assistant" : "Disabled"}
             </span>
           </div>
         </header>
@@ -270,11 +270,11 @@ export function ToolsetConfigDrawer({ toolset, profile, onClose, onChanged }: Pr
           ) : !config?.has_category ? (
             <p className="text-sm text-muted-foreground py-6 text-center">
               This toolset has no configurable backends — toggle it on or off
-              above. It works with no provider selection or API keys.
+              above. It works with no provider selection or Clé d'APIs.
             </p>
           ) : config.providers.length === 0 ? (
             <p className="text-sm text-muted-foreground py-6 text-center">
-              No providers are available for this toolset in this install.
+              Aucun fournisseur disponible pour cette boîte à outils sur cette installation.
             </p>
           ) : (
             config.providers.map((provider) => {
@@ -328,7 +328,7 @@ export function ToolsetConfigDrawer({ toolset, profile, onClose, onChanged }: Pr
                     </p>
                   )}
 
-                  {/* API key inputs */}
+                  {/* Clé d'API inputs */}
                   {provider.env_vars.length > 0 && (
                     <div className="mt-3 space-y-2.5">
                       {provider.env_vars.map((ev) => (
@@ -370,7 +370,7 @@ export function ToolsetConfigDrawer({ toolset, profile, onClose, onChanged }: Pr
                               rel="noreferrer"
                               className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
                             >
-                              <ExternalLink className="h-3 w-3" /> Get a key
+                              <ExternalLink className="h-3 w-3" /> Obtenir une clé
                             </a>
                           )}
                         </div>
@@ -383,7 +383,7 @@ export function ToolsetConfigDrawer({ toolset, profile, onClose, onChanged }: Pr
                         {savingProvider === provider.name ? (
                           <Loader2 className="h-3 w-3 animate-spin" />
                         ) : (
-                          "Save keys"
+                          "Enregistrer les clés"
                         )}
                       </Button>
                     </div>
@@ -414,7 +414,7 @@ export function ToolsetConfigDrawer({ toolset, profile, onClose, onChanged }: Pr
                           </>
                         ) : (
                           <>
-                            <Terminal className="h-3 w-3 mr-1" /> Run setup
+                            <Terminal className="h-3 w-3 mr-1" /> Lancer la configuration
                           </>
                         )}
                       </Button>

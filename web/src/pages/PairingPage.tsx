@@ -43,7 +43,7 @@ export default function PairingPage() {
         setPending(res.pending);
         setApproved(res.approved);
       })
-      .catch(() => showToast("Failed to load pairing requests", "error"))
+      .catch(() => showToast("Chargement des demandes d'appairage impossible", "error"))
       .finally(() => setLoading(false));
   }, [showToast]);
 
@@ -53,7 +53,7 @@ export default function PairingPage() {
 
   const handleApprove = async (user: PairingUser) => {
     if (!user.code) {
-      showToast("Missing pairing code", "error");
+      showToast("Code d'appairage manquant", "error");
       return;
     }
     const key = getUserKey(user);
@@ -70,7 +70,7 @@ export default function PairingPage() {
   };
 
   const handleClearPending = async () => {
-    if (!window.confirm("Clear all pending pairing requests?")) return;
+    if (!window.confirm("Effacer toutes les demandes d'appairage en attente ?")) return;
     setClearing(true);
     try {
       const res = await api.clearPendingPairing();
@@ -104,7 +104,7 @@ export default function PairingPage() {
     ),
   });
 
-  // Put "Clear pending" button in page header
+  // Put "Effacer les demandes" button in page header
   useLayoutEffect(() => {
     setEnd(
       <Button
@@ -114,7 +114,7 @@ export default function PairingPage() {
         disabled={clearing}
         prefix={clearing ? <Spinner /> : <Trash2 className="h-4 w-4" />}
       >
-        Clear pending
+        Effacer les demandes
       </Button>,
     );
     return () => {
@@ -143,30 +143,30 @@ export default function PairingPage() {
         open={userRevoke.isOpen}
         onCancel={userRevoke.cancel}
         onConfirm={userRevoke.confirm}
-        title="Revoke access"
+        title="Révoquer l'accès"
         description={
           pendingRevokeUser
             ? `"${getUserLabel(pendingRevokeUser)}" will lose access. This cannot be undone.`
-            : "This user will lose access. This cannot be undone."
+            : "Cet utilisateur perdra son accès. L'opération est irréversible."
         }
         confirmLabel="Revoke"
         loading={userRevoke.isDeleting}
       />
 
-      {/* Pending requests */}
+      {/* Demandes en attente */}
       <div className="flex flex-col gap-3">
         <H2
           variant="sm"
           className="flex items-center gap-2 text-muted-foreground"
         >
           <Users className="h-4 w-4" />
-          Pending requests ({pending.length})
+          Demandes en attente ({pending.length})
         </H2>
 
         {pending.length === 0 && (
           <Card>
             <CardContent className="py-8 text-center text-sm text-muted-foreground">
-              No pending pairing requests
+              Aucune demande en attente
             </CardContent>
           </Card>
         )}
@@ -230,7 +230,7 @@ export default function PairingPage() {
         {approved.length === 0 && (
           <Card>
             <CardContent className="py-8 text-center text-sm text-muted-foreground">
-              No approved users
+              Aucun utilisateur approuvé
             </CardContent>
           </Card>
         )}

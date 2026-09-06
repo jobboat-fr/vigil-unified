@@ -37,7 +37,7 @@ export default function StudioPage() {
       setArtifacts(artifacts);
       setAuthError(null);
     } catch (e) {
-      if (e instanceof GatewayError && e.code === "NO_SESSION") setAuthError("Sign in to VIGIL to use the Studio.");
+      if (e instanceof GatewayError && e.code === "NO_SESSION") setAuthError("Connectez-vous pour ouvrir le studio.");
       else setAuthError((e as Error).message);
     }
   }, []);
@@ -77,7 +77,7 @@ export default function StudioPage() {
     setDrafting(true);
     setError(null);
     try {
-      const title = brief.trim().slice(0, 60) || "Untitled artifact";
+      const title = brief.trim().slice(0, 60) || "Document sans titre";
       const art = await vigil.studio.create({
         title,
         kind,
@@ -122,7 +122,7 @@ export default function StudioPage() {
 
   const newBoard = async () => {
     try {
-      const art = await vigil.studio.blankCanvas("New board");
+      const art = await vigil.studio.blankCanvas("Nouveau tableau");
       setActive(art);
       await refresh();
     } catch (e) {
@@ -138,10 +138,10 @@ export default function StudioPage() {
         <div className="flex flex-col gap-1">
           <h1 className="text-xl font-bold tracking-tight">Studio</h1>
           <p className="text-sm text-text-secondary">
-            Draft, refine, and crystallize artifacts — or open an <em>infinite brainstorming board</em> and think with the agent.
+            Rédigez, affinez et figez vos documents — ou ouvrez un <em>infinite brainstorming board</em> and think with the agent.
           </p>
         </div>
-        <Button onClick={() => void newBoard()}>+ New board</Button>
+        <Button onClick={() => void newBoard()}>+ Nouveau tableau</Button>
       </header>
 
       {authError && (
@@ -152,7 +152,7 @@ export default function StudioPage() {
         {/* ── Left: composer + brainstorm gate ── */}
         <div className="flex flex-col gap-4">
           <Card>
-            <CardHeader><CardTitle>New artifact</CardTitle></CardHeader>
+            <CardHeader><CardTitle>Nouveau document</CardTitle></CardHeader>
             <CardContent className="flex flex-col gap-3">
               <div className="flex flex-wrap gap-2">
                 {KINDS.map((k) => (
@@ -175,12 +175,12 @@ export default function StudioPage() {
               <textarea
                 className={inputCls}
                 rows={4}
-                placeholder="What do you want to create? e.g. 'A proposal to onboard Acme Corp onto our trading desk, 3-month pilot.'"
+                placeholder="Que voulez-vous produire ? Par exemple : « une convention de formation pour la session Bureautique de septembre »."
                 value={brief}
                 onChange={(e) => setBrief(e.target.value)}
               />
               <details>
-                <summary className="cursor-pointer text-xs text-text-secondary">Ground in source text (optional)</summary>
+                <summary className="cursor-pointer text-xs text-text-secondary">Texte source à respecter (facultatif)</summary>
                 <textarea
                   className={`${inputCls} mt-2`}
                   rows={3}
@@ -205,7 +205,7 @@ export default function StudioPage() {
                 {plan.understanding && <p className="text-sm">{plan.understanding}</p>}
                 {plan.clarifying_questions?.length > 0 && (
                   <div className="text-xs text-text-secondary">
-                    <p className="mb-1 font-semibold uppercase tracking-wide">Worth clarifying</p>
+                    <p className="mb-1 font-semibold uppercase tracking-wide">À clarifier</p>
                     <ul className="list-disc pl-4">
                       {plan.clarifying_questions.map((q, i) => <li key={i}>{q}</li>)}
                     </ul>
@@ -216,7 +216,7 @@ export default function StudioPage() {
                     <div key={i} className="rounded-md border border-current/15 p-3">
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-sm font-semibold">{a.name}</span>
-                        {a.recommended && <span className="rounded px-2 py-0.5 text-[10px] uppercase" style={{ background: "#059669", color: "#fff" }}>Recommended</span>}
+                        {a.recommended && <span className="rounded px-2 py-0.5 text-[10px] uppercase" style={{ background: "#059669", color: "#fff" }}>Recommandé</span>}
                       </div>
                       <p className="mt-1 text-sm">{a.summary}</p>
                       {a.tradeoffs && <p className="mt-1 text-xs text-text-secondary">Trade-offs: {a.tradeoffs}</p>}
@@ -236,9 +236,9 @@ export default function StudioPage() {
           )}
 
           <Card>
-            <CardHeader><CardTitle>Your artifacts</CardTitle></CardHeader>
+            <CardHeader><CardTitle>Vos documents</CardTitle></CardHeader>
             <CardContent className="flex flex-col gap-2">
-              {artifacts.length === 0 && <p className="text-sm text-text-secondary">No artifacts yet.</p>}
+              {artifacts.length === 0 && <p className="text-sm text-text-secondary">Aucun document.</p>}
               {artifacts.map((a) => (
                 <div key={a.id} className="flex items-center justify-between gap-2 rounded-md border border-current/10 px-3 py-2">
                   <button type="button" className="min-w-0 flex-1 text-left" onClick={() => void open(a.id)}>
@@ -279,7 +279,7 @@ export default function StudioPage() {
                     onKeyDown={(e) => { if (e.key === "Enter") void refine(); }}
                   />
                   <Button onClick={() => void refine()} disabled={refining || !refineText.trim()} className="w-full">
-                    {refining ? "Refining…" : "Refine with the agent"}
+                    {refining ? "Refining…" : "Affiner avec l'assistant"}
                   </Button>
                 </div>
               </CardContent>
@@ -287,7 +287,7 @@ export default function StudioPage() {
           ) : (
             <Card>
               <CardContent className="flex min-h-[200px] items-center justify-center text-center text-sm text-text-secondary">
-                Open an artifact, or write a brief and let the agent think it through first.
+                Ouvrez un document, ou rédigez une consigne et laissez l'assistant la travailler.
               </CardContent>
             </Card>
           )}

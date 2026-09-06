@@ -155,7 +155,7 @@ function ToolCallBlock({
 // session timeline (#29824 — "WebUI can show context compaction block
 // instead of latest assistant response after compression"), so we
 // detect them here and downgrade them to a muted, clearly-labelled
-// "Context handoff" row.
+// "Passage de contexte" row.
 //
 // Keep these prefixes (and the END marker below) in sync with
 // ``SUMMARY_PREFIX`` / ``LEGACY_SUMMARY_PREFIX`` and the
@@ -173,7 +173,7 @@ const COMPACTION_PREFIXES = [
 // prefix on the first tail message instead of inserting a standalone
 // row. We split on this marker so the WebUI still shows the original
 // assistant reply as its own readable bubble — otherwise the merged
-// row reads as a single opaque "Context compaction" block and the
+// row reads as a single opaque "Compactage du contexte" block and the
 // user can't see the reply (#29824).
 const COMPACTION_END_MARKER =
   "--- END OF CONTEXT SUMMARY — respond to the message below, not the summary above ---";
@@ -240,7 +240,7 @@ function MessageBubble({
     compaction: {
       bg: "bg-muted/50",
       text: "text-muted-foreground italic",
-      label: "Context handoff",
+      label: "Passage de contexte",
     },
   };
 
@@ -452,8 +452,8 @@ function SessionRow({
         ghost
         size="icon"
         className="text-muted-foreground hover:text-foreground"
-        aria-label="Rename session"
-        title="Rename session"
+        aria-label="Renommer la session"
+        title="Renommer la session"
         onClick={(e) => {
           e.stopPropagation();
           setRenameValue(
@@ -554,7 +554,7 @@ function SessionRow({
                         if (e.key === "Enter") void submitRename();
                         else if (e.key === "Escape") setRenaming(false);
                       }}
-                      placeholder="Session title"
+                      placeholder="Titre de la session"
                       className="h-7 min-w-0 flex-1 py-0 text-sm"
                       disabled={renameSaving}
                     />
@@ -562,8 +562,8 @@ function SessionRow({
                       ghost
                       size="icon"
                       className="text-muted-foreground hover:text-success"
-                      aria-label="Save title"
-                      title="Save title"
+                      aria-label="Enregistrer le titre"
+                      title="Enregistrer le titre"
                       disabled={renameSaving}
                       onClick={() => void submitRename()}
                     >
@@ -577,8 +577,8 @@ function SessionRow({
                       ghost
                       size="icon"
                       className="text-muted-foreground hover:text-foreground"
-                      aria-label="Cancel rename"
-                      title="Cancel rename"
+                      aria-label="Annuler le renommage"
+                      title="Annuler le renommage"
                       disabled={renameSaving}
                       onClick={() => setRenaming(false)}
                     >
@@ -730,7 +730,7 @@ export default function SessionsPage() {
   const [view, setView] = useState<SessionsView>("overview");
   // Count of empty (no-message, ended, non-archived) sessions across the
   // entire DB, populated by /api/sessions/empty/count. Used to:
-  //   • hide the "Delete empty" button when there's nothing to clean up
+  //   • hide the "Supprimer les vides" button when there's nothing to clean up
   //   • show "(N)" alongside the label
   //   • surface the count in the confirm dialog body
   // Refreshed on mount, after single-session deletes, and after the bulk
@@ -798,7 +798,7 @@ export default function SessionsPage() {
         onClick={() => setPruneOpen(true)}
       >
         <Archive className="h-3.5 w-3.5" />
-        Prune old sessions
+        Purger les anciennes sessions
       </Button>,
     );
     return () => {
@@ -1091,10 +1091,10 @@ export default function SessionsPage() {
         setOverviewSessions((prev) =>
           prev.map((s) => (s.id === id ? { ...s, title } : s)),
         );
-        showToast("Session renamed", "success");
+        showToast("Session renommée", "success");
         loadStats();
       } catch {
-        showToast("Failed to rename session", "error");
+        showToast("Renommage impossible", "error");
       }
     },
     [showToast, loadStats],
@@ -1120,7 +1120,7 @@ export default function SessionsPage() {
         a.click();
         URL.revokeObjectURL(url);
       } catch {
-        showToast("Failed to export session", "error");
+        showToast("Export de la session impossible", "error");
       }
     },
     [showToast],
@@ -1129,7 +1129,7 @@ export default function SessionsPage() {
   const handlePrune = useCallback(async () => {
     const days = parseInt(pruneDays, 10);
     if (!Number.isFinite(days) || days < 0) {
-      showToast("Enter a valid number of days", "error");
+      showToast("Indiquez un nombre de jours valide", "error");
       return;
     }
     setPruning(true);
@@ -1144,7 +1144,7 @@ export default function SessionsPage() {
       setPage(0);
       loadStats();
     } catch {
-      showToast("Failed to prune sessions", "error");
+      showToast("Purge des sessions impossible", "error");
     } finally {
       setPruning(false);
     }
@@ -1269,7 +1269,7 @@ export default function SessionsPage() {
       >
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Prune old sessions</DialogTitle>
+            <DialogTitle>Purger les anciennes sessions</DialogTitle>
             <DialogDescription>
               Permanently remove archived sessions whose last activity is older
               than the given number of days. Active sessions are never pruned.
@@ -1280,7 +1280,7 @@ export default function SessionsPage() {
               htmlFor="prune-days"
               className="text-xs font-medium text-muted-foreground"
             >
-              Older than (days)
+              Plus anciennes que (jours)
             </label>
             <Input
               id="prune-days"

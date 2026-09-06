@@ -81,7 +81,7 @@ function ProfilesLoadingSpinner() {
  * Per-card "⋯" actions menu. Holds every action for the profile (set active,
  * model, description, SOUL, copy command, rename, delete) so the card row stays
  * a single button. Mirrors the hand-rolled dropdown pattern used by ModelsPage's
- * "Use as" menu (button + absolute panel + outside-click close).
+ * "Utiliser comme" menu (button + absolute panel + outside-click close).
  */
 function ProfileActionsMenu({
   isActive,
@@ -266,41 +266,41 @@ export default function ProfilesPage() {
   const L = useMemo(() => {
     const p = t.profiles;
     return {
-      activeProfile: p.activeProfile ?? "Active profile",
+      activeProfile: p.activeProfile ?? "Profil actif",
       activeBadge: p.activeBadge ?? "active",
-      setActive: p.setActive ?? "Set as active",
-      activeSet: p.activeSet ?? "Active profile set",
-      gatewayRunning: p.gatewayRunning ?? "Gateway running",
-      gatewayStopped: p.gatewayStopped ?? "Gateway stopped",
+      setActive: p.setActive ?? "Définir comme actif",
+      activeSet: p.activeSet ?? "Profil actif défini",
+      gatewayRunning: p.gatewayRunning ?? "Passerelle active",
+      gatewayStopped: p.gatewayStopped ?? "Passerelle arrêtée",
       gatewayRunningWarning:
         p.gatewayRunningWarning ??
-        "This profile's gateway is running — it will be stopped.",
+        "La passerelle de ce profil tourne — elle sera arrêtée.",
       aliasBadge: p.aliasBadge ?? "alias",
       description: p.description ?? "Description",
       descriptionPlaceholder:
         p.descriptionPlaceholder ??
-        "What is this profile good at? Used to route kanban tasks by role.",
-      noDescription: p.noDescription ?? "No description",
-      editDescription: p.editDescription ?? "Edit description",
+        "À quoi ce profil est-il bon ? Sert à orienter les tâches selon le rôle.",
+      noDescription: p.noDescription ?? "Aucune description",
+      editDescription: p.editDescription ?? "Modifier la description",
       descriptionSaved: p.descriptionSaved ?? "Description saved",
       reviewBadge: p.reviewBadge ?? "review",
-      autoGenerate: p.autoGenerate ?? "Auto-generate",
+      autoGenerate: p.autoGenerate ?? "Générer",
       generating: p.generating ?? "Generating…",
-      describeFailed: p.describeFailed ?? "Could not generate description",
+      describeFailed: p.describeFailed ?? "Génération de la description impossible",
       distribution: p.distribution ?? "Distribution",
-      advancedOptions: p.advancedOptions ?? "Advanced options",
+      advancedOptions: p.advancedOptions ?? "Options avancées",
       cloneAll:
-        p.cloneAll ?? "Clone everything (memories, sessions, skills, state)",
-      noSkillsOption: p.noSkillsOption ?? "Don't seed bundled skills",
-      descriptionOptional: p.descriptionOptional ?? "Description (optional)",
-      modelOptional: p.modelOptional ?? "Model (optional)",
-      modelInherit: p.modelInherit ?? "Inherit from clone / default",
+        p.cloneAll ?? "Tout cloner (mémoires, sessions, compétences, état)",
+      noSkillsOption: p.noSkillsOption ?? "Ne pas préinstaller les compétences fournies",
+      descriptionOptional: p.descriptionOptional ?? "Description (facultatif)",
+      modelOptional: p.modelOptional ?? "Modèle (facultatif)",
+      modelInherit: p.modelInherit ?? "Hériter du clone ou du profil par défaut",
       modelLoading: p.modelLoading ?? "Loading models…",
       modelNone:
-        p.modelNone ?? "No authenticated providers — set a key first",
-      editModel: p.editModel ?? "Change model",
-      modelSaved: p.modelSaved ?? "Model updated",
-      modelSelect: p.modelSelect ?? "Select a model",
+        p.modelNone ?? "Aucun fournisseur authentifié — définissez d'abord une clé",
+      editModel: p.editModel ?? "Changer de modèle",
+      modelSaved: p.modelSaved ?? "Modèle mis à jour",
+      modelSelect: p.modelSelect ?? "Choisir un modèle",
       actions: p.actions ?? "Actions",
       manageSkills: p.manageSkills ?? "Manage skills & tools",
       activeSetHint:
@@ -495,7 +495,7 @@ export default function ProfilesPage() {
       // The backend normalizes/validates the name; trust the canonical
       // value it returns rather than the raw input.
       const { active } = await api.setActiveProfile(name);
-      // "Set as active" only flips the sticky default for FUTURE CLI/gateway
+      // "Définir comme actif" only flips the sticky default for FUTURE CLI/gateway
       // invocations — it does NOT retarget this running dashboard. Say so,
       // or users assume skill/tool toggles now apply to the activated
       // profile (they don't — that's what "Manage skills & tools" is for).
@@ -801,7 +801,7 @@ export default function ProfilesPage() {
         loading={profileDelete.isDeleting}
       />
 
-      {/* Create profile modal */}
+      {/* Créer le profil modal */}
       {createModalOpen && (
         <div
           ref={createModalRef}
@@ -983,7 +983,7 @@ export default function ProfilesPage() {
         </div>
       )}
 
-      {/* Active profile banner */}
+      {/* Profil actif banner */}
       {activeInfo && (
         <Card>
           <CardContent className="flex flex-wrap items-center gap-x-4 gap-y-1 py-3 text-xs">

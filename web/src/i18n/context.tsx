@@ -65,7 +65,12 @@ export const LOCALE_META: Record<Locale, { name: string }> = {
 };
 
 const SUPPORTED_LOCALES = Object.keys(TRANSLATIONS) as Locale[];
-const STORAGE_KEY = "hermes-locale";
+// Clé nouvelle, et c'est le but. L'ancienne, `hermes-locale`, contenait « en » sur toute
+// session ouverte avant que le produit ne passe au français — et une valeur enregistrée
+// gagne sur le défaut, si bien que changer le défaut ne changeait rien pour les personnes
+// déjà passées par là. Repartir d'une clé propre remet tout le monde en français ; un choix
+// explicite fait après ce changement est conservé normalement.
+const STORAGE_KEY = "vtlvs-locale";
 
 function isLocale(value: string): value is Locale {
   return (SUPPORTED_LOCALES as string[]).includes(value);

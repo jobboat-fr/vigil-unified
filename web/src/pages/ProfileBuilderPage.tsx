@@ -13,7 +13,7 @@ import { api } from "@/lib/api";
 import type { McpServerCreate, SkillInfo, SkillHubResult } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
-// Profile name rule mirrors the backend (`^[a-z0-9][a-z0-9_-]{0,63}$`).
+// Nom du profil rule mirrors the backend (`^[a-z0-9][a-z0-9_-]{0,63}$`).
 const PROFILE_NAME_RE = /^[a-z0-9][a-z0-9_-]{0,63}$/;
 
 type StepId = "identity" | "model" | "skills" | "mcp" | "review";
@@ -37,8 +37,8 @@ interface ModelChoice {
  *
  * Composes the same elements the standalone Models / Skills / MCP pages
  * manage — Name, Description, Model+Provider, Skills (built-in/optional +
- * hub), MCP servers — into one stepped create flow. Nothing is written to
- * disk until "Create profile" on the final step; the single POST /api/profiles
+ * hub), Serveurs MCP — into one stepped create flow. Nothing is written to
+ * disk until "Créer le profil" on the final step; the single POST /api/profiles
  * call commits model + MCPs + skill selection synchronously and spawns any
  * hub-skill installs (which the success toast reports as in-progress).
  *
@@ -162,11 +162,11 @@ export default function ProfileBuilderPage() {
   const addMcpDraft = () => {
     const n = mcpDraft.name.trim();
     if (!n) {
-      showToast("MCP server needs a name", "error");
+      showToast("Le serveur MCP doit avoir un nom", "error");
       return;
     }
     if (!mcpDraft.url.trim() && !mcpDraft.command.trim()) {
-      showToast("Give the MCP server a URL or a command", "error");
+      showToast("Donnez une URL ou une commande au serveur MCP", "error");
       return;
     }
     const entry: McpServerCreate = { name: n };
@@ -249,7 +249,7 @@ export default function ProfileBuilderPage() {
   return (
     <div className="mx-auto w-full max-w-3xl space-y-6 p-4">
       <div className="flex items-center justify-between">
-        <H2>New profile</H2>
+        <H2>Nouveau profil</H2>
         <Button ghost onClick={() => navigate("/profiles")}>
           Cancel
         </Button>
@@ -283,7 +283,7 @@ export default function ProfileBuilderPage() {
           {step === "identity" && (
             <div className="space-y-4">
               <div className="space-y-1.5">
-                <Label htmlFor="pb-name">Profile name</Label>
+                <Label htmlFor="pb-name">Nom du profil</Label>
                 <Input
                   id="pb-name"
                   placeholder="coder"
@@ -297,10 +297,10 @@ export default function ProfileBuilderPage() {
                 )}
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="pb-desc">Description (optional)</Label>
+                <Label htmlFor="pb-desc">Description (facultatif)</Label>
                 <Input
                   id="pb-desc"
-                  placeholder="What this agent profile is for"
+                  placeholder="À quoi sert ce profil"
                   value={description}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                     setDescription(e.target.value)
@@ -333,7 +333,7 @@ export default function ProfileBuilderPage() {
                       modelChoice === "" ? "bg-primary/10" : "hover:bg-muted",
                     )}
                   >
-                    Use default (set later)
+                    Défaut (à définir plus tard)
                   </button>
                   {filteredModels.map((c) => {
                     const key = `${c.provider}\u0000${c.model}`;
@@ -362,12 +362,12 @@ export default function ProfileBuilderPage() {
                   checked={keepAll}
                   onCheckedChange={(v) => setKeepAll(Boolean(v))}
                 />
-                Start from the full default skill bundle (recommended)
+                Partir de la sélection complète par défaut (recommandé)
               </label>
               {!keepAll && (
                 <div className="space-y-2">
                   <p className="text-xs text-muted-foreground">
-                    Choose which built-in / optional skills to keep active. Unchecked skills are disabled in the new profile.
+                    Choisissez les compétences à garder actives. Les compétences décochées sont désactivées dans le nouveau profil.
                   </p>
                   <Input
                     placeholder="Filter skills…"
@@ -411,7 +411,7 @@ export default function ProfileBuilderPage() {
 
               {/* Skills hub */}
               <div className="space-y-2 border-t pt-4">
-                <Label>Add from the skills hub</Label>
+                <Label>Ajouter depuis la bibliothèque</Label>
                 <div className="flex gap-2">
                   <Input
                     placeholder="Search the hub (e.g. linear, hyperliquid)…"
@@ -475,11 +475,11 @@ export default function ProfileBuilderPage() {
           {step === "mcp" && (
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                Add MCP servers for this profile. HTTP servers take a URL; stdio servers take a command + args.
+                Ajouter un serveur MCPs for this profile. HTTP servers take a URL; stdio servers take a command + args.
               </p>
               <div className="grid grid-cols-2 gap-2">
                 <Input
-                  placeholder="Server name"
+                  placeholder="Nom du serveur"
                   value={mcpDraft.name}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                     setMcpDraft({ ...mcpDraft, name: e.target.value })
@@ -493,14 +493,14 @@ export default function ProfileBuilderPage() {
                   }
                 />
                 <Input
-                  placeholder="Command (e.g. npx)"
+                  placeholder="Commande (par ex. npx)"
                   value={mcpDraft.command}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                     setMcpDraft({ ...mcpDraft, command: e.target.value })
                   }
                 />
                 <Input
-                  placeholder="Args (space-separated)"
+                  placeholder="Arguments (séparés par des espaces)"
                   value={mcpDraft.args}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                     setMcpDraft({ ...mcpDraft, args: e.target.value })
@@ -508,7 +508,7 @@ export default function ProfileBuilderPage() {
                 />
               </div>
               <Button outlined onClick={addMcpDraft}>
-                Add server
+                Ajouter un serveur
               </Button>
               {mcpServers.length > 0 && (
                 <div className="space-y-1">
@@ -542,13 +542,13 @@ export default function ProfileBuilderPage() {
               <ReviewRow label="Description" value={description.trim() || "—"} />
               <ReviewRow
                 label="Model"
-                value={pickedModel ? pickedModel.label : "Default (set later)"}
+                value={pickedModel ? pickedModel.label : "Défaut (à définir plus tard)"}
               />
               <ReviewRow
                 label="Skills"
                 value={
                   keepAll
-                    ? "Full default bundle"
+                    ? "Sélection complète par défaut"
                     : `${keptSkills.size} built-in/optional kept` +
                       (hubSkills.length ? ` + ${hubSkills.length} hub` : "")
                 }
@@ -560,12 +560,12 @@ export default function ProfileBuilderPage() {
               )}
               {keepAll && hubSkills.length > 0 && (
                 <ReviewRow
-                  label="Hub skills"
+                  label="Compétences de la bibliothèque"
                   value={hubSkills.map((s) => s.name).join(", ")}
                 />
               )}
               <ReviewRow
-                label="MCP servers"
+                label="Serveurs MCP"
                 value={mcpServers.length ? mcpServers.map((s) => s.name).join(", ") : "None"}
               />
             </div>
@@ -584,7 +584,7 @@ export default function ProfileBuilderPage() {
         </Button>
         {step === "review" ? (
           <Button onClick={handleCreate} disabled={creating || !nameValid}>
-            {creating ? "Creating…" : "Create profile"}
+            {creating ? "Creating…" : "Créer le profil"}
           </Button>
         ) : (
           <Button

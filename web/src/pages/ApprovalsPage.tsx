@@ -29,7 +29,7 @@ export default function ApprovalsPage() {
       setActions((await vigil.connect.actions()).actions);
       setAuthError(null);
     } catch (e) {
-      if (e instanceof GatewayError && e.code === "NO_SESSION") setAuthError("Sign in to review approvals.");
+      if (e instanceof GatewayError && e.code === "NO_SESSION") setAuthError("Connectez-vous pour traiter les validations.");
       else setAuthError((e as Error).message);
     }
   }, []);
@@ -59,9 +59,9 @@ export default function ApprovalsPage() {
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
       <header className="flex flex-col gap-1">
-        <h1 className="text-xl font-bold tracking-tight">Approvals</h1>
+        <h1 className="text-xl font-bold tracking-tight">Validations</h1>
         <p className="text-sm text-text-secondary">
-          Nothing leaves the system until you approve it. Departments propose outbound actions; you decide.
+          Rien ne part au nom de l'organisme sans votre accord. L'assistant prépare, une personne nommée valide.
         </p>
       </header>
 
@@ -69,7 +69,7 @@ export default function ApprovalsPage() {
       {err && <Card><CardContent className="py-3 text-sm" style={{ color: "#ff3366" }}>{err}</CardContent></Card>}
 
       <Card>
-        <CardHeader><CardTitle>Pending · {pending.length}</CardTitle></CardHeader>
+        <CardHeader><CardTitle>En attente · {pending.length}</CardTitle></CardHeader>
         <CardContent className="flex flex-col gap-2">
           {pending.length === 0 && <p className="text-sm text-text-secondary">Nothing waiting. Clear.</p>}
           {pending.map((a) => (
@@ -89,7 +89,7 @@ export default function ApprovalsPage() {
       <Card>
         <CardHeader><CardTitle>Recent</CardTitle></CardHeader>
         <CardContent className="flex flex-col gap-1.5">
-          {recent.length === 0 && <p className="text-sm text-text-secondary">No history yet.</p>}
+          {recent.length === 0 && <p className="text-sm text-text-secondary">Aucun historique.</p>}
           {recent.map((a) => (
             <div key={a.id} className="flex items-center gap-2 text-sm">
               <span className="text-[10px] uppercase w-16" style={{ color: STATUS_COLOR[a.status] }}>{a.status}</span>

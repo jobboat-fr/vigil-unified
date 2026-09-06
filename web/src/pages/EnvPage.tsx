@@ -330,7 +330,7 @@ function EnvVarRow({
 }
 
 /* ------------------------------------------------------------------ */
-/*  ProviderGroupCard — groups API key + base URL per provider         */
+/*  ProviderGroupCard — groups Clé d'API + base URL per provider         */
 /* ------------------------------------------------------------------ */
 
 function ProviderGroupCard({
@@ -359,7 +359,7 @@ function ProviderGroupCard({
   const [expanded, setExpanded] = useState(false);
   const { t } = useI18n();
 
-  // Separate API keys from base URLs and other settings
+  // Separate Clé d'APIs from base URLs and other settings
   const apiKeys = group.entries.filter(
     ([k]) => k.endsWith("_API_KEY") || k.endsWith("_TOKEN"),
   );
@@ -539,7 +539,7 @@ export default function EnvPage() {
     setAfterTitle(
       <nav
         className="flex shrink-0 flex-nowrap items-center gap-1"
-        aria-label="Jump to section"
+        aria-label="Aller à la section"
       >
         {sections.map((s) => (
           <button

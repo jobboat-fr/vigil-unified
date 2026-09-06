@@ -132,7 +132,7 @@ function getJobScheduleDisplay(
   strings: ScheduleDescribeStrings,
 ): string {
   // Prefer a structured render so cron expressions like
-  // ``30 14 * * 1,3,5`` surface as "Weekly on Mon, Wed, Fri at 14:30"
+  // ``30 14 * * 1,3,5`` surface as "Chaque lundi, mercredi et vendredi à 14 h 30"
   // in the list instead of the raw five-field gibberish. Falls back
   // through the existing chain (``schedule_display`` from the backend,
   // then the structured ``display`` field, then the raw ``expr``) so
@@ -224,7 +224,7 @@ export default function CronPage() {
   const [creating, setCreating] = useState(false);
   const createProfile = selectedProfile === "all" ? "default" : selectedProfile;
 
-  // Edit job modal state
+  // Modifier la tâche modal state
   const [editJob, setEditJob] = useState<CronJob | null>(null);
   const [editPrompt, setEditPrompt] = useState("");
   const [editSchedule, setEditSchedule] = useState("");
@@ -574,7 +574,7 @@ export default function CronPage() {
 
             <div className="p-5 grid gap-4">
               <div className="grid gap-2">
-                <Label htmlFor="cron-profile">Profile</Label>
+                <Label htmlFor="cron-profile">Profil</Label>
                 <Select
                   id="cron-profile"
                   value={createProfile}
@@ -627,19 +627,19 @@ export default function CronPage() {
                 {onlyLocalAvailable && (
                   <p className="text-xs text-muted-foreground">
                     {t.cron.delivery.noneConfigured ??
-                      "No messaging platforms configured. Set one up under Channels to deliver reports."}
+                      "Aucun canal de diffusion configuré. Ajoutez-en un depuis la page Canaux pour recevoir les rapports."}
                   </p>
                 )}
               </div>
 
               <div className="grid gap-2">
-                <Label htmlFor="cron-skills">Skills (optional)</Label>
+                <Label htmlFor="cron-skills">Compétences (facultatif)</Label>
                 <SkillsPicker
                   id="cron-skills"
                   available={availableSkills}
                   selected={jobSkills}
                   onChange={setJobSkills}
-                  emptyLabel="No skills installed for this profile."
+                  emptyLabel="Aucune compétence installée pour ce profil."
                 />
                 <p className="text-xs text-muted-foreground">
                   Selected skills are loaded before the prompt runs — the cron
@@ -663,7 +663,7 @@ export default function CronPage() {
         </div>
       )}
 
-      {/* Edit job modal */}
+      {/* Modifier la tâche modal */}
       {editJob && (
         <div
           ref={editModalRef}
@@ -689,7 +689,7 @@ export default function CronPage() {
                 id="edit-cron-title"
                 className="font-mondwest text-display text-base tracking-wider"
               >
-                Edit job
+                Modifier la tâche
               </h2>
             </header>
 
@@ -746,7 +746,7 @@ export default function CronPage() {
                   available={availableSkills}
                   selected={editSkills}
                   onChange={setEditSkills}
-                  emptyLabel="No skills installed for this profile."
+                  emptyLabel="Aucune compétence installée pour ce profil."
                 />
               </div>
 
@@ -758,7 +758,7 @@ export default function CronPage() {
                   disabled={saving}
                   prefix={saving ? <Spinner /> : undefined}
                 >
-                  {saving ? t.common.loading : "Save changes"}
+                  {saving ? t.common.loading : "Enregistrer"}
                 </Button>
               </div>
             </div>
@@ -778,13 +778,13 @@ export default function CronPage() {
           </H2>
 
           <div className="grid gap-1 min-w-[220px]">
-            <Label htmlFor="cron-profile-filter">Profile</Label>
+            <Label htmlFor="cron-profile-filter">Profil</Label>
             <Select
               id="cron-profile-filter"
               value={selectedProfile}
               onValueChange={(v) => setSelectedProfile(v)}
             >
-              <SelectOption value="all">All profiles</SelectOption>
+              <SelectOption value="all">Tous les profils</SelectOption>
               {profiles.map((profile) => (
                 <SelectOption key={profile.name} value={profile.name}>
                   {profileLabel(profile.name)}
@@ -886,8 +886,8 @@ export default function CronPage() {
                   <Button
                     ghost
                     size="icon"
-                    title="Edit job"
-                    aria-label="Edit job"
+                    title="Modifier la tâche"
+                    aria-label="Modifier la tâche"
                     onClick={() => openEditModal(job)}
                   >
                     <Pencil />

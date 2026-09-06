@@ -33,7 +33,7 @@ function TierCard({
       className={`vigil-lift relative flex min-w-0 flex-1 flex-col ${current ? "vigil-current-plan" : ""}`}
       style={current ? { borderColor: EMER } : highlight ? { borderColor: GOLD } : undefined}
     >
-      {highlight && !current && <span className="vigil-ribbon">Most popular</span>}
+      {highlight && !current && <span className="vigil-ribbon">Le plus choisi</span>}
       <CardHeader className="pb-2">
         <CardTitle className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-3 gap-y-1 text-base">
           <span className="truncate">{tier.name}</span>
@@ -44,15 +44,15 @@ function TierCard({
       </CardHeader>
       <CardContent className="flex flex-1 flex-col gap-1 text-sm">
         <ul className="flex-1 space-y-1 text-muted-foreground">
-          <li>{tier.ops_runs_per_day == null ? "Unlimited" : tier.ops_runs_per_day} agent runs/day</li>
-          <li>{tier.max_connectors == null ? "Unlimited" : tier.max_connectors} connector{tier.max_connectors === 1 ? "" : "s"}</li>
-          <li>{tier.departments} AI departments</li>
+          <li>{tier.ops_runs_per_day == null ? "Illimité" : tier.ops_runs_per_day} exécutions d'agent par jour</li>
+          <li>{tier.max_connectors == null ? "Illimité" : tier.max_connectors} connector{tier.max_connectors === 1 ? "" : "s"}</li>
+          <li>{tier.departments} pôles agentiques</li>
           <li>{tier.write_actions ? "✓ Outbound write-actions" : "— Read-only connectors"}</li>
-          <li>{tier.byok ? "✓ Bring your own keys" : "— Managed models only"}</li>
+          <li>{tier.byok ? "✓ Vos propres clés" : "— Modèles gérés uniquement"}</li>
         </ul>
         {current ? (
           <div className="mt-3 text-center text-xs font-semibold" style={{ color: EMER }}>
-            Current plan
+            Formule en cours
           </div>
         ) : tier.contact_sales ? (
           <Button
@@ -62,7 +62,7 @@ function TierCard({
               window.location.href = "mailto:sales@vigil-ai.xyz?subject=VIGIL%20Enterprise";
             }}
           >
-            Contact sales
+            Nous contacter
           </Button>
         ) : tier.purchasable ? (
           <Button
@@ -74,7 +74,7 @@ function TierCard({
             {busy ? "Redirecting…" : `Upgrade to ${tier.name}`}
           </Button>
         ) : tier.id === "free" ? null : (
-          <div className="mt-3 text-center text-xs text-muted-foreground">Not yet available</div>
+          <div className="mt-3 text-center text-xs text-muted-foreground">Bientôt disponible</div>
         )}
       </CardContent>
     </Card>
@@ -94,7 +94,7 @@ export default function BillingPage() {
       setInfo(await billing.info());
       setErr(null);
     } catch (e) {
-      if (e instanceof GatewayError && e.code === "NO_SESSION") setErr("Sign in to manage billing.");
+      if (e instanceof GatewayError && e.code === "NO_SESSION") setErr("Connectez-vous pour gérer la facturation.");
       else setErr((e as Error).message);
     }
   }, []);
@@ -135,20 +135,20 @@ export default function BillingPage() {
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
       <div>
-        <h1 className="text-xl font-semibold">Billing</h1>
+        <h1 className="text-xl font-semibold">Facturation</h1>
         <p className="text-sm text-muted-foreground">
-          Plan, usage and upgrades{info?.org?.name ? ` — ${info.org.name}` : ""}
+          Formule, consommation et évolutions{info?.org?.name ? ` — ${info.org.name}` : ""}
         </p>
       </div>
 
       {checkoutResult === "success" && (
         <div className="rounded-md border px-3 py-2 text-sm" style={{ borderColor: EMER, color: EMER }}>
-          Payment received — your plan updates as soon as Stripe confirms (usually seconds). Refresh if it hasn't.
+          Paiement reçu — la formule change dès la confirmation de Stripe, en général en quelques secondes.
         </div>
       )}
       {checkoutResult === "cancelled" && (
         <div className="rounded-md border px-3 py-2 text-sm text-muted-foreground">
-          Checkout cancelled — no charge was made.
+          Paiement annulé — aucun débit n'a été effectué.
         </div>
       )}
       {err && (
@@ -159,7 +159,7 @@ export default function BillingPage() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base">
-              Current plan: <span style={{ color: GOLD }}>{info.limits?.name as string}</span>
+              Formule en cours : <span style={{ color: GOLD }}>{info.limits?.name as string}</span>
               {sub?.status && sub.status !== "active" && (
                 <span className="ml-2 text-xs text-muted-foreground">({sub.status})</span>
               )}
@@ -169,11 +169,11 @@ export default function BillingPage() {
             {usage && (
               <>
                 <span>
-                  Runs today: <b>{usage.runs_today}</b>
+                  Exécutions aujourd'hui : <b>{usage.runs_today}</b>
                   {usage.daily_cap != null && <span className="text-muted-foreground"> / {usage.daily_cap}</span>}
                 </span>
                 <span>
-                  This month: <b>{usage.runs_month}</b> runs · ${usage.cost_usd_month.toFixed(2)} model cost
+                  Ce mois-ci : <b>{usage.runs_month}</b> exécutions · {usage.cost_usd_month.toFixed(2)} $ de modèle
                 </span>
               </>
             )}
@@ -184,7 +184,7 @@ export default function BillingPage() {
             )}
             {sub && (
               <Button outlined size="sm" disabled={portalBusy} onClick={() => void openPortal()}>
-                {portalBusy ? "Opening…" : "Manage subscription"}
+                {portalBusy ? "Opening…" : "Gérer l'abonnement"}
               </Button>
             )}
           </CardContent>
@@ -193,7 +193,7 @@ export default function BillingPage() {
 
       {info && !info.stripe_configured && (
         <div className="rounded-md border px-3 py-2 text-xs text-muted-foreground">
-          Payments are not configured on this environment yet — upgrades are in dev-mock mode.
+          Les paiements ne sont pas encore configurés sur cet environnement — les changements de formule sont simulés.
         </div>
       )}
 
@@ -211,8 +211,8 @@ export default function BillingPage() {
       </div>
 
       <p className="text-xs text-muted-foreground">
-        Prices in EUR, billed monthly via Stripe. VAT handled at checkout. Enterprise includes custom
-        quotas, SSO and a dedicated instance — talk to us.
+        Tarifs en euros, facturés mensuellement via Stripe. TVA appliquée au paiement. La formule Entreprise comprend des
+        quotas sur mesure, le SSO et une instance dédiée — contactez-nous.
       </p>
     </div>
   );

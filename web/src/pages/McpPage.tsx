@@ -67,7 +67,7 @@ export default function McpPage() {
   const { toast, showToast } = useToast();
   const { setEnd } = usePageHeader();
 
-  // Add server modal state
+  // Ajouter un serveur modal state
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [name, setName] = useState("");
   const [transport, setTransport] = useState<Transport>("http");
@@ -129,15 +129,15 @@ export default function McpPage() {
 
   const handleCreate = async () => {
     if (!name.trim()) {
-      showToast("Name required", "error");
+      showToast("Nom requis", "error");
       return;
     }
     if (transport === "http" && !url.trim()) {
-      showToast("URL required", "error");
+      showToast("URL requise", "error");
       return;
     }
     if (transport === "stdio" && !command.trim()) {
-      showToast("Command required", "error");
+      showToast("Commande requise", "error");
       return;
     }
     setCreating(true);
@@ -198,7 +198,7 @@ export default function McpPage() {
         ),
       );
       setRestartNote(
-        "Enable/disable takes effect on the next gateway restart.",
+        "L'activation prend effet au prochain redéploiement de la passerelle.",
       );
     } catch (e) {
       showToast(`Error: ${e}`, "error");
@@ -237,7 +237,7 @@ export default function McpPage() {
         if (res.background) {
           showToast("Installing in background…", "success");
         } else {
-          showToast(`Installed: "${truncateText(entry.name, 30)}"`, "success");
+          showToast(`Installée: "${truncateText(entry.name, 30)}"`, "success");
         }
         setInstallEntry(null);
         setInstallEnv({});
@@ -280,7 +280,7 @@ export default function McpPage() {
     void runInstall(installEntry, envMap);
   };
 
-  // Put "Add Server" button in page header
+  // Put "Ajouter" button in page header
   useLayoutEffect(() => {
     setEnd(
       <Button
@@ -288,7 +288,7 @@ export default function McpPage() {
         size="sm"
         onClick={() => setCreateModalOpen(true)}
       >
-        Add Server
+        Ajouter
       </Button>,
     );
     return () => {
@@ -317,16 +317,16 @@ export default function McpPage() {
         open={serverDelete.isOpen}
         onCancel={serverDelete.cancel}
         onConfirm={serverDelete.confirm}
-        title="Remove MCP server"
+        title="Retirer le serveur MCP"
         description={
           serverDelete.pendingId
             ? `"${truncateText(serverDelete.pendingId, 40)}" — this will remove the server.`
-            : "This will remove the server."
+            : "Le serveur sera retiré."
         }
         loading={serverDelete.isDeleting}
       />
 
-      {/* Add server modal */}
+      {/* Ajouter un serveur modal */}
       {createModalOpen && (
         <div
           ref={createModalRef}
@@ -359,7 +359,7 @@ export default function McpPage() {
                 id="create-mcp-title"
                 className="font-mondwest text-display text-base tracking-wider"
               >
-                Add MCP server
+                Ajouter un serveur MCP
               </h2>
             </header>
 
@@ -486,7 +486,7 @@ export default function McpPage() {
 
             <div className="p-5 grid gap-4">
               <p className="text-xs text-muted-foreground">
-                This MCP requires the following values to be configured.
+                Ce serveur MCP demande les valeurs suivantes.
               </p>
               {installEntry.required_env.map((item) => (
                 <div className="grid gap-2" key={item.name}>
@@ -531,7 +531,7 @@ export default function McpPage() {
         </div>
       )}
 
-      {/* ── Your MCP servers ── */}
+      {/* ── Vos serveurs MCP ── */}
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <H2
@@ -539,7 +539,7 @@ export default function McpPage() {
             className="flex items-center gap-2 text-muted-foreground"
           >
             <Server className="h-4 w-4" />
-            Your MCP servers ({servers.length})
+            Vos serveurs MCP ({servers.length})
           </H2>
         </div>
 
@@ -550,7 +550,7 @@ export default function McpPage() {
         {servers.length === 0 && (
           <Card>
             <CardContent className="py-8 text-center text-sm text-muted-foreground">
-              No MCP servers configured.
+              Aucun serveur MCP configuré.
             </CardContent>
           </Card>
         )}
@@ -604,14 +604,14 @@ export default function McpPage() {
                       {result.ok ? (
                         <p className="text-success">
                           {result.tools.length === 0
-                            ? "Connected — no tools"
+                            ? "Connecté — aucun outil"
                             : `Tools: ${result.tools
                                 .map((tool) => tool.name)
                                 .join(", ")}`}
                         </p>
                       ) : (
                         <p className="text-destructive">
-                          {result.error ?? "Connection failed"}
+                          {result.error ?? "Connexion impossible"}
                         </p>
                       )}
                     </div>
@@ -641,8 +641,8 @@ export default function McpPage() {
                   <Button
                     ghost
                     size="icon"
-                    title="Test connection"
-                    aria-label="Test connection"
+                    title="Tester la connexion"
+                    aria-label="Tester la connexion"
                     onClick={() => handleTest(server)}
                     disabled={testing === server.name}
                   >
@@ -679,13 +679,13 @@ export default function McpPage() {
         </div>
 
         <p className="text-xs text-muted-foreground">
-          Browse Nous-approved MCP servers and install them with one click.
+          Parcourez les serveurs MCP validés et installez-les en un clic.
         </p>
 
         {catalog.length === 0 && (
           <Card>
             <CardContent className="py-8 text-center text-sm text-muted-foreground">
-              No catalog entries available.
+              Aucune entrée de catalogue.
             </CardContent>
           </Card>
         )}
@@ -711,7 +711,7 @@ export default function McpPage() {
                       {entry.source === "official" ? "official" : entry.source}
                     </Badge>
                     {entry.installed && (
-                      <Badge tone="success">Installed</Badge>
+                      <Badge tone="success">Installée</Badge>
                     )}
                     {entry.installed && !entry.enabled && (
                       <Badge tone="outline">disabled</Badge>
@@ -734,7 +734,7 @@ export default function McpPage() {
 
                 <div className="flex items-center gap-1 shrink-0">
                   {entry.installed ? (
-                    <Badge tone="success">Installed</Badge>
+                    <Badge tone="success">Installée</Badge>
                   ) : (
                     <Button
                       className="uppercase"

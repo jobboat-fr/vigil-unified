@@ -30,7 +30,7 @@ export function WwGate({
     return (
       <Card>
         <CardContent className="py-10 text-center text-sm text-text-secondary">
-          Sign in to VIGIL to load live data.
+          Connectez-vous pour charger les données.
         </CardContent>
       </Card>
     );

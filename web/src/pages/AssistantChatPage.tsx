@@ -88,7 +88,7 @@ export default function AssistantChatPage() {
  ╚████╔╝ ██║╚██████╔╝██║███████╗
   ╚═══╝  ╚═╝ ╚═════╝ ╚═╝╚══════╝`}</div>
         <div style={{ opacity: 0.6 }}>VIGIL assistant · thinks before it acts · type below ↵</div>
-        <div style={{ opacity: 0.45, marginBottom: 12 }}>grounded in your vault, books & live data · human-in-the-loop</div>
+        <div style={{ opacity: 0.45, marginBottom: 12 }}>appuyé sur vos documents et vos données réelles · une personne valide</div>
 
         {messages.map((m, i) => {
           const isLastAssistant = i === messages.length - 1 && m.role === "assistant";
@@ -117,7 +117,7 @@ export default function AssistantChatPage() {
             onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void send(); } }}
             rows={1}
             autoFocus
-            aria-label="Message the VIGIL assistant"
+            aria-label="Écrire à l'assistant Vigil"
             placeholder={busy ? "…working" : "ask anything"}
             disabled={busy}
             className="flex-1 resize-none bg-transparent outline-none placeholder:opacity-40"

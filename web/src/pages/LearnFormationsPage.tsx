@@ -73,7 +73,8 @@ export default function LearnFormationsPage() {
       const r = await getCourseOutline(courseId);
       setOutline((m) => ({
         ...m,
-        [courseId]: r.items.flatMap((mod) =>
+        // `modules`, pas `items` : le plan revenait vide alors que l'appel renvoyait 200.
+        [courseId]: r.modules.flatMap((mod) =>
           (mod.lessons ?? []).map((l) => ({ id: l.id, title: `${mod.title} · ${l.title}` })),
         ),
       }));

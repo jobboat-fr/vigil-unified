@@ -42,7 +42,7 @@ export default function OpsTeamPage() {
       setUsage(usage);
       setAuthError(null);
     } catch (e) {
-      if (e instanceof GatewayError && e.code === "NO_SESSION") setAuthError("Sign in to VIGIL to use the Ops Team.");
+      if (e instanceof GatewayError && e.code === "NO_SESSION") setAuthError("Connectez-vous pour ouvrir l'équipe agentique.");
       else setAuthError((e as Error).message);
     }
   }, []);
@@ -83,9 +83,9 @@ export default function OpsTeamPage() {
     <div className="flex flex-col gap-6 p-4 md:p-6">
       <header className="flex items-start justify-between gap-3">
         <div className="flex flex-col gap-1">
-          <h1 className="text-xl font-bold tracking-tight">Ops Team</h1>
+          <h1 className="text-xl font-bold tracking-tight">Équipe agentique</h1>
           <p className="text-sm text-text-secondary">
-            An agentic company — each department runs <em>on demand</em> and only counts as working once its
+            Les pôles de l'assistant. Chacun travaille <em>on demand</em> and only counts as working once its
             self-test passes its effectiveness contract.
           </p>
         </div>
@@ -94,7 +94,7 @@ export default function OpsTeamPage() {
           disabled={pausing}
           style={anyPaused ? undefined : { color: "#ef4444", borderColor: "#ef4444" }}
         >
-          {pausing ? "…" : anyPaused ? "Resume all" : "Pause all"}
+          {pausing ? "…" : anyPaused ? "Tout reprendre" : "Tout suspendre"}
         </Button>
       </header>
 
@@ -104,11 +104,11 @@ export default function OpsTeamPage() {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-md p-3" style={{ background: "var(--color-background-secondary, rgba(127,127,127,0.06))" }}>
-          <div className="text-xs text-text-secondary">Departments live</div>
+          <div className="text-xs text-text-secondary">Pôles actifs</div>
           <div className="text-2xl font-semibold">{live} / {departments.length}</div>
         </div>
         <div className="rounded-md p-3" style={{ background: "var(--color-background-secondary, rgba(127,127,127,0.06))" }}>
-          <div className="text-xs text-text-secondary">Plan · runs today</div>
+          <div className="text-xs text-text-secondary">Formule · exécutions du jour</div>
           <div className="text-2xl font-semibold capitalize">
             {usage?.plan ?? "—"}
             <span className="text-sm font-normal text-text-secondary">
@@ -117,11 +117,11 @@ export default function OpsTeamPage() {
           </div>
         </div>
         <div className="rounded-md p-3" style={{ background: "var(--color-background-secondary, rgba(127,127,127,0.06))" }}>
-          <div className="text-xs text-text-secondary">Recent activity</div>
+          <div className="text-xs text-text-secondary">Activité récente</div>
           <div className="text-2xl font-semibold">{events.length}</div>
         </div>
         <div className="rounded-md p-3" style={{ background: "var(--color-background-secondary, rgba(127,127,127,0.06))" }}>
-          <div className="text-xs text-text-secondary">Kill switch</div>
+          <div className="text-xs text-text-secondary">Arrêt d'urgence</div>
           <div className="text-2xl font-semibold" style={{ color: anyPaused ? "#ef4444" : "#22c55e" }}>{anyPaused ? "paused" : "armed"}</div>
         </div>
       </div>
@@ -179,7 +179,7 @@ export default function OpsTeamPage() {
                     </Button>
                   ))}
                   <Button ghost onClick={() => void act(d, "selftest")} disabled={!!b || d.paused}>
-                    {b === "selftest" ? "Testing…" : "Self-test"}
+                    {b === "selftest" ? "Testing…" : "Autotest"}
                   </Button>
                 </div>
               </CardContent>
@@ -187,12 +187,12 @@ export default function OpsTeamPage() {
           );
         })}
         {departments.length === 0 && !authError && (
-          <Card><CardContent className="py-6 text-center text-sm text-text-secondary">Loading departments…</CardContent></Card>
+          <Card><CardContent className="py-6 text-center text-sm text-text-secondary">Chargement des pôles…</CardContent></Card>
         )}
       </div>
 
       <Card>
-        <CardHeader><CardTitle>Company activity</CardTitle></CardHeader>
+        <CardHeader><CardTitle>Activité</CardTitle></CardHeader>
         <CardContent className="flex flex-col gap-1.5">
           {events.length === 0 && <p className="text-sm text-text-secondary">No activity yet. Run a department.</p>}
           {events.map((e) => (

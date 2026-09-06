@@ -198,7 +198,7 @@ export function AutomationBlueprints({ profile, onCreated }: AutomationBlueprint
     );
   }
   if (blueprints.length === 0) {
-    return <p className="opacity-70">No automation blueprints available.</p>;
+    return <p className="opacity-70">Aucun modèle d'automatisation disponible.</p>;
   }
 
   return (

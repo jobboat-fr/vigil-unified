@@ -540,7 +540,7 @@ function CanvasInner({ initialNodes = [], initialEdges = [], onCanvasChange, col
                   title="The agent draws an editable diagram (uses the prompt above)"
                   className="w-full flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-[11px] text-cyan-electric border border-cyan-electric/30 hover:bg-cyan-electric/10 disabled:opacity-40 transition-all"
                 >
-                  <GitBranch className="w-3.5 h-3.5" /> Draw a diagram
+                  <GitBranch className="w-3.5 h-3.5" /> Tracer un schéma
                 </button>
               )}
 

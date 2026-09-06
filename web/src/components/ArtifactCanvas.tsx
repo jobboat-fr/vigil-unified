@@ -12,7 +12,7 @@ import { vigil, type Artifact, type MeetingCanvas } from "@/lib/vigil";
 //    after that the editable React Flow graph is persisted to artifact.tldraw
 //    ({ reactflow: { nodes, edges } }) and reloaded verbatim.
 //  • The top-right panel calls the council: lenses → /artifacts/canvas-brainstorm
-//    (winny/council/canvas_brainstorm.py), "Draw a diagram" →
+//    (winny/council/canvas_brainstorm.py), "Tracer un schéma" →
 //    /artifacts/canvas-diagram (winny/council/structurer.diagram_from_prompt).
 
 // council canvas kind → VigilNode shape/color

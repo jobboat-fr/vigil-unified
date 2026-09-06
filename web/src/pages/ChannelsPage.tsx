@@ -41,10 +41,10 @@ const STATE_BADGE: Record<
   { tone: "success" | "warning" | "destructive" | "secondary" | "outline"; label: string }
 > = {
   connected: { tone: "success", label: "Connected" },
-  pending_restart: { tone: "warning", label: "Restart to apply" },
-  gateway_stopped: { tone: "warning", label: "Gateway stopped" },
+  pending_restart: { tone: "warning", label: "Effectif au prochain redéploiement" },
+  gateway_stopped: { tone: "warning", label: "Passerelle arrêtée" },
   disconnected: { tone: "warning", label: "Disconnected" },
-  not_configured: { tone: "outline", label: "Not configured" },
+  not_configured: { tone: "outline", label: "Non configuré" },
   disabled: { tone: "secondary", label: "Disabled" },
   fatal: { tone: "destructive", label: "Error" },
 };
@@ -119,7 +119,7 @@ export default function ChannelsPage() {
       if (v.trim()) env[k] = v.trim();
     });
     if (Object.keys(env).length === 0) {
-      showToast("Nothing to save — fill in at least one field.", "error");
+      showToast("Rien à enregistrer — remplissez au moins un champ.", "error");
       return;
     }
     const missing = editing.env_vars.filter(
@@ -224,7 +224,7 @@ export default function ChannelsPage() {
             <div className="flex items-center gap-2 text-sm">
               <AlertTriangle className="h-4 w-4 shrink-0 text-warning" />
               <span>
-                Changes are saved. Restart the gateway for them to take effect.
+                Les modifications sont enregistrées. Elles prendront effet au prochain redéploiement de la passerelle.
               </span>
             </div>
             <Button
@@ -234,7 +234,7 @@ export default function ChannelsPage() {
               disabled={restarting}
               prefix={restarting ? <Spinner /> : <RotateCw className="h-4 w-4" />}
             >
-              {restarting ? "Restarting…" : "Restart now"}
+              {restarting ? "Restarting…" : "Appliquer"}
             </Button>
           </CardContent>
         </Card>
@@ -245,7 +245,7 @@ export default function ChannelsPage() {
           <CardContent className="flex items-center gap-2 p-4 text-sm text-muted-foreground">
             <WifiOff className="h-4 w-4 shrink-0" />
             <span>
-              The gateway is not running. Configure channels here, then start the
+              La passerelle n'est pas démarrée. Configurez les canaux ici, puis lancez la
               gateway with <code className="font-courier">hermes gateway start</code>{" "}
               (or the Restart button above).
             </span>
@@ -254,7 +254,7 @@ export default function ChannelsPage() {
       )}
 
       <p className="text-xs text-muted-foreground">
-        {configured} of {platforms.length} channels configured. Credentials are
+        {configured} canal(aux) configuré(s) sur {platforms.length}. Les identifiants sont
         written to <code className="font-courier">~/.hermes/.env</code>; the
         gateway connects each enabled channel on its next restart.
       </p>
@@ -299,7 +299,7 @@ export default function ChannelsPage() {
                   rel="noopener noreferrer"
                   className="mt-1 inline-flex items-center gap-1 text-xs text-primary hover:underline"
                 >
-                  Setup guide <ExternalLink className="h-3 w-3" />
+                  Guide de configuration <ExternalLink className="h-3 w-3" />
                 </a>
               )}
             </header>
@@ -514,7 +514,7 @@ function TelegramOnboardingPanel({
           setSetup(null);
           setQrDataUrl("");
           setPhase("idle");
-          setError("Telegram pairing expired. Start a new QR setup to try again.");
+          setError("L'appairage Telegram a expiré. Relancez une configuration par QR code.");
           return;
         }
 
@@ -555,7 +555,7 @@ function TelegramOnboardingPanel({
     setDetectedOwnerId(null);
     setNewAllowedId("");
     try {
-      const res = await api.startTelegramOnboarding({ bot_name: "Hermes Agent" });
+      const res = await api.startTelegramOnboarding({ bot_name: "Assistant Vigil" });
       const dataUrl = await QRCode.toDataURL(res.qr_payload, {
         errorCorrectionLevel: "M",
         margin: 1,
@@ -584,7 +584,7 @@ function TelegramOnboardingPanel({
   const addAllowedId = () => {
     const trimmed = newAllowedId.trim();
     if (!TELEGRAM_USER_ID_RE.test(trimmed)) {
-      setError("Allowed Telegram user IDs must be numeric.");
+      setError("Les identifiants Telegram doivent être numériques.");
       return;
     }
     setError("");
@@ -621,7 +621,7 @@ function TelegramOnboardingPanel({
   const apply = async () => {
     if (!setup) return;
     if (allowedIds.length === 0) {
-      setError("Add at least one allowed Telegram user ID.");
+      setError("Ajoutez au moins un identifiant Telegram autorisé.");
       return;
     }
     setPhase("applying");
@@ -675,11 +675,11 @@ function TelegramOnboardingPanel({
           disabled={phase === "starting" || phase === "waiting" || phase === "applying"}
           prefix={phase === "starting" ? <Spinner /> : <QrCode className="h-4 w-4" />}
         >
-          {phase === "starting" ? "Starting…" : "Set up with QR"}
+          {phase === "starting" ? "Starting…" : "Configurer par QR code"}
         </Button>
         {platform.configured && (
           <span className="text-xs text-muted-foreground">
-            Existing Telegram credentials are configured.
+            Des identifiants Telegram sont déjà configurés.
           </span>
         )}
       </div>
@@ -707,7 +707,7 @@ function TelegramOnboardingPanel({
                 <div className="grid gap-2">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-xs uppercase tracking-[0.12em] text-muted-foreground">
-                      Allowed users
+                      Utilisateurs autorisés
                     </span>
                     {detectedOwnerId && allowedIds.includes(detectedOwnerId) && (
                       <Badge tone="success">owner detected</Badge>
@@ -731,7 +731,7 @@ function TelegramOnboardingPanel({
                     ))}
                     {allowedIds.length === 0 && (
                       <span className="text-sm text-muted-foreground">
-                        Add at least one Telegram user ID.
+                        Ajoutez au moins un identifiant Telegram.
                       </span>
                     )}
                   </div>
@@ -741,7 +741,7 @@ function TelegramOnboardingPanel({
                   <Input
                     value={newAllowedId}
                     onChange={(event) => setNewAllowedId(event.target.value)}
-                    placeholder="Telegram user ID"
+                    placeholder="Identifiant Telegram"
                     className="font-courier"
                   />
                   <Button size="sm" outlined onClick={addAllowedId} prefix={<Check />}>
@@ -757,7 +757,7 @@ function TelegramOnboardingPanel({
                     disabled={phase === "applying"}
                     prefix={phase === "applying" ? <Spinner /> : <Save className="h-4 w-4" />}
                   >
-                    {phase === "applying" ? "Saving…" : "Save and restart"}
+                    {phase === "applying" ? "Saving…" : "Enregistrer"}
                   </Button>
                   <Button size="sm" ghost onClick={() => void cancel()}>
                     Cancel
@@ -770,7 +770,7 @@ function TelegramOnboardingPanel({
           <div className="flex flex-col items-center justify-center gap-3">
             <img
               src={qrDataUrl}
-              alt="Telegram setup QR code"
+              alt="QR code de configuration Telegram"
               className="h-56 w-56 bg-white p-2"
             />
             <div className="flex flex-wrap items-center justify-center gap-2 text-sm">
@@ -787,7 +787,7 @@ function TelegramOnboardingPanel({
                 className="inline-flex h-8 items-center gap-1 border border-border px-3 text-xs uppercase text-foreground hover:border-foreground/40"
               >
                 <ExternalLink className="h-4 w-4" />
-                Open Telegram
+                Ouvrir Telegram
               </a>
               <Button size="sm" ghost onClick={() => void cancel()}>
                 Cancel

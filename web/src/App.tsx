@@ -48,6 +48,8 @@ import {
   Users,
   GraduationCap,
   Layers,
+  KanbanSquare,
+  Trophy,
   Archive,
   CalendarDays,
   Webhook,
@@ -115,6 +117,8 @@ import MailPage from "@/pages/MailPage";
 import AuditPage from "@/pages/AuditPage";
 import LearnCalendarPage from "@/pages/LearnCalendarPage";
 import NoyauPage from "@/pages/NoyauPage";
+import LearnParcoursPage from "@/pages/LearnParcoursPage";
+import LearnAcquisPage from "@/pages/LearnAcquisPage";
 import LearnDashboardPage from "@/pages/LearnDashboardPage";
 import LearnFormationsPage from "@/pages/LearnFormationsPage";
 import LearnEmargementPage from "@/pages/LearnEmargementPage";
@@ -184,6 +188,8 @@ const BUILTIN_ROUTES_CORE: Record<string, ComponentType> = {
   "/mail": MailPage,
   // LEARN — training platform (AZZ&CO)
   "/noyau": NoyauPage,
+  "/learn/parcours": LearnParcoursPage,
+  "/learn/acquis": LearnAcquisPage,
   "/learn": LearnDashboardPage,
   "/learn/calendar": LearnCalendarPage,
   "/learn/formations": LearnFormationsPage,
@@ -235,9 +241,11 @@ const BUILTIN_NAV_REST: NavItem[] = [
   { path: "/studio", label: "Studio", icon: PenLine, group: "workspace" },
   { path: "/vault", label: "Artéfacts", icon: Lock, group: "workspace" },
   // ── Company ──
-  { path: "/learn", label: "Formation", icon: GraduationCap, group: "learn" },
+  { path: "/learn", label: "Tableau de bord", icon: GraduationCap, group: "learn" },
   { path: "/learn/calendar", label: "Calendrier", icon: CalendarDays, group: "learn" },
   { path: "/learn/formations", label: "Formations", icon: Layers, group: "learn" },
+  { path: "/learn/parcours", label: "Parcours", icon: KanbanSquare, group: "learn" },
+  { path: "/learn/acquis", label: "Acquis", icon: Trophy, group: "learn" },
   { path: "/learn/emargement", label: "Émargement", icon: PenLine, group: "learn" },
   { path: "/learn/coffre", label: "Coffre", icon: Archive, group: "learn" },
   { path: "/learn/comptes", label: "Comptes", icon: Users, group: "learn" },

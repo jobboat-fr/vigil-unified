@@ -30,7 +30,7 @@ export default function CrmPage() {
       setContacts(c.contacts);
       setAuthError(null);
     } catch (e) {
-      if (e instanceof GatewayError && e.code === "NO_SESSION") setAuthError("Sign in to VIGIL to use the CRM.");
+      if (e instanceof GatewayError && e.code === "NO_SESSION") setAuthError("Connectez-vous pour ouvrir le CRM.");
       else setErr((e as Error).message);
     }
   }, []);
@@ -74,14 +74,14 @@ export default function CrmPage() {
     <div className="flex flex-col gap-6 p-4 md:p-6">
       <header className="flex flex-col gap-1">
         <h1 className="text-xl font-bold tracking-tight">CRM</h1>
-        <p className="text-sm text-text-secondary">Contacts and a deal pipeline — value rolls up to Finance, deals route to the Council.</p>
+        <p className="text-sm text-text-secondary">Contacts et opportunités — les montants remontent vers la finance, les dossiers vers le conseil.</p>
       </header>
 
       {authError && <Card><CardContent className="py-4 text-sm" style={{ color: "#f59e0b" }}>{authError}</CardContent></Card>}
 
       {pipeline && (
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-          <Stat label="Open pipeline" value={money(pipeline.open_value)} />
+          <Stat label="Pipeline ouvert" value={money(pipeline.open_value)} />
           <Stat label="Weighted" value={money(pipeline.weighted_open_value)} color="#059669" />
           <Stat label="Deals" value={String(pipeline.deal_count)} />
         </div>
@@ -92,9 +92,9 @@ export default function CrmPage() {
         <CardHeader><CardTitle>Pipeline</CardTitle></CardHeader>
         <CardContent>
           <div className="flex flex-col gap-2 mb-4 sm:flex-row">
-            <input className={inputCls} placeholder="New deal title" value={dealTitle} onChange={(e) => setDealTitle(e.target.value)} />
+            <input className={inputCls} placeholder="Intitulé de l'opportunité" value={dealTitle} onChange={(e) => setDealTitle(e.target.value)} />
             <input className={`${inputCls} sm:w-40`} type="number" placeholder="Value" value={dealValue} onChange={(e) => setDealValue(e.target.value)} />
-            <Button onClick={() => void addDeal()} disabled={!dealTitle.trim()}>Add deal</Button>
+            <Button onClick={() => void addDeal()} disabled={!dealTitle.trim()}>Ajouter une opportunité</Button>
           </div>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
             {DEAL_STAGES.map((stage) => {
@@ -142,7 +142,7 @@ export default function CrmPage() {
           </div>
           {err && <p className="mb-2 text-xs" style={{ color: "#ff3366" }}>{err}</p>}
           <div className="flex flex-col gap-1">
-            {contacts.length === 0 && <EmptyState title="No contacts yet" hint="Add a contact, or connect HubSpot on the Connections page to sync your pipeline." />}
+            {contacts.length === 0 && <EmptyState title="Aucun contact" hint="Ajoutez un contact, ou reliez HubSpot depuis la page Connexions pour synchroniser votre pipeline." />}
             {contacts.map((c) => (
               <div key={c.id} className="flex items-center justify-between gap-2 rounded-md border border-current/10 px-3 py-2">
                 <div className="min-w-0">

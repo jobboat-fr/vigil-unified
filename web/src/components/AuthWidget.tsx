@@ -117,7 +117,7 @@ export function AuthWidget({ className }: AuthWidgetProps) {
           {label}
         </span>
         <span className="truncate text-muted-foreground/70">
-          {me ? `via ${me.provider}` : "signed in"}
+          {me ? `via ${me.provider}` : "connecté"}
         </span>
       </div>
       <button

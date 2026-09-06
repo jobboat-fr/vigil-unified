@@ -26,9 +26,9 @@ export default function GuestMeetingPage() {
       if (/livekit|not_configured|503/i.test(msg)) {
         setError("The host hasn't started the live video yet. Ask them to click “Start live meeting”, then reopen this link.");
       } else if (/invalid_share|404/i.test(msg)) {
-        setError("This invite link is invalid or has expired.");
+        setError("Ce lien d'invitation est invalide ou a expiré.");
       } else {
-        setError(msg || "Could not join the meeting.");
+        setError(msg || "Impossible de rejoindre la réunion.");
       }
     } finally {
       setJoining(false);
@@ -50,14 +50,14 @@ export default function GuestMeetingPage() {
       <div className="w-full max-w-sm flex flex-col items-center gap-5 text-center">
         <img src="/vigil-mark.svg" alt="" width={44} height={44} />
         <div>
-          <h1 className="text-lg font-bold tracking-[0.05em]">You're invited to a VIGIL meeting</h1>
-          <p className="mt-1 text-sm text-white/55">Enter your name to join. No account needed.</p>
+          <h1 className="text-lg font-bold tracking-[0.05em]">Vous êtes invité à une réunion</h1>
+          <p className="mt-1 text-sm text-white/55">Indiquez votre nom pour rejoindre. Aucun compte n'est nécessaire.</p>
         </div>
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter") void doJoin(); }}
-          placeholder="Your name"
+          placeholder="Votre nom"
           className="w-full rounded-md border border-white/15 bg-transparent px-3 py-2 text-sm outline-none focus:border-white/40"
         />
         <button
@@ -66,7 +66,7 @@ export default function GuestMeetingPage() {
           className="w-full rounded-xl px-5 py-3 text-sm font-semibold text-[#07080d] disabled:opacity-50"
           style={{ background: `linear-gradient(90deg,${A},${B})` }}
         >
-          {joining ? "Joining…" : "Join meeting"}
+          {joining ? "Joining…" : "Rejoindre la réunion"}
         </button>
         {error && <p className="text-xs" style={{ color: "#c0392b" }}>{error}</p>}
       </div>

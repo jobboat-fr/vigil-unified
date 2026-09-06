@@ -63,7 +63,7 @@ export class LearnError extends Error {
 
 async function call<T>(method: string, path: string, body?: unknown): Promise<T> {
   const token = await getAccessToken();
-  if (!token) throw new GatewayError("not signed in", "NO_SESSION");
+  if (!token) throw new GatewayError("Session expirée — reconnectez-vous.", "NO_SESSION");
 
   let res: Response;
   try {
@@ -300,8 +300,34 @@ export const getSessions = (status?: string) =>
     `/sessions${status ? `?status=${encodeURIComponent(status)}` : ""}`,
   );
 
-export const getSessionEnrollments = (sessionId: string) =>
-  call<{ items: Enrollment[]; _can?: Can }>("GET", `/sessions/${sessionId}/enrollments`);
+export interface SessionDetail extends Session {
+  program_version?: number | null;
+  next_review_due?: string | null;
+  certifiante?: boolean | null;
+  rncp_code?: string | null;
+  formateurs: { id: string; full_name: string | null; email: string | null }[];
+  learners: {
+    id: string;
+    enrollment_id: string;
+    full_name: string | null;
+    email: string | null;
+    status: string;
+    level: string | null;
+    company: string | null;
+    _can?: Can;
+  }[];
+  slots: Slot[];
+}
+
+/**
+ * Le détail d'une session : son programme, ses formateurs, ses inscrits, ses créneaux.
+ *
+ * `GET /sessions/{id}/enrollments` n'existe pas — cette route est un POST, et l'appeler en
+ * GET renvoyait 405. Les inscrits arrivent avec le détail de la session, ce qui est aussi
+ * la bonne granularité : une inscription n'a pas de sens hors de sa session.
+ */
+export const getSession = (sessionId: string) =>
+  call<SessionDetail>("GET", `/sessions/${sessionId}`);
 
 export interface Enrollment {
   id: string;
@@ -328,17 +354,29 @@ export const getCourses = () => call<{ items: Course[]; _can?: Can }>("GET", "/c
 
 /** The course's modules and their lessons. `/outline`, not `/modules` — checked against
  *  the deployed OpenAPI rather than assumed, after inventing a route earlier today. */
+export interface CourseModule {
+  id: string;
+  title: string;
+  summary: string | null;
+  position: number;
+  required: boolean;
+  unlocked?: boolean;
+  lessons?: {
+    id: string;
+    title: string;
+    kind?: string;
+    position: number;
+    duration_minutes?: number | null;
+    status?: string | null;
+    progress_pct?: number | null;
+  }[];
+}
+
+/** La clé est `modules`, pas `items` — vérifié contre la réponse déployée. Le type
+ *  précédent annonçait `items`, si bien que le plan d'un cours s'affichait vide alors que
+ *  l'appel réussissait : la panne la plus difficile à voir, celle qui renvoie 200. */
 export const getCourseOutline = (courseId: string) =>
-  call<{
-    course?: Record<string, unknown>;
-    items: {
-      id: string;
-      title: string;
-      position: number;
-      unlocked?: boolean;
-      lessons?: { id: string; title: string; kind?: string; done?: boolean }[];
-    }[];
-  }>("GET", `/courses/${courseId}/outline`);
+  call<{ modules: CourseModule[] }>("GET", `/courses/${courseId}/outline`);
 
 // ---------------------------------------------------------------- évaluation
 
@@ -362,11 +400,56 @@ export const getAssessments = (kind?: string) =>
     `/assessments${kind ? `?kind=${encodeURIComponent(kind)}` : ""}`,
   );
 
-export const getGradebook = (sessionId: string) =>
-  call<{ items: Record<string, unknown>[] }>("GET", `/gradebook?session_id=${sessionId}`);
+/** Une ligne du carnet de notes : une tentative d'un apprenant sur une évaluation.
+ *  Les colonnes viennent de la vue `learn_gradebook`, relevées sur la base plutôt que
+ *  supposées. */
+export interface GradeRow {
+  session_id: string;
+  session_code: string | null;
+  profile_id: string;
+  apprenant_name: string | null;
+  assessment_kind: string;
+  assessment_title: string | null;
+  attempt_no: number;
+  score: number | null;
+  max_score: number | null;
+  percent: number | null;
+  level: string | null;
+  passed: boolean | null;
+  status: string | null;
+  review_status: string | null;
+  submitted_at: string | null;
+  _can?: Can;
+}
+
+/** Sans `session_id`, la vue renvoie tout ce que le profil a le droit de voir — ce qui est
+ *  exactement ce qu'il faut à un apprenant qui consulte ses propres résultats. */
+export const getGradebook = (sessionId?: string) =>
+  call<{ items: GradeRow[] }>(
+    "GET",
+    `/gradebook${sessionId ? `?session_id=${encodeURIComponent(sessionId)}` : ""}`,
+  );
+
+/** Résultats par bloc de compétences — l'indicateur 3 pour un organisme certificateur. */
+export interface BlocRow {
+  profile_id: string;
+  apprenant_name: string | null;
+  session_id: string;
+  bloc: string;
+  questions: number;
+  score: number | null;
+  max_score: number | null;
+  percent: number | null;
+}
+
+export const getBlocs = (sessionId?: string) =>
+  call<{ items: BlocRow[] }>(
+    "GET",
+    `/blocs${sessionId ? `?session_id=${encodeURIComponent(sessionId)}` : ""}`,
+  );
 
 export const getReviewQueue = () =>
-  call<{ items: Record<string, unknown>[] }>("GET", "/review-queue");
+  call<{ items: GradeRow[] }>("GET", "/review-queue");
 
 // ---------------------------------------------------------------- documents & coffre
 

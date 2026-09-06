@@ -53,7 +53,7 @@ export function ModelInfoCard({
       <div className="flex items-center gap-4 text-xs">
         <div className="flex items-center gap-1.5 text-muted-foreground">
           <Gauge className="h-3.5 w-3.5" />
-          <span className="font-medium">Context Window</span>
+          <span className="font-medium">Fenêtre de contexte</span>
         </div>
         <div className="flex items-center gap-2">
           <span className="font-mono font-semibold text-foreground">
@@ -75,7 +75,7 @@ export function ModelInfoCard({
         <div className="flex items-center gap-4 text-xs">
           <div className="flex items-center gap-1.5 text-muted-foreground">
             <Lightbulb className="h-3.5 w-3.5" />
-            <span className="font-medium">Max Output</span>
+            <span className="font-medium">Sortie maximale</span>
           </div>
           <span className="font-mono font-semibold text-foreground">
             {formatTokenCount(caps.max_output_tokens)}
