@@ -12,7 +12,22 @@
 import { getAccessToken } from "./supabase";
 import { WW_BASE, GatewayError } from "./ww";
 
-const BASE = `${WW_BASE}/api/v1/learn`;
+/**
+ * LEARN has its own origin, separate from the VIGIL gateway.
+ *
+ * The two halves of this application are two deployments: the training platform runs on
+ * Railway at api.vtlvs.com (jobboat-fr/hbs-backend-, `app/learn/`), and the VIGIL gateway
+ * is a different service. Pointing both at one base means whichever is not deployed takes
+ * the other down with it — and for a while that is exactly what happened: every LEARN page
+ * called a host that answers only VIGIL routes and got a 404 that reads like a bug.
+ *
+ * `WW_BASE` is kept as the fallback so a single-origin deployment still works unchanged.
+ */
+const LEARN_ORIGIN = (
+  (import.meta.env.VITE_LEARN_API_URL as string | undefined)?.trim() || WW_BASE
+).replace(/\/$/, "");
+
+const BASE = `${LEARN_ORIGIN}/api/v1/learn`;
 
 /** What the caller may do to a row. Rendered from, never guessed at. */
 export interface Can {
@@ -237,4 +252,176 @@ export const getReversibility = () =>
   call<{ items: { dataset: string; rows: number; note: string | null }[]; formats: Record<string, string>; note: string }>(
     "GET",
     "/platform/reversibility",
+  );
+
+// ---------------------------------------------------------------- formations & contenu
+//
+// Added so the LEARN pages stop being two screens against a 81-endpoint API. Every list
+// returns `_can`; components render controls from that and never from a role check.
+
+export interface Program {
+  id: string;
+  code: string | null;
+  title: string;
+  nature: string;
+  objectives: string | null;
+  prerequisites: string | null;
+  duration_hours: number;
+  modality: string;
+  certifiante: boolean;
+  rncp_code: string | null;
+  version: number;
+  published: boolean;
+  _can?: Can;
+}
+
+export const getPrograms = () =>
+  call<{ items: Program[]; _can?: Can }>("GET", "/programs");
+
+export interface Session {
+  id: string;
+  program_id: string;
+  code: string | null;
+  title: string | null;
+  starts_on: string;
+  ends_on: string;
+  modality: string;
+  place: string | null;
+  capacity: number;
+  status: string;
+  program_title?: string | null;
+  enrolled?: number | null;
+  _can?: Can;
+}
+
+export const getSessions = (status?: string) =>
+  call<{ items: Session[]; _can?: Can }>(
+    "GET",
+    `/sessions${status ? `?status=${encodeURIComponent(status)}` : ""}`,
+  );
+
+export const getSessionEnrollments = (sessionId: string) =>
+  call<{ items: Enrollment[]; _can?: Can }>("GET", `/sessions/${sessionId}/enrollments`);
+
+export interface Enrollment {
+  id: string;
+  apprenant_id: string;
+  apprenant_name?: string | null;
+  email?: string | null;
+  status: string;
+  level: string | null;
+  company_name?: string | null;
+}
+
+export interface Course {
+  id: string;
+  program_id: string | null;
+  title: string;
+  summary: string | null;
+  version: number;
+  published: boolean;
+  modules?: number | null;
+  _can?: Can;
+}
+
+export const getCourses = () => call<{ items: Course[]; _can?: Can }>("GET", "/courses");
+
+/** The course's modules and their lessons. `/outline`, not `/modules` — checked against
+ *  the deployed OpenAPI rather than assumed, after inventing a route earlier today. */
+export const getCourseOutline = (courseId: string) =>
+  call<{
+    course?: Record<string, unknown>;
+    items: {
+      id: string;
+      title: string;
+      position: number;
+      unlocked?: boolean;
+      lessons?: { id: string; title: string; kind?: string; done?: boolean }[];
+    }[];
+  }>("GET", `/courses/${courseId}/outline`);
+
+// ---------------------------------------------------------------- évaluation
+
+export interface Assessment {
+  id: string;
+  program_id: string | null;
+  code: string | null;
+  title: string;
+  kind: "positionnement" | "acquis_entree" | "acquis_sortie" | "examen";
+  duration_minutes: number;
+  pass_mark: number | null;
+  retakes_allowed: number;
+  active: boolean;
+  questions?: number | null;
+  _can?: Can;
+}
+
+export const getAssessments = (kind?: string) =>
+  call<{ items: Assessment[]; _can?: Can }>(
+    "GET",
+    `/assessments${kind ? `?kind=${encodeURIComponent(kind)}` : ""}`,
+  );
+
+export const getGradebook = (sessionId: string) =>
+  call<{ items: Record<string, unknown>[] }>("GET", `/gradebook?session_id=${sessionId}`);
+
+export const getReviewQueue = () =>
+  call<{ items: Record<string, unknown>[] }>("GET", "/review-queue");
+
+// ---------------------------------------------------------------- documents & coffre
+
+export interface VaultObject {
+  id: string;
+  kind: string;
+  filename: string | null;
+  size_bytes: number | null;
+  /** Deletion is refused before this date — by a trigger, not by convention. */
+  retention_until: string | null;
+  legal_hold: boolean;
+  imported: boolean;
+  created_at: string;
+  _can?: Can;
+}
+
+export const getVault = (kind?: string) =>
+  call<{ items: VaultObject[]; _can?: Can }>(
+    "GET",
+    `/vault${kind ? `?kind=${encodeURIComponent(kind)}` : ""}`,
+  );
+
+export const getDocuments = () =>
+  call<{ items: Record<string, unknown>[]; _can?: Can }>("GET", "/documents");
+
+// ---------------------------------------------------------------- personnes & rôles
+
+export interface Person {
+  id: string;
+  full_name: string | null;
+  email: string;
+  username: string | null;
+  phone: string | null;
+  role: string;
+  company_id: string | null;
+  created_at: string;
+}
+
+export const getProfiles = (role?: string) =>
+  call<{ items: Person[]; _can: Can }>(
+    "GET",
+    `/profiles${role ? `?role=${encodeURIComponent(role)}` : ""}`,
+  );
+
+export const getAssignableRoles = () =>
+  call<{ items: { role: string; level: number; scope: string }[] }>("GET", "/roles");
+
+export const getLeads = (status?: string) =>
+  call<{ items: Record<string, unknown>[]; _can: Can }>(
+    "GET",
+    `/leads${status ? `?status=${encodeURIComponent(status)}` : ""}`,
+  );
+
+export const getActions = (status?: string) =>
+  call<{ items: Record<string, unknown>[] }>(
+    "GET",
+    `/actions${status ? `?status=${encodeURIComponent(status)}` : ""}`,
   );

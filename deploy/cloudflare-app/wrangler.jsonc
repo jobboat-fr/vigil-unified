@@ -11,7 +11,17 @@
   // conventional web/dist. Pointing this config at web/dist deploys a stale August build.
   "name": "vtlvs-app",
   "compatibility_date": "2026-09-01",
+  "main": "worker.ts",
+  // The SPA calls /api on its own origin. Served as assets alone, those paths fell through
+  // to the SPA fallback and returned 200 text/html, which the client then tried to parse as
+  // JSON. The Worker proxies them to the two real backends instead — and removes CORS from
+  // the picture, since the browser only ever talks to app.vtlvs.com.
+  "vars": {
+    "LEARN_API_ORIGIN": "https://api.vtlvs.com",
+    "GATEWAY_ORIGIN": ""
+  },
   "assets": {
+    "binding": "ASSETS",
     "directory": "../../hermes_cli/web_dist",
     // A React router owns the paths. Without this, a reload on /learn/calendar returns the
     // edge's 404 instead of the app, because no file of that name exists.

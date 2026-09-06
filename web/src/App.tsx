@@ -48,6 +48,10 @@ import {
   Star,
   Terminal,
   Users,
+  GraduationCap,
+  Layers,
+  Archive,
+  CalendarDays,
   Webhook,
   Wrench,
   X,
@@ -122,6 +126,10 @@ import OrdersPage from "@/pages/OrdersPage";
 import AuditPage from "@/pages/AuditPage";
 import LearnCalendarPage from "@/pages/LearnCalendarPage";
 import LearnDashboardPage from "@/pages/LearnDashboardPage";
+import LearnFormationsPage from "@/pages/LearnFormationsPage";
+import LearnEmargementPage from "@/pages/LearnEmargementPage";
+import LearnVaultPage from "@/pages/LearnVaultPage";
+import LearnPeoplePage from "@/pages/LearnPeoplePage";
 import { useLearnRole } from "@/lib/supabase";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
@@ -181,6 +189,10 @@ const BUILTIN_ROUTES_CORE: Record<string, ComponentType> = {
   // LEARN — training platform (AZZ&CO)
   "/learn": LearnDashboardPage,
   "/learn/calendar": LearnCalendarPage,
+  "/learn/formations": LearnFormationsPage,
+  "/learn/emargement": LearnEmargementPage,
+  "/learn/coffre": LearnVaultPage,
+  "/learn/comptes": LearnPeoplePage,
 
   // WinnyWoo workspace
   "/trade-desk": TradeDeskPage,
@@ -232,6 +244,13 @@ const BUILTIN_NAV_REST: NavItem[] = [
   { path: "/studio", label: "Studio", icon: PenLine, group: "workspace" },
   { path: "/vault", label: "Vault", icon: Lock, group: "workspace" },
   // ── Company ──
+  { path: "/learn", label: "Formation", icon: GraduationCap, group: "learn" },
+  { path: "/learn/calendar", label: "Calendrier", icon: CalendarDays, group: "learn" },
+  { path: "/learn/formations", label: "Formations", icon: Layers, group: "learn" },
+  { path: "/learn/emargement", label: "Émargement", icon: PenLine, group: "learn" },
+  { path: "/learn/coffre", label: "Coffre", icon: Archive, group: "learn" },
+  { path: "/learn/comptes", label: "Comptes", icon: Users, group: "learn" },
+
   { path: "/finance", label: "Finance", icon: Receipt, group: "company" },
   { path: "/crm", label: "CRM", icon: Contact, group: "company" },
   { path: "/mail", label: "Mail", icon: Mail, group: "company" },
@@ -266,10 +285,11 @@ const BUILTIN_NAV_REST: NavItem[] = [
 
 // Sidebar section ordering + labels. Grouping the ~30 destinations into five
 // labelled sections keeps the nav scannable instead of one long confusing list.
-type NavGroupKey = "workspace" | "desk" | "company" | "insight" | "system";
-const NAV_GROUP_ORDER: NavGroupKey[] = ["workspace", "company", "desk", "insight", "system"];
+type NavGroupKey = "workspace" | "learn" | "desk" | "company" | "insight" | "system";
+const NAV_GROUP_ORDER: NavGroupKey[] = ["workspace", "learn", "company", "desk", "insight", "system"];
 const NAV_GROUP_LABEL: Record<NavGroupKey, string> = {
   workspace: "Workspace",
+  learn: "Formation",
   company: "Company",
   desk: "Trade Desk",
   insight: "Insight",
