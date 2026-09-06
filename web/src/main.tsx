@@ -53,4 +53,14 @@ if ("serviceWorker" in navigator && import.meta.env.PROD) {
       /* Un enregistrement refusé (mode privé, contexte non sécurisé) n'empêche rien. */
     });
   });
+
+  // Quand un nouveau worker prend la main, la page tourne encore sur l'ancien bundle : ses
+  // modules sont déjà chargés. On recharge une fois — le garde-fou évite la boucle si le
+  // navigateur émet l'évènement plusieurs fois.
+  let rechargé = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (rechargé) return;
+    rechargé = true;
+    window.location.reload();
+  });
 }

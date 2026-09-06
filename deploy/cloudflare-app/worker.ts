@@ -143,6 +143,26 @@ export default {
       return origin ? proxy(request, origin) : unavailable("La passerelle VIGIL");
     }
 
+    // Un fichier de `/assets/` porte son empreinte dans son nom : il existe, ou il
+    // n'existera jamais. Le repli SPA renvoyait pourtant `index.html` avec un 200 pour
+    // tout chemin absent — si bien qu'un navigateur resté sur une ancienne page demandait
+    // `index-<vieux hash>.js`, recevait du HTML, et tentait de le parser comme du
+    // JavaScript. Une erreur par requête, à chaque chargement, et un diagnostic qui pointe
+    // vers le mauvais endroit puisque le réseau répond 200.
+    //
+    // Un 404 franc dit la vérité, et le service worker sait alors qu'il doit se recharger.
+    if (pathname.startsWith("/assets/")) {
+      const res = await env.ASSETS.fetch(request);
+      const ct = res.headers.get("content-type") || "";
+      if (res.status === 200 && ct.includes("text/html")) {
+        return new Response("asset introuvable — build périmé", {
+          status: 404,
+          headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store" },
+        });
+      }
+      return res;
+    }
+
     return env.ASSETS.fetch(request);
   },
 };
