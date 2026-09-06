@@ -49,6 +49,24 @@ async def tenant_plan(uid: str) -> str:
     return plan if plan in OPS_PLANS else "pro"
 
 
+async def plan_is_subscribed(uid: str) -> bool:
+    """Le plan vient-il d'un abonnement réel, ou du repli ?
+
+    Sans cette distinction, `usage_summary` annonçait « Pro — 49 € par mois » à un
+    utilisateur qui n'a jamais souscrit : le repli `DEFAULT_OPS_PLAN` sert à ne pas brider
+    un usage mono-organisme, pas à facturer. Les plafonds du repli sont réels — ils
+    s'appliquent — mais le prix, lui, ne correspond à rien tant qu'aucun abonnement n'existe.
+    """
+    try:
+        members = await db_select("org_members", filters={"user_id": uid}, limit=1)
+        if not members:
+            return False
+        subs = await db_select("subscriptions", filters={"org_id": members[0].get("org_id")}, limit=10)
+        return any((s.get("status") or "") in ("active", "trialing") for s in subs)
+    except Exception:  # noqa: BLE001 — une facturation indisponible n'est pas un abonnement
+        return False
+
+
 def _today() -> str:
     return datetime.now(UTC).date().isoformat()
 
@@ -64,10 +82,15 @@ async def usage_summary(uid: str) -> dict[str, Any]:
     runs_month = sum(1 for t in tasks if str(t.get("created_at") or "").startswith(month))
     cost_month = round(sum(float(t.get("cost_usd") or 0) for t in tasks if str(t.get("created_at") or "").startswith(month)), 4)
     plan = await tenant_plan(uid)
+    subscribed = await plan_is_subscribed(uid)
     limits = plan_limits(plan)
     cap = limits.get("ops_runs_per_day")
     return {
-        "plan": plan, "plan_name": limits.get("name"), "price_eur_cents": limits.get("price_eur_cents"),
+        "plan": plan, "plan_name": limits.get("name"),
+        # Le prix n'est renvoyé que s'il correspond à un abonnement. Sinon `null` : le
+        # tableau de bord affiche alors les plafonds sans inventer une relation commerciale.
+        "price_eur_cents": limits.get("price_eur_cents") if subscribed else None,
+        "plan_source": "subscription" if subscribed else "default",
         "runs_today": runs_today, "runs_month": runs_month, "cost_usd_month": cost_month,
         "daily_cap": cap, "remaining_today": (None if cap is None else max(0, cap - runs_today)),
         "limits": limits,
