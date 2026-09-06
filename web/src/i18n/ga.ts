@@ -50,12 +50,12 @@ export const ga: Translations = {
   },
 
   app: {
-    brand: "VIGIL × WinnyWoo",
-    brandShort: "VW",
+    brand: "VTLVS",
+    brandShort: "VT",
     closeNavigation: "Dún an nascleanúint",
     closeModelTools: "Dún an samhail agus na huirlisí",
     footer: {
-      org: "VIGIL",
+      org: "VTLVS",
     },
     activeSessionsLabel: "Seisiúin gníomhacha:",
     gatewayStatusLabel: "Stádas an gateway:",

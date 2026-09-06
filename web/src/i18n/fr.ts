@@ -50,12 +50,12 @@ export const fr: Translations = {
   },
 
   app: {
-    brand: "VIGIL × WinnyWoo",
-    brandShort: "VW",
+    brand: "VTLVS",
+    brandShort: "VT",
     closeNavigation: "Fermer la navigation",
     closeModelTools: "Fermer modèle et outils",
     footer: {
-      org: "VIGIL",
+      org: "VTLVS",
     },
     activeSessionsLabel: "Sessions actives:",
     gatewayStatusLabel: "État de la passerelle:",

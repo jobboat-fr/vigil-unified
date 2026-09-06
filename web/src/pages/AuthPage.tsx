@@ -10,7 +10,7 @@ type Mode = "signin" | "reset";
  * fermé et rend cette page pour toute session absente ou expirée.
  *
  * Le logo sert de fond, agrandi. C'est demandé, et c'est piégeux : le fichier ne contient
- * que ~7 % de pixels sombres, donc à opacité naïve il disparaît sur fond clair. Il est donc
+ * que ~9 % de pixels sombres une fois détouré, donc à opacité naïve il disparaît. Il est donc
  * posé en `background-size: cover` à une opacité assumée, avec un voile dégradé par-dessus
  * — dense au centre, sous la carte, transparent sur les bords. Le motif reste visible sans
  * qu'aucune couleur ne passe sous le texte.
@@ -64,7 +64,7 @@ export default function AuthPage({ initialMode = "signin" }: { initialMode?: Mod
       <style>{`
         @keyframes ap-in{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
         .ap-in{animation:ap-in .6s cubic-bezier(.2,.7,.2,1) both}
-        .ap-mark{background-image:url("/logo.webp");background-repeat:no-repeat;background-position:center;background-size:cover;opacity:.16}
+        .ap-mark{background-image:url("/logo-mark.png");background-repeat:no-repeat;background-position:center;background-size:cover;opacity:.10}
         .ap-veil{background:radial-gradient(52% 44% at 50% 50%, ${BRAND.bg}f2 0%, ${BRAND.bg}d9 45%, ${BRAND.bg}66 78%, transparent 100%)}
         .ap-card{background:rgba(255,255,255,.62);backdrop-filter:blur(14px) saturate(1.1);-webkit-backdrop-filter:blur(14px) saturate(1.1)}
         .ap-field{width:100%;border-radius:.5rem;border:1px solid ${BRAND.line};background:rgba(255,255,255,.9);padding:.6rem .75rem;font-size:.875rem;color:${BRAND.ink};outline:none;transition:border-color .15s,box-shadow .15s}
@@ -79,7 +79,7 @@ export default function AuthPage({ initialMode = "signin" }: { initialMode?: Mod
       <div className="ap-in relative flex w-full max-w-sm flex-col gap-6">
         <div className="flex flex-col items-center gap-2 text-center">
           <Link to="/" className="flex flex-col items-center gap-3 hover:opacity-90">
-            <img src="/logo.webp" alt="VTLVS" style={{ height: 56, width: "auto" }} />
+            <img src="/logo-mark.png" alt="VTLVS" style={{ height: 56, width: "auto" }} />
             <h1 className="text-3xl font-bold" style={{ fontFamily: BRAND.display, letterSpacing: ".02em" }}>VTLVS</h1>
           </Link>
           <p style={{ ...label, fontSize: 11, letterSpacing: ".18em" }}>{heading}</p>

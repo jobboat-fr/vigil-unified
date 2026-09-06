@@ -50,12 +50,12 @@ export const ko: Translations = {
   },
 
   app: {
-    brand: "VIGIL × WinnyWoo",
-    brandShort: "VW",
+    brand: "VTLVS",
+    brandShort: "VT",
     closeNavigation: "내비게이션 닫기",
     closeModelTools: "모델 및 도구 닫기",
     footer: {
-      org: "VIGIL",
+      org: "VTLVS",
     },
     activeSessionsLabel: "활성 세션:",
     gatewayStatusLabel: "게이트웨이 상태:",

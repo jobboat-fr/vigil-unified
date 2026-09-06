@@ -1608,6 +1608,11 @@ export interface PlatformStatus {
 
 export interface StatusResponse {
   active_sessions: number;
+  /** `false` lorsque la réponse vient du Worker Cloudflare plutôt que d'un serveur de
+   *  tableau de bord Hermes — ce déploiement n'en exécute aucun. Les indicateurs qui
+   *  décrivent ce serveur (état de la passerelle, sessions actives) n'ont alors rien à
+   *  décrire, et un voyant « hors ligne » permanent est une nuisance, pas une information. */
+  dashboard?: boolean;
   /** Phase 7: ``true`` when the dashboard's OAuth gate is engaged
    * (public bind, no ``--insecure``). Read alongside ``auth_providers``
    * to render a "gated / loopback" badge. */

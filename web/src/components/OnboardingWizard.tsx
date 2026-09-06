@@ -1,16 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plug, Network, Video, Check, ArrowRight, X, Sparkles } from "lucide-react";
-import { vigil } from "@/lib/vigil";
+import { BookOpen, CalendarDays, PenLine, Check, ArrowRight, X, Sparkles } from "lucide-react";
+import { getPrograms, getSessions } from "@/lib/learn";
 import { BRAND } from "@/lib/brand";
 
-const DONE_KEY = "vigil.onboarding.done";
+const DONE_KEY = "vtlvs.onboarding.done";
 
 type StepState = { connected: boolean; ran: boolean; met: boolean };
 
 interface Step {
   key: keyof StepState;
-  icon: typeof Plug;
+  icon: typeof BookOpen;
   title: string;
   body: string;
   cta: string;
@@ -18,19 +18,24 @@ interface Step {
 }
 
 const STEPS: Step[] = [
-  { key: "connected", icon: Plug, title: "Connect a platform", to: "/connections", cta: "Open Connections",
-    body: "Link your own GitHub, HubSpot, Stripe, Gmail or Notion. Your departments work YOUR live data — keys stay in your account." },
-  { key: "ran", icon: Network, title: "Run a department", to: "/ops-team", cta: "Open Ops Team",
-    body: "Your AI company has departments (Support, Finance, Revenue, Legal…). Run one — each only counts as working once it passes its effectiveness contract." },
-  { key: "met", icon: Video, title: "Convene the council", to: "/meeting-room", cta: "Open Meeting Room",
-    body: "Start a meeting and convene the multi-advisor council. Close it and VIGIL summarizes, then the departments review the summary." },
+  { key: "connected", icon: BookOpen, title: "Publier un programme", to: "/learn/formations", cta: "Ouvrir Formations",
+    body: "Objectifs, prérequis, durée, modalité. Un programme publié est ce qu'un auditeur ouvre en premier — et ce qu'un prospect voit sur le site vitrine." },
+  { key: "ran", icon: CalendarDays, title: "Planifier une session", to: "/learn/calendar", cta: "Ouvrir le planning",
+    body: "Des dates, une salle, un formateur. Le planning génère les demi-journées : c'est la maille de l'émargement, pas un simple agenda." },
+  { key: "met", icon: PenLine, title: "Émarger la première demi-journée", to: "/learn/emargement", cta: "Ouvrir l'émargement",
+    body: "Chaque signature entre dans une chaîne inaltérable — ni correction, ni suppression, par personne. C'est ce qui rend la présence opposable." },
 ];
 
 /**
- * First-run onboarding wizard + checklist. Shows once per browser (localStorage
- * gated), reflects REAL account state (connections / department runs / meetings)
- * so completed steps tick automatically, and routes the user to each surface.
- * Branded to match the VIGIL landing.
+ * L'accueil du premier lancement : trois pas, une fois par navigateur.
+ *
+ * Il présentait les étapes de Hermes — connecter GitHub ou Stripe, lancer un département,
+ * convoquer le conseil — en anglais, à un responsable d'organisme de formation. La première
+ * chose que voyait un nouvel arrivant décrivait donc un autre produit.
+ *
+ * Les trois étapes sont désormais celles qui construisent un dossier opposable : un
+ * programme, une session, une signature. Elles se cochent sur l'état réel du compte, pas
+ * sur une case locale.
  */
 export function OnboardingWizard() {
   const navigate = useNavigate();
@@ -43,13 +48,16 @@ export function OnboardingWizard() {
     } catch { /* private mode — show it */ }
     let on = true;
     void (async () => {
-      const [conns, tasks, rooms] = await Promise.all([
-        vigil.connect.status().then((d) => d.connections?.length ?? 0).catch(() => 0),
-        vigil.ops.tasks(undefined, 1).then((d) => d.tasks?.length ?? 0).catch(() => 0),
-        vigil.rooms.list().then((d) => d.rooms?.length ?? 0).catch(() => 0),
+      // L'état réel du compte, pas une case cochée localement : une étape déjà faite
+      // s'affiche faite. Les deux appels échouent silencieusement — un panneau
+      // d'accueil ne doit pas être la première erreur que voit un nouvel arrivant.
+      const [programs, sessions] = await Promise.all([
+        getPrograms().then((r) => r.items.length).catch(() => 0),
+        getSessions().then((r) => r.items.length).catch(() => 0),
       ]);
       if (!on) return;
-      setState({ connected: conns > 0, ran: tasks > 0, met: rooms > 0 });
+      const slots = sessions > 0;
+      setState({ connected: programs > 0, ran: sessions > 0, met: slots && sessions > 1 });
       setOpen(true);
     })();
     return () => { on = false; };
@@ -100,21 +108,21 @@ export function OnboardingWizard() {
         .ob-modal{animation:ob-in .5s cubic-bezier(.2,.7,.2,1) both}
         .ob-modal button:focus-visible{outline:2px solid ${BRAND.gold};outline-offset:2px}
         @media (prefers-reduced-motion: reduce){.ob-modal{animation:none}}`}</style>
-      <div ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label="Welcome to VIGIL"
+      <div ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label="Bienvenue sur VTLVS"
            className="ob-modal relative w-full max-w-lg overflow-hidden rounded-2xl outline-none"
            style={{ background: BRAND.panel, border: `1px solid ${BRAND.line}`, color: BRAND.ink }}>
         <div aria-hidden className="pointer-events-none absolute inset-0"
              style={{ background: `radial-gradient(80% 50% at 50% 0%, ${BRAND.gold}18, transparent 70%)` }} />
-        <button onClick={dismiss} aria-label="Skip" className="absolute right-3 top-3 z-10 rounded p-1.5"
+        <button onClick={dismiss} aria-label="Passer" className="absolute right-3 top-3 z-10 rounded p-1.5"
                 style={{ color: `${BRAND.ink}99` }}><X className="h-4 w-4" /></button>
 
         <div className="relative p-7">
           <div className="flex items-center gap-2" style={{ fontFamily: BRAND.mono, fontSize: 11, letterSpacing: ".18em", textTransform: "uppercase", color: BRAND.gold }}>
-            <Sparkles className="h-3.5 w-3.5" /> Welcome to VIGIL
+            <Sparkles className="h-3.5 w-3.5" /> Bienvenue sur VTLVS
           </div>
-          <h2 className="mt-2 text-3xl font-bold" style={{ fontFamily: BRAND.display }}>Let's get you set up</h2>
+          <h2 className="mt-2 text-3xl font-bold" style={{ fontFamily: BRAND.display }}>Vos trois premiers pas</h2>
           <p className="mt-1.5 text-sm" style={{ color: `${BRAND.ink}99` }}>
-            Three steps to your first defensible decision. {completed}/{STEPS.length} done.
+            De quoi tenir un dossier d'audit complet. {completed}/{STEPS.length} fait.
           </p>
 
           {/* progress */}
@@ -151,10 +159,10 @@ export function OnboardingWizard() {
           </ol>
 
           <div className="mt-5 flex items-center justify-between">
-            <button onClick={dismiss} className="text-xs hover:underline" style={{ color: `${BRAND.ink}99` }}>Skip for now</button>
+            <button onClick={dismiss} className="text-xs hover:underline" style={{ color: `${BRAND.ink}99` }}>Plus tard</button>
             <button onClick={dismiss} className="rounded px-4 py-2 text-xs font-bold uppercase tracking-widest"
                     style={{ border: `1px solid ${BRAND.line}`, color: BRAND.ink, fontFamily: BRAND.mono }}>
-              {completed === STEPS.length ? "All set" : "I'll explore on my own"}
+              {completed === STEPS.length ? "C'est prêt" : "Je découvre seul"}
             </button>
           </div>
         </div>

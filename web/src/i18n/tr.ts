@@ -50,12 +50,12 @@ export const tr: Translations = {
   },
 
   app: {
-    brand: "VIGIL × WinnyWoo",
-    brandShort: "VW",
+    brand: "VTLVS",
+    brandShort: "VT",
     closeNavigation: "Gezintiyi kapat",
     closeModelTools: "Modeli ve araçları kapat",
     footer: {
-      org: "VIGIL",
+      org: "VTLVS",
     },
     activeSessionsLabel: "Aktif Oturumlar:",
     gatewayStatusLabel: "Ağ Geçidi Durumu:",

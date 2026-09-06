@@ -50,12 +50,12 @@ export const hu: Translations = {
   },
 
   app: {
-    brand: "VIGIL × WinnyWoo",
-    brandShort: "VW",
+    brand: "VTLVS",
+    brandShort: "VT",
     closeNavigation: "Navigáció bezárása",
     closeModelTools: "Modell és eszközök bezárása",
     footer: {
-      org: "VIGIL",
+      org: "VTLVS",
     },
     activeSessionsLabel: "Aktív munkamenetek:",
     gatewayStatusLabel: "Átjáró állapota:",

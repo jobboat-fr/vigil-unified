@@ -11,7 +11,7 @@
  *     sinon un déploiement ne prend effet qu'au troisième lancement.
  */
 const VERSION = "vtlvs-v1";
-const SHELL = ["/", "/logo.webp", "/manifest.webmanifest", "/icon-192.png", "/icon-512.png"];
+const SHELL = ["/", "/logo-mark.png", "/manifest.webmanifest", "/icon-192.png", "/icon-512.png"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(VERSION).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));

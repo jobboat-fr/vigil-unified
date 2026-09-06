@@ -7,16 +7,28 @@
 // instead of crashing.
 import { getAccessToken } from "./supabase";
 
-// Full native port (UNIFIED_PORT_PLAN): the WinnyWoo gateway is vendored into
-// vigil-unified (winny_gateway) and runs locally on :8400 — no Railway. An
-// explicit VITE_WW_GATEWAY_URL always wins (for a hosted deploy); otherwise we
-// default to the local gateway in every environment.
+// Où vit la passerelle.
+//
+// `VITE_WW_GATEWAY_URL` gagne toujours. Sans lui, la valeur par défaut dépend de
+// l'environnement, et c'est le correctif :
+//
+//   dev   → http://127.0.0.1:8400, la passerelle vendorisée que l'on lance à côté ;
+//   prod  → la même origine que la page. Le Worker Cloudflare relaie /api et /v1 vers
+//           les deux backends, donc une URL relative arrive exactement où il faut — et
+//           le navigateur ne parle qu'à une origine, ce qui retire le CORS du tableau.
+//
+// Le défaut « localhost partout » était livré tel quel : une fois en ligne, chaque page
+// appelait http://127.0.0.1:8400 depuis le navigateur du visiteur. Les requêtes
+// échouaient en ERR_BLOCKED_BY_CLIENT ou ERR_CONNECTION_REFUSED, la console se
+// remplissait, et les pages restaient vides — un symptôme qui ressemble à « pas de
+// données » alors que l'appel n'a jamais quitté la machine du visiteur.
 const LOCAL_DEFAULT = "http://127.0.0.1:8400";
 
 function resolveBase(): string {
   const configured = (import.meta.env.VITE_WW_GATEWAY_URL as string | undefined)?.trim();
   if (configured) return configured.replace(/\/$/, "");
-  return LOCAL_DEFAULT;
+  // Chaîne vide = même origine : les chemins restent « /api/… », relatifs à la page.
+  return import.meta.env.DEV ? LOCAL_DEFAULT : "";
 }
 
 export const WW_BASE = resolveBase();

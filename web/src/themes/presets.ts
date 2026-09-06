@@ -347,16 +347,16 @@ export const vtlvsTheme: DashboardTheme = {
 };
 
 export const BUILTIN_THEMES: Record<string, DashboardTheme> = {
-  // `default` is what ThemeProvider applies when nobody has chosen — so this is the one
-  // line that decides how the product looks out of the box.
+  // Une seule charte, et c'est délibéré.
+  //
+  // Les presets hérités de Hermes (Hermes Teal, Midnight, Ember, Cyberpunk, Rose…) sont
+  // des canevas sombres. Le reste de cette application est construit pour un canevas
+  // clair : cartes blanches, filets définis, encre marine. Choisir un preset sombre ne
+  // produisait pas « la même application en sombre », mais de l'encre marine sur du vert
+  // profond — illisible, et c'est exactement ce qui a été constaté à l'écran.
+  //
+  // Un produit vendu à des organismes de formation n'a pas besoin d'un thème « Cyberpunk ».
+  // Il a besoin de ressembler au site vitrine par lequel l'apprenant est arrivé.
   default: vtlvsTheme,
   vtlvs: vtlvsTheme,
-  hermes: defaultTheme,
-  "default-large": defaultLargeTheme,
-  "nous-blue": nousBlueTheme,
-  midnight: midnightTheme,
-  ember: emberTheme,
-  mono: monoTheme,
-  cyberpunk: cyberpunkTheme,
-  rose: roseTheme,
 };

@@ -146,10 +146,12 @@ function UnknownRouteFallback({ pluginsLoading }: { pluginsLoading: boolean }) {
   return <Navigate to="/meeting-room" replace />;
 }
 
+// L'assistant garde le nom VIGIL : c'est l'agent, pas l'application. VTLVS est le
+// produit, et la distinction tient quand la plateforme est revendue — seul AGENTS.md
+// adopte la marque du nouvel organisme.
 const CHAT_NAV_ITEM: NavItem = {
   path: "/chat",
-  labelKey: "chat",
-  label: "Chat",
+  label: "Vigil",
   icon: Terminal,
   group: "workspace",
 };
@@ -217,18 +219,17 @@ function ChatRouteSink() {
 const BUILTIN_NAV_REST: NavItem[] = [
   {
     path: "/sessions",
-    labelKey: "sessions",
-    label: "Sessions",
+    label: "Sessions Vigil",
     icon: MessageSquare,
     group: "workspace",
   },
   // ── Workspace ──
-  { path: "/ops-team", label: "Ops Team", icon: Network, group: "workspace" },
-  { path: "/connections", label: "Connections", icon: Plug, group: "workspace" },
-  { path: "/approvals", label: "Approvals", icon: ShieldCheck, group: "workspace" },
-  { path: "/meeting-room", label: "Meeting Room", icon: Video, group: "workspace" },
+  { path: "/ops-team", label: "Équipe agentique", icon: Network, group: "workspace" },
+  { path: "/connections", label: "Connexions", icon: Plug, group: "workspace" },
+  { path: "/approvals", label: "Validations", icon: ShieldCheck, group: "workspace" },
+  { path: "/meeting-room", label: "Salle de réunion", icon: Video, group: "workspace" },
   { path: "/studio", label: "Studio", icon: PenLine, group: "workspace" },
-  { path: "/vault", label: "Vault", icon: Lock, group: "workspace" },
+  { path: "/vault", label: "Artéfacts", icon: Lock, group: "workspace" },
   // ── Company ──
   { path: "/learn", label: "Formation", icon: GraduationCap, group: "learn" },
   { path: "/learn/calendar", label: "Calendrier", icon: CalendarDays, group: "learn" },
@@ -243,9 +244,7 @@ const BUILTIN_NAV_REST: NavItem[] = [
   // ── Trade desk ──
   // ── Insight ──
   { path: "/audit", label: "Audit", icon: ScrollText, group: "insight", roles: ["super_admin", "auditeur"] },
-  { path: "/learn", label: "Formation", icon: ScrollText, group: "insight" },
-  { path: "/learn/calendar", label: "Calendrier", icon: ScrollText, group: "insight" },
-  { path: "/files", label: "Files", icon: FolderOpen, group: "insight", roles: ["super_admin"] },
+  { path: "/files", label: "Fichiers", icon: FolderOpen, group: "insight", roles: ["super_admin"] },
   { path: "/analytics", labelKey: "analytics", label: "Analytics", icon: BarChart3, group: "insight", roles: ["super_admin", "admin"] },
   { path: "/models", labelKey: "models", label: "Models", icon: Cpu, group: "insight", roles: ["super_admin", "admin"] },
   { path: "/logs", labelKey: "logs", label: "Logs", icon: FileText, group: "insight", roles: ["super_admin"] },
@@ -254,14 +253,14 @@ const BUILTIN_NAV_REST: NavItem[] = [
   { path: "/skills", labelKey: "skills", label: "Skills", icon: Package, group: "system" , roles: ["super_admin", "admin"] },
   { path: "/plugins", labelKey: "plugins", label: "Plugins", icon: Puzzle, group: "system" , roles: ["super_admin", "admin"] },
   { path: "/mcp", label: "MCP", icon: Plug, group: "system" , roles: ["super_admin", "admin"] },
-  { path: "/channels", label: "Channels", icon: Radio, group: "system" , roles: ["super_admin", "admin"] },
+  { path: "/channels", label: "Canaux", icon: Radio, group: "system" , roles: ["super_admin", "admin"] },
   { path: "/webhooks", label: "Webhooks", icon: Webhook, group: "system" , roles: ["super_admin", "admin"] },
-  { path: "/pairing", label: "Pairing", icon: ShieldCheck, group: "system" , roles: ["super_admin", "admin"] },
-  { path: "/profiles", labelKey: "profiles", label: "Profiles", icon: Users, group: "system" },
+  { path: "/pairing", label: "Appairage", icon: ShieldCheck, group: "system" , roles: ["super_admin", "admin"] },
+  { path: "/profiles", labelKey: "profiles", label: "Profils agent", icon: Users, group: "system", roles: ["super_admin", "admin"] },
   { path: "/config", labelKey: "config", label: "Config", icon: Settings, group: "system" , roles: ["super_admin", "admin"] },
   { path: "/env", labelKey: "keys", label: "Keys", icon: KeyRound, group: "system" , roles: ["super_admin", "admin"] },
-  { path: "/billing", label: "Billing", icon: CreditCard, group: "system" , roles: ["super_admin", "admin"] },
-  { path: "/system", label: "System", icon: Wrench, group: "system" , roles: ["super_admin", "admin"] },
+  { path: "/billing", label: "Facturation", icon: CreditCard, group: "system" , roles: ["super_admin", "admin"] },
+  { path: "/system", label: "Système", icon: Wrench, group: "system" , roles: ["super_admin", "admin"] },
   { path: "/noyau", label: "Le Noyau", icon: BookOpen, group: "system", roles: ["super_admin", "admin"] },
 ];
 
@@ -270,11 +269,11 @@ const BUILTIN_NAV_REST: NavItem[] = [
 type NavGroupKey = "workspace" | "learn" | "company" | "insight" | "system";
 const NAV_GROUP_ORDER: NavGroupKey[] = ["workspace", "learn", "company", "insight", "system"];
 const NAV_GROUP_LABEL: Record<NavGroupKey, string> = {
-  workspace: "Workspace",
+  workspace: "Espace de travail",
   learn: "Formation",
-  company: "Company",
-  insight: "Insight",
-  system: "System",
+  company: "Organisme",
+  insight: "Pilotage",
+  system: "Administration",
 };
 
 const ICON_MAP: Record<string, ComponentType<{ className?: string }>> = {
@@ -540,16 +539,24 @@ export default function App() {
     () => buildRoutes(builtinRoutes, manifests),
     [builtinRoutes, manifests],
   );
-  const pluginTabMeta = useMemo(
-    () =>
-      manifests
+  // Le titre de page se déduisait du chemin, faute de mieux : « /learn » donnait « Learn »
+  // et « /learn/calendar » donnait « Learn/calendar ». La barre latérale connaît déjà le
+  // nom de chaque destination — on le lui demande, plutôt que d'entretenir une deuxième
+  // liste qui dérive. Les onglets de plugins gardent la priorité : ils sont plus
+  // spécifiques que la navigation intégrée.
+  const pageTitleSources = useMemo(
+    () => [
+      ...manifests
         .filter((m) => !m.tab.hidden)
         .map((m) => ({
           path: m.tab.override ?? m.tab.path,
           label: m.label,
         })),
-    [manifests],
+      ...builtinNav.map((n) => ({ path: n.path, label: n.label })),
+    ],
+    [manifests, builtinNav],
   );
+
 
   const layoutVariant = theme.layoutVariant ?? "standard";
 
@@ -613,7 +620,6 @@ export default function App() {
 
         <Typography
           className="font-bold text-[0.95rem] leading-[0.95] tracking-[0.05em] text-midground"
-          style={{ mixBlendMode: "plus-lighter" }}
         >
           {t.app.brand}
         </Typography>
@@ -670,28 +676,20 @@ export default function App() {
               >
                 <PluginSlot name="header-left" />
 
+                {/* La marque de l'application est VTLVS ; VIGIL est le nom de
+                    l'assistant, et il le reste — ils ne désignent pas la même chose. */}
                 <img
-                  src="/vigil-mark.svg"
-                  alt="VIGIL"
-                  width={28}
+                  src="/logo-mark.png"
+                  alt="VTLVS"
                   height={28}
-                  className="shrink-0"
+                  className="h-7 w-auto shrink-0"
                 />
-                <Typography
-                  className="font-bold text-[1.05rem] leading-[0.95] tracking-[0.045rem] text-midground"
-                  style={{ mixBlendMode: "plus-lighter" }}
-                >
-                  <span className="inline-flex items-center gap-1.5">
-                    VIGIL
-                    <span
-                      className="rounded-full px-1.5 py-px text-[0.5rem] font-bold uppercase tracking-[0.12em]"
-                      style={{ color: "#0b2239", background: "#1d3fae" }}
-                    >
-                      Beta
-                    </span>
-                  </span>
+                <Typography className="font-bold text-[1.05rem] leading-[0.95] tracking-[0.045rem]">
+                  <span>VTLVS</span>
                   <br />
-                  <span className="text-[0.8rem] opacity-70">× WinnyWoo</span>
+                  <span className="text-[0.72rem] font-medium uppercase tracking-[0.14em] opacity-60">
+                    Plateforme de formation
+                  </span>
                 </Typography>
               </div>
 
@@ -847,7 +845,7 @@ export default function App() {
             </div>
           </aside>
 
-          <PageHeaderProvider pluginTabs={pluginTabMeta}>
+          <PageHeaderProvider pluginTabs={pageTitleSources}>
             <div
               className={cn(
                 "relative z-2 flex min-w-0 min-h-0 flex-1 flex-col",
@@ -1013,7 +1011,6 @@ function SidebarNavLink({
               <span
                 aria-hidden
                 className="absolute left-0 top-0 bottom-0 w-px bg-midground"
-                style={{ mixBlendMode: "plus-lighter" }}
               />
             )}
           </>
@@ -1069,11 +1066,20 @@ function SidebarSystemActions({
         {t.app.system}
       </span>
 
-      <div className={cn(collapsed && "lg:hidden")}>
-        <SidebarStatusStrip status={status} />
-      </div>
-
-      <GatewayDot collapsed={collapsed} status={status} tooltipWarmRef={tooltipWarmRef} />
+      {/* L'état de la passerelle décrivait un processus local que l'opérateur lançait
+          lui-même. Ce déploiement n'en a pas : `/api/status` est répondu par le Worker,
+          qui annonce `dashboard: false`. Le voyant affichait donc « Hors ligne » en
+          permanence, à côté d'une application qui fonctionne — un indicateur qui ment
+          dans un sens rassurant est une nuisance ; dans l'autre, il fait ouvrir un ticket.
+          On ne le montre que là où il a un sens. */}
+      {status?.dashboard !== false && (
+        <>
+          <div className={cn(collapsed && "lg:hidden")}>
+            <SidebarStatusStrip status={status} />
+          </div>
+          <GatewayDot collapsed={collapsed} status={status} tooltipWarmRef={tooltipWarmRef} />
+        </>
+      )}
 
       <ul className="flex flex-col">
         {items.map((item) => (
@@ -1163,7 +1169,6 @@ function SystemActionButton({
           <span
             aria-hidden
             className="absolute left-0 top-0 bottom-0 w-px bg-midground"
-            style={{ mixBlendMode: "plus-lighter" }}
           />
         )}
       </button>

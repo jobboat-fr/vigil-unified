@@ -88,7 +88,6 @@ export function PageHeaderProvider({
                       ? "shrink truncate"
                       : "truncate",
                 )}
-                style={{ mixBlendMode: "plus-lighter" }}
               >
                 {displayTitle}
               </h1>

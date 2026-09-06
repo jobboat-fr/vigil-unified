@@ -271,9 +271,12 @@ code { font-size: 0.875rem; }
   display: none;
 }
 
-/* Plus-lighter blend used by logos/titles for a subtle glow. */
+/* `plus-lighter` éclaircissait un logo ou un titre sur canevas sombre. Sur le canevas
+   clair du produit il pousse l'encre marine vers le blanc : le titre de page et le nom
+   de la marque disparaissaient purement et simplement. Le canevas est clair, la lueur
+   n'a plus d'objet. */
 .blend-lighter {
-  mix-blend-mode: plus-lighter;
+  mix-blend-mode: normal;
 }
 
 /* System UI-monospace stack — distinct from `font-courier` (Courier
@@ -386,6 +389,23 @@ code { font-size: 0.875rem; }
   --color-destructive-foreground: #ffffff;
   --color-success: #1f7a4c;
   --color-warning: #b4740b;
+
+  /* --- le fond ------------------------------------------------------
+     `Backdrop` peint quatre couches par-dessus la page, réglées pour un
+     canevas sombre. `difference` sur le fond clair du produit renvoie son
+     complément, soit un vert profond : c'est de là que venait le tableau de
+     bord noir sur noir. Les crochets CSS existent précisément pour ça —
+     le composant n'a pas à être touché.
+
+       fond      peint tel quel, sans inversion ;
+       filler    la texture est faite pour être éclaircie sur du noir ;
+       grain     du film sur du papier blanc lit comme de la saleté.
+
+     La couche d'inversion z-200 reste inerte : `--foreground-alpha` vaut 0,
+     la palette est déjà claire, et l'inverser reviendrait à la défaire. */
+  --component-backdrop-bg-blend-mode: normal;
+  --component-backdrop-filler-opacity: 0;
+  --component-backdrop-filler-blend-mode: normal;
 }
 
 /* The dark-canvas decorations belong to the Hermes lens, not to a light

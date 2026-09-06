@@ -71,14 +71,21 @@ function isLocale(value: string): value is Locale {
   return (SUPPORTED_LOCALES as string[]).includes(value);
 }
 
+/** Le français par défaut.
+ *
+ * Le produit s'adresse à des organismes de formation français : les documents qu'il
+ * produit — convention, convocation, feuille d'émargement, certificat de réalisation —
+ * n'existent qu'en droit français. Une interface qui s'ouvrait en anglais mélangeait donc
+ * « Ops Team » et « Émargement » dans la même colonne. Le choix de l'utilisateur, lui,
+ * reste prioritaire : `localStorage` gagne toujours. */
 function getInitialLocale(): Locale {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored && isLocale(stored)) return stored;
   } catch {
-    // SSR or privacy mode
+    // SSR ou navigation privée
   }
-  return "en";
+  return "fr";
 }
 
 interface I18nContextValue {
@@ -88,9 +95,9 @@ interface I18nContextValue {
 }
 
 const I18nContext = createContext<I18nContextValue>({
-  locale: "en",
+  locale: "fr",
   setLocale: () => {},
-  t: en,
+  t: fr,
 });
 
 export function I18nProvider({ children }: { children: ReactNode }) {

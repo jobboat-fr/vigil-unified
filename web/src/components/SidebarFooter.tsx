@@ -21,7 +21,7 @@ export function SidebarFooter({ status }: SidebarFooterProps) {
       </Typography>
 
       <a
-        href="https://vigil-ai.xyz"
+        href="https://hbs-formation.fr"
         target="_blank"
         rel="noopener noreferrer"
         className={cn(
@@ -29,7 +29,6 @@ export function SidebarFooter({ status }: SidebarFooterProps) {
           "transition-opacity hover:opacity-90",
           "focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-midground/40",
         )}
-        style={{ mixBlendMode: "plus-lighter" }}
       >
         {t.app.footer.org}
       </a>
