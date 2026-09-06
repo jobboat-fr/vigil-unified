@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 // Supabase client for the VIGIL × WinnyWoo product layer.
 //
 // The WinnyWoo gateway authenticates with a Supabase JWT (gateway.auth
@@ -35,4 +36,32 @@ export async function getAccessToken(): Promise<string | null> {
   } catch {
     return null;
   }
+}
+
+/**
+ * The caller's LEARN role, or null when signed out / not yet loaded.
+ *
+ * Read from `app_metadata`, never `user_metadata`: the latter is writable by the account's
+ * own owner, so a role taken from it would let anyone promote themselves. The API applies
+ * the same rule server-side, which is what actually enforces it — this exists only so the
+ * navigation can hide what a caller cannot use.
+ */
+export function useLearnRole(): string | null {
+  const [role, setRole] = useState<string | null>(null);
+  useEffect(() => {
+    if (!supabase) return;
+    let alive = true;
+    const read = (s: { user?: { app_metadata?: Record<string, unknown> } } | null) => {
+      if (!alive) return;
+      const meta = (s?.user?.app_metadata ?? {}) as Record<string, unknown>;
+      setRole((meta.learn_role as string | undefined) ?? null);
+    };
+    supabase.auth.getSession().then(({ data }) => read(data.session));
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => read(s));
+    return () => {
+      alive = false;
+      sub.subscription.unsubscribe();
+    };
+  }, []);
+  return role;
 }

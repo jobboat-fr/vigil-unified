@@ -26,14 +26,19 @@ export interface Can {
 }
 
 export class LearnError extends Error {
-  constructor(
-    message: string,
-    readonly status: number,
-    readonly code?: string,
-    readonly detail?: unknown,
-  ) {
+  // Declared and assigned explicitly rather than as constructor parameter properties:
+  // this package builds with `erasableSyntaxOnly`, which rejects that shorthand because it
+  // emits runtime code from a type-position annotation.
+  readonly status: number;
+  readonly code?: string;
+  readonly detail?: unknown;
+
+  constructor(message: string, status: number, code?: string, detail?: unknown) {
     super(message);
     this.name = "LearnError";
+    this.status = status;
+    this.code = code;
+    this.detail = detail;
   }
   /** True when LEARN is deployed but has no database configured. */
   get unavailable() {

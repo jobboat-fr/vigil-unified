@@ -179,35 +179,10 @@ def create_app(config: GatewayConfig | None = None) -> FastAPI:
     app.add_middleware(BaseHTTPMiddleware, dispatch=log_request)
 
     # Register routers
-    # LEARN (AZZ&CO training platform) — mounted defensively: a missing driver or an
-    # unset LEARN_DATABASE_URL must degrade LEARN, never stop the gateway booting.
-    try:
-        from learn.routes import assessment as learn_assessment
-        from learn.routes import attendance as learn_attendance
-        from learn.routes import calendar as learn_calendar
-        from learn.routes import content as learn_content
-        from learn.routes import documents as learn_documents
-        from learn.routes import funnel as learn_funnel
-        from learn.routes import planning as learn_planning
-        from learn.routes import platform as learn_platform
-        from learn.routes import reporting as learn_reporting
-        from learn.routes import quality as learn_quality
-
-        app.include_router(learn_planning.router)
-        app.include_router(learn_calendar.router)
-        app.include_router(learn_attendance.router)
-        app.include_router(learn_quality.router)
-        app.include_router(learn_assessment.router)
-        app.include_router(learn_documents.router)
-        app.include_router(learn_content.router)
-        app.include_router(learn_reporting.router)
-        app.include_router(learn_platform.router)
-        app.include_router(learn_funnel.router)
-    except Exception as exc:  # pragma: no cover - optional subsystem
-        logger.warning(
-            "LEARN routes not mounted: %s", exc,
-            extra={"action": "learn.mount_skipped", "component": "learn"},
-        )
+    # LEARN moved to jobboat-fr/hbs-backend- (app/learn/) on 2026-09-06 and is served
+    # from Railway at api.vtlvs.com. It was mounted here while it was being built; keeping
+    # a second copy in this repo meant two copies of the same authorization rules, and they
+    # had started to diverge within a day. See learn/README.md.
 
     app.include_router(portfolio.router)
     app.include_router(orders.router)

@@ -1,4 +1,5 @@
 """Attribution default_headers applied per provider via base-URL detection."""
+import os
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
@@ -132,6 +133,27 @@ def test_gmi_base_url_picks_up_profile_user_agent(mock_openai):
 
     headers = agent._client_kwargs["default_headers"]
     assert headers["User-Agent"].startswith("HermesAgent/")
+
+
+@patch("run_agent.OpenAI")
+def test_huggingface_base_url_applies_org_billing_header(mock_openai):
+    """HF org billing requires X-HF-Bill-To on every router request."""
+    mock_openai.return_value = MagicMock()
+    agent = AIAgent(
+        api_key="test-key",
+        base_url="https://router.huggingface.co/v1",
+        model="openai/gpt-oss-20b",
+        provider="huggingface",
+        quiet_mode=True,
+        skip_context_files=True,
+        skip_memory=True,
+    )
+
+    agent._apply_client_headers_for_base_url("https://router.huggingface.co/v1")
+
+    headers = agent._client_kwargs["default_headers"]
+    expected = os.getenv("HF_BILL_TO") or os.getenv("HUGGINGFACE_BILL_TO") or "azzetco"
+    assert headers["X-HF-Bill-To"] == expected
 
 
 @patch("run_agent.OpenAI")

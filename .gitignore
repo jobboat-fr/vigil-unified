@@ -148,3 +148,10 @@ meet_auth_state.json
 # LEARN local credentials — never commit
 .env.learn
 .env.*.local
+
+# Cloudflare Tunnel credentials — the tunnel JSON is a credential, and cert.pem authorises
+# creating tunnels on the whole account.
+.cloudflared/
+*.cfargotunnel.json
+deploy/cloudflared/*.json
+deploy/cloudflared/cert.pem

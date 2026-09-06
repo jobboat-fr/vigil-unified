@@ -122,6 +122,7 @@ import OrdersPage from "@/pages/OrdersPage";
 import AuditPage from "@/pages/AuditPage";
 import LearnCalendarPage from "@/pages/LearnCalendarPage";
 import LearnDashboardPage from "@/pages/LearnDashboardPage";
+import { useLearnRole } from "@/lib/supabase";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { useI18n } from "@/i18n";
@@ -243,10 +244,10 @@ const BUILTIN_NAV_REST: NavItem[] = [
   { path: "/audit", label: "Audit", icon: ScrollText, group: "insight" },
   { path: "/learn", label: "Formation", icon: ScrollText, group: "insight" },
   { path: "/learn/calendar", label: "Calendrier", icon: ScrollText, group: "insight" },
-  { path: "/files", label: "Files", icon: FolderOpen, group: "insight" },
+  { path: "/files", label: "Files", icon: FolderOpen, group: "insight", roles: ["super_admin"] },
   { path: "/analytics", labelKey: "analytics", label: "Analytics", icon: BarChart3, group: "insight" },
   { path: "/models", labelKey: "models", label: "Models", icon: Cpu, group: "insight" },
-  { path: "/logs", labelKey: "logs", label: "Logs", icon: FileText, group: "insight" },
+  { path: "/logs", labelKey: "logs", label: "Logs", icon: FileText, group: "insight", roles: ["super_admin"] },
   // ── System ──
   { path: "/cron", labelKey: "cron", label: "Cron", icon: Clock, group: "system" },
   { path: "/skills", labelKey: "skills", label: "Skills", icon: Package, group: "system" },
@@ -488,6 +489,11 @@ export default function App() {
   // — killing the session mid-paint.  Delaying host mount by the
   // plugin-load window (typically <50ms, worst case 2s safety timeout)
   // is the cheaper trade-off.
+  // Drives which nav entries appear and which routes resolve. Null while the session
+  // loads and for signed-out users, so gated entries stay hidden until a role is known —
+  // failing closed rather than flashing a link that then disappears.
+  const learnRole = useLearnRole();
+
   const chatOverriddenByPlugin = useMemo(
     () => manifests.some((m) => m.tab.override === "/chat"),
     [manifests],
@@ -496,22 +502,29 @@ export default function App() {
   const builtinRoutes = useMemo(
     () => ({
       ...BUILTIN_ROUTES_CORE,
+      // Hiding a link stops nobody who can type a URL. Logs and Files expose operational
+      // traces and raw stored objects across the platform, so the route resolves to a
+      // redirect for anyone below super_admin — and the gateway refuses them regardless.
+      ...(learnRole === "super_admin"
+        ? {}
+        : { "/logs": RootRedirect, "/files": RootRedirect }),
       // Embedded TUI (PTY over WS) when the dashboard serves it; otherwise the
       // gateway-backed VIGIL assistant (HTTP SSE) — the only chat that works
       // through the Vercel product.
       "/chat": embeddedChat ? ChatRouteSink : AssistantChatPage,
     }),
-    [embeddedChat],
+    [embeddedChat, learnRole],
   );
 
   const builtinNav = useMemo(() => {
     // Chat is always in the nav now: the embedded TUI when the dashboard serves
     // it, otherwise the gateway-backed VIGIL assistant.
     const base = [CHAT_NAV_ITEM, ...BUILTIN_NAV_REST];
+    const visible = base.filter((n) => !n.roles || (learnRole && n.roles.includes(learnRole)));
     return showTokenAnalytics
-      ? base
-      : base.filter((n) => n.path !== "/analytics");
-  }, [showTokenAnalytics]);
+      ? visible
+      : visible.filter((n) => n.path !== "/analytics");
+  }, [showTokenAnalytics, learnRole]);
 
   const sidebarNav = useMemo(
     () => partitionSidebarNav(builtinNav, manifests),
@@ -1303,6 +1316,9 @@ interface NavItem {
   labelKey?: string;
   path: string;
   group?: NavGroupKey;
+  /** Absent means everyone. Present means only these LEARN roles see the entry.
+   *  Hiding a link is tidiness, not security — the gateway re-checks every call. */
+  roles?: string[];
 }
 
 interface SidebarIconWithTooltipProps {

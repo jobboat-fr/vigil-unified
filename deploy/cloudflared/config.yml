@@ -1,0 +1,33 @@
+# Cloudflare Tunnel — the gateway's public origin.
+#
+# `tunnel` and `credentials-file` are filled in by `cloudflared tunnel create`; the id it
+# prints goes here and the JSON it writes stays out of the repo (it is a credential).
+#
+#   tunnel: <uuid printed by `cloudflared tunnel create vigil-learn`>
+#   credentials-file: C:/Users/<you>/.cloudflared/<uuid>.json
+
+tunnel: REPLACE_WITH_TUNNEL_ID
+credentials-file: REPLACE_WITH_PATH_TO_TUNNEL_JSON
+
+# Cloudflare terminates TLS; the origin is plain HTTP on loopback. Binding the gateway to
+# 127.0.0.1 rather than 0.0.0.0 is the point of using a tunnel at all — nothing reaches it
+# except through this process.
+originRequest:
+  connectTimeout: 30s
+  # LEARN's audit export and reversibility manifest are slow by nature: they walk a whole
+  # session's evidence. The default 30s cuts them off mid-ZIP.
+  httpHostHeader: ""
+  noTLSVerify: false
+
+ingress:
+  - hostname: REPLACE_WITH_HOSTNAME      # e.g. learn.vtlvs.com
+    service: http://127.0.0.1:8000
+    originRequest:
+      # The public funnel is unauthenticated, so anything reaching it is a stranger. Keep
+      # the origin's own rate limiter in front of it (SecurityMiddleware) rather than
+      # relying on Cloudflare alone — the tunnel is not a WAF.
+      httpHostHeader: ""
+
+  # Everything not matched above is refused here rather than at the origin, so a hostname
+  # someone points at this tunnel by mistake gets a 404 and never reaches the app.
+  - service: http_status:404
