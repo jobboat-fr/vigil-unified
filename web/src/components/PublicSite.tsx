@@ -36,7 +36,8 @@ export default function PublicSite() {
       {/* External guests join a live meeting via a share link — no account. */}
       <Route path="/join/:shareToken" element={<GuestMeetingPage />} />
       <Route path="/login" element={<AuthPage initialMode="signin" />} />
-      <Route path="/signup" element={<AuthPage initialMode="signup" />} />
+      {/* Pas d’inscription en libre-service : les accès sont délivrés par l’organisme. */}
+      <Route path="/signup" element={<Navigate to="/login" replace />} />
       {/* OAuth / magic-link callback lands here; AuthProvider exchanges the code. */}
       <Route path="/auth" element={<AuthCallback />} />
       <Route path="*" element={<Navigate to="/" replace />} />

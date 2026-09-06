@@ -24,9 +24,9 @@ export const OPERATOR = {
   lastUpdated: "8 July 2026",
 };
 
-const INK = "#ffe6cb";
-const BG = "#041c1c";
-const LINE = "#ffe6cb22";
+const INK = "#0b2239";
+const BG = "#f4f7fb";
+const LINE = "#0b223922";
 
 function LegalLayout({ title, children }: { title: string; children: ReactNode }) {
   return (

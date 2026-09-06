@@ -9,8 +9,8 @@ import { GatewayError } from "@/lib/ww";
 // (gateway /v1/billing/checkout → redirect); the webhook provisions the org's
 // subscription row, which is what tenant_plan() gates quotas/features on.
 
-const GOLD = "#ffbd38";
-const EMER = "#34d399";
+const GOLD = "#1d3fae";
+const EMER = "#1f7a4c";
 
 function eur(cents: number): string {
   return cents === 0 ? "€0" : `€${(cents / 100).toFixed(0)}`;
@@ -69,7 +69,7 @@ function TierCard({
             className="mt-3"
             disabled={busy}
             onClick={() => onBuy(tier.id)}
-            style={highlight ? { background: GOLD, color: "#041c1c" } : undefined}
+            style={highlight ? { background: GOLD, color: "#0b2239" } : undefined}
           >
             {busy ? "Redirecting…" : `Upgrade to ${tier.name}`}
           </Button>

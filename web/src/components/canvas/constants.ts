@@ -3,4 +3,4 @@
 // Refresh working on the node component during dev).
 
 /** The node/edge accent palette for the VIGIL brainstorming board. */
-export const PALETTE = ['#00e5ff', '#a78bfa', '#34d399', '#fbbf24', '#f87171', '#e8b544'];
+export const PALETTE = ['#00e5ff', '#a78bfa', '#1f7a4c', '#fbbf24', '#f87171', '#e8b544'];

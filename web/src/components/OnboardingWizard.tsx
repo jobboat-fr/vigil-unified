@@ -95,7 +95,7 @@ export function OnboardingWizard() {
 
   return (
     <div className="fixed inset-0 z-[80] flex items-center justify-center p-4"
-         style={{ background: "rgba(2,12,12,.72)", backdropFilter: "blur(4px)" }}>
+         style={{ background: "color-mix(in srgb, var(--midground-base) 45%, transparent)", backdropFilter: "blur(4px)" }}>
       <style>{`@keyframes ob-in{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
         .ob-modal{animation:ob-in .5s cubic-bezier(.2,.7,.2,1) both}
         .ob-modal button:focus-visible{outline:2px solid ${BRAND.gold};outline-offset:2px}

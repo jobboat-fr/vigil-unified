@@ -24,7 +24,6 @@ import {
   Code,
   Cpu,
   Database,
-  Download,
   CreditCard,
   Eye,
   FolderOpen,
@@ -40,7 +39,6 @@ import {
   Plug,
   Puzzle,
   Radio,
-  RotateCw,
   Settings,
   Shield,
   ShieldCheck,
@@ -59,10 +57,6 @@ import {
   Video,
   PenLine,
   Lock,
-  LineChart,
-  TrendingUp,
-  Wallet,
-  ListOrdered,
   ScrollText,
   Receipt,
   Contact,
@@ -90,7 +84,6 @@ import { ProfileScopeBanner } from "@/components/ProfileScopeBanner";
 import { useSystemActions } from "@/contexts/useSystemActions";
 import type { SystemAction } from "@/contexts/system-actions-context";
 import ConfigPage from "@/pages/ConfigPage";
-import DocsPage from "@/pages/DocsPage";
 import EnvPage from "@/pages/EnvPage";
 import FilesPage from "@/pages/FilesPage";
 import SessionsPage from "@/pages/SessionsPage";
@@ -119,12 +112,9 @@ import VaultPage from "@/pages/VaultPage";
 import FinancePage from "@/pages/FinancePage";
 import CrmPage from "@/pages/CrmPage";
 import MailPage from "@/pages/MailPage";
-import TradeDeskPage from "@/pages/TradeDeskPage";
-import SignalsPage from "@/pages/SignalsPage";
-import PositionsPage from "@/pages/PositionsPage";
-import OrdersPage from "@/pages/OrdersPage";
 import AuditPage from "@/pages/AuditPage";
 import LearnCalendarPage from "@/pages/LearnCalendarPage";
+import NoyauPage from "@/pages/NoyauPage";
 import LearnDashboardPage from "@/pages/LearnDashboardPage";
 import LearnFormationsPage from "@/pages/LearnFormationsPage";
 import LearnEmargementPage from "@/pages/LearnEmargementPage";
@@ -187,6 +177,7 @@ const BUILTIN_ROUTES_CORE: Record<string, ComponentType> = {
   "/crm": CrmPage,
   "/mail": MailPage,
   // LEARN — training platform (AZZ&CO)
+  "/noyau": NoyauPage,
   "/learn": LearnDashboardPage,
   "/learn/calendar": LearnCalendarPage,
   "/learn/formations": LearnFormationsPage,
@@ -195,10 +186,6 @@ const BUILTIN_ROUTES_CORE: Record<string, ComponentType> = {
   "/learn/comptes": LearnPeoplePage,
 
   // WinnyWoo workspace
-  "/trade-desk": TradeDeskPage,
-  "/signals": SignalsPage,
-  "/positions": PositionsPage,
-  "/orders": OrdersPage,
   "/audit": AuditPage,
   "/files": FilesPage,
   "/analytics": AnalyticsPage,
@@ -217,7 +204,6 @@ const BUILTIN_ROUTES_CORE: Record<string, ComponentType> = {
   "/config": ConfigPage,
   "/env": EnvPage,
   "/billing": BillingPage,
-  "/docs": DocsPage,
 };
 
 // Route placeholder for /chat.  The persistent ChatPage host (rendered
@@ -251,47 +237,42 @@ const BUILTIN_NAV_REST: NavItem[] = [
   { path: "/learn/coffre", label: "Coffre", icon: Archive, group: "learn" },
   { path: "/learn/comptes", label: "Comptes", icon: Users, group: "learn" },
 
-  { path: "/finance", label: "Finance", icon: Receipt, group: "company" },
-  { path: "/crm", label: "CRM", icon: Contact, group: "company" },
-  { path: "/mail", label: "Mail", icon: Mail, group: "company" },
+  { path: "/finance", label: "Finance", icon: Receipt, group: "company", roles: ["super_admin"] },
+  { path: "/crm", label: "CRM", icon: Contact, group: "company", roles: ["super_admin", "admin"] },
+  { path: "/mail", label: "Mail", icon: Mail, group: "company", roles: ["super_admin", "admin"] },
   // ── Trade desk ──
-  { path: "/trade-desk", label: "Trade Desk", icon: LineChart, group: "desk" },
-  { path: "/signals", label: "Signals", icon: TrendingUp, group: "desk" },
-  { path: "/positions", label: "Positions", icon: Wallet, group: "desk" },
-  { path: "/orders", label: "Orders", icon: ListOrdered, group: "desk" },
   // ── Insight ──
-  { path: "/audit", label: "Audit", icon: ScrollText, group: "insight" },
+  { path: "/audit", label: "Audit", icon: ScrollText, group: "insight", roles: ["super_admin", "auditeur"] },
   { path: "/learn", label: "Formation", icon: ScrollText, group: "insight" },
   { path: "/learn/calendar", label: "Calendrier", icon: ScrollText, group: "insight" },
   { path: "/files", label: "Files", icon: FolderOpen, group: "insight", roles: ["super_admin"] },
-  { path: "/analytics", labelKey: "analytics", label: "Analytics", icon: BarChart3, group: "insight" },
-  { path: "/models", labelKey: "models", label: "Models", icon: Cpu, group: "insight" },
+  { path: "/analytics", labelKey: "analytics", label: "Analytics", icon: BarChart3, group: "insight", roles: ["super_admin", "admin"] },
+  { path: "/models", labelKey: "models", label: "Models", icon: Cpu, group: "insight", roles: ["super_admin", "admin"] },
   { path: "/logs", labelKey: "logs", label: "Logs", icon: FileText, group: "insight", roles: ["super_admin"] },
   // ── System ──
-  { path: "/cron", labelKey: "cron", label: "Cron", icon: Clock, group: "system" },
-  { path: "/skills", labelKey: "skills", label: "Skills", icon: Package, group: "system" },
-  { path: "/plugins", labelKey: "plugins", label: "Plugins", icon: Puzzle, group: "system" },
-  { path: "/mcp", label: "MCP", icon: Plug, group: "system" },
-  { path: "/channels", label: "Channels", icon: Radio, group: "system" },
-  { path: "/webhooks", label: "Webhooks", icon: Webhook, group: "system" },
-  { path: "/pairing", label: "Pairing", icon: ShieldCheck, group: "system" },
+  { path: "/cron", labelKey: "cron", label: "Cron", icon: Clock, group: "system" , roles: ["super_admin", "admin"] },
+  { path: "/skills", labelKey: "skills", label: "Skills", icon: Package, group: "system" , roles: ["super_admin", "admin"] },
+  { path: "/plugins", labelKey: "plugins", label: "Plugins", icon: Puzzle, group: "system" , roles: ["super_admin", "admin"] },
+  { path: "/mcp", label: "MCP", icon: Plug, group: "system" , roles: ["super_admin", "admin"] },
+  { path: "/channels", label: "Channels", icon: Radio, group: "system" , roles: ["super_admin", "admin"] },
+  { path: "/webhooks", label: "Webhooks", icon: Webhook, group: "system" , roles: ["super_admin", "admin"] },
+  { path: "/pairing", label: "Pairing", icon: ShieldCheck, group: "system" , roles: ["super_admin", "admin"] },
   { path: "/profiles", labelKey: "profiles", label: "Profiles", icon: Users, group: "system" },
-  { path: "/config", labelKey: "config", label: "Config", icon: Settings, group: "system" },
-  { path: "/env", labelKey: "keys", label: "Keys", icon: KeyRound, group: "system" },
-  { path: "/billing", label: "Billing", icon: CreditCard, group: "system" },
-  { path: "/system", label: "System", icon: Wrench, group: "system" },
-  { path: "/docs", labelKey: "documentation", label: "Documentation", icon: BookOpen, group: "system" },
+  { path: "/config", labelKey: "config", label: "Config", icon: Settings, group: "system" , roles: ["super_admin", "admin"] },
+  { path: "/env", labelKey: "keys", label: "Keys", icon: KeyRound, group: "system" , roles: ["super_admin", "admin"] },
+  { path: "/billing", label: "Billing", icon: CreditCard, group: "system" , roles: ["super_admin", "admin"] },
+  { path: "/system", label: "System", icon: Wrench, group: "system" , roles: ["super_admin", "admin"] },
+  { path: "/noyau", label: "Le Noyau", icon: BookOpen, group: "system", roles: ["super_admin", "admin"] },
 ];
 
 // Sidebar section ordering + labels. Grouping the ~30 destinations into five
 // labelled sections keeps the nav scannable instead of one long confusing list.
-type NavGroupKey = "workspace" | "learn" | "desk" | "company" | "insight" | "system";
-const NAV_GROUP_ORDER: NavGroupKey[] = ["workspace", "learn", "company", "desk", "insight", "system"];
+type NavGroupKey = "workspace" | "learn" | "company" | "insight" | "system";
+const NAV_GROUP_ORDER: NavGroupKey[] = ["workspace", "learn", "company", "insight", "system"];
 const NAV_GROUP_LABEL: Record<NavGroupKey, string> = {
   workspace: "Workspace",
   learn: "Formation",
   company: "Company",
-  desk: "Trade Desk",
   insight: "Insight",
   system: "System",
 };
@@ -525,9 +506,14 @@ export default function App() {
       // Hiding a link stops nobody who can type a URL. Logs and Files expose operational
       // traces and raw stored objects across the platform, so the route resolves to a
       // redirect for anyone below super_admin — and the gateway refuses them regardless.
-      ...(learnRole === "super_admin"
-        ? {}
-        : { "/logs": RootRedirect, "/files": RootRedirect }),
+      // Hidden links stop nobody who can type a URL, so each gated path resolves to a
+      // redirect for anyone outside its allowlist. The gateway refuses them regardless;
+      // this is what stops the page rendering an empty shell before that refusal lands.
+      ...Object.fromEntries(
+        BUILTIN_NAV_REST.filter(
+          (n) => n.roles && !(learnRole && n.roles.includes(learnRole)),
+        ).map((n) => [n.path, RootRedirect]),
+      ),
       // Embedded TUI (PTY over WS) when the dashboard serves it; otherwise the
       // gateway-backed VIGIL assistant (HTTP SSE) — the only chat that works
       // through the Vercel product.
@@ -594,7 +580,7 @@ export default function App() {
     <ProfileProvider>
     <div
       data-layout-variant={layoutVariant}
-      className="flex h-dvh max-h-dvh min-h-0 flex-col overflow-hidden bg-black text-text-primary antialiased"
+      className="flex h-dvh max-h-dvh min-h-0 flex-col overflow-hidden bg-background text-text-primary antialiased"
     >
       <SelectionSwitcher />
       <Backdrop />
@@ -640,7 +626,7 @@ export default function App() {
           onClick={closeMobile}
           className={cn(
             "lg:hidden fixed inset-0 z-40 p-0 block",
-            "bg-black/60 backdrop-blur-sm",
+            "bg-[color-mix(in_srgb,var(--midground-base)_45%,transparent)] backdrop-blur-sm",
           )}
         />
       )}
@@ -699,7 +685,7 @@ export default function App() {
                     VIGIL
                     <span
                       className="rounded-full px-1.5 py-px text-[0.5rem] font-bold uppercase tracking-[0.12em]"
-                      style={{ color: "#041c1c", background: "#ffbd38" }}
+                      style={{ color: "#0b2239", background: "#1d3fae" }}
                     >
                       Beta
                     </span>
@@ -1052,22 +1038,11 @@ function SidebarSystemActions({
   const { activeAction, isBusy, isRunning, pendingAction, runAction } =
     useSystemActions();
 
-  const items: SystemActionItem[] = [
-    {
-      action: "restart",
-      icon: RotateCw,
-      label: t.status.restartGateway,
-      runningLabel: t.status.restartingGateway,
-      spin: true,
-    },
-    {
-      action: "update",
-      icon: Download,
-      label: t.status.updateHermes,
-      runningLabel: t.status.updatingHermes,
-      spin: false,
-    },
-  ];
+  // Restarting the gateway and updating VIGIL were dashboard operations: they act on a
+  // process the operator runs locally. This deployment's gateway is a managed Railway
+  // service — a button that cannot do what it says is worse than no button, and worse
+  // still when the thing it claims to restart serves an organisme's live sessions.
+  const items: SystemActionItem[] = [];
 
   const handleClick = (action: SystemAction) => {
     if (isBusy) return;

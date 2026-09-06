@@ -43,3 +43,14 @@ createRoot(document.getElementById("root")!).render(
     </I18nProvider>
   </BrowserRouter>,
 );
+
+// PWA : installable sur mobile, et une coquille servie quand le réseau tombe en salle.
+// Enregistré après le premier rendu pour ne pas disputer la bande passante au bundle, et
+// silencieux en développement, où un worker persistant sert un build périmé.
+if ("serviceWorker" in navigator && import.meta.env.PROD) {
+  window.addEventListener("load", () => {
+    void navigator.serviceWorker.register("/sw.js").catch(() => {
+      /* Un enregistrement refusé (mode privé, contexte non sécurisé) n'empêche rien. */
+    });
+  });
+}

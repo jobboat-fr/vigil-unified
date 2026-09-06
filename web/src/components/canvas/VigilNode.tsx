@@ -22,7 +22,7 @@ export type VigilNodeData = {
 
 const KIND_DEFAULTS: Record<string, { color: string; shape: BlockShape }> = {
   decision:  { color: '#a78bfa', shape: 'decision'  },
-  note:      { color: '#34d399', shape: 'note'      },
+  note:      { color: '#1f7a4c', shape: 'note'      },
   action:    { color: '#fbbf24', shape: 'action'    },
   risk:      { color: '#f87171', shape: 'block'     },
   circle:    { color: '#00e5ff', shape: 'circle'    },

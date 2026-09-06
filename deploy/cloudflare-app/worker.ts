@@ -80,16 +80,65 @@ async function proxy(request: Request, origin: string): Promise<Response> {
   }
 }
 
+/**
+ * Endpoints that belong to the Hermes *dashboard* server, not to the product gateway.
+ *
+ * This deployment has no dashboard: it is a static SPA in front of two APIs. The client
+ * polls these anyway — they drive optional features (plugin tabs, theme catalogue, agent
+ * profiles) — and every poll logged a 404, 114 of them on one page load.
+ *
+ * Answering with an honest empty result is better than a 404 for a reason beyond tidiness:
+ * these are catalogues, and "this deployment has none" is exactly what an empty catalogue
+ * means. Nothing here invents data. `/api/auth/me` and the LEARN and gateway routes are
+ * deliberately NOT in this list — an empty answer there would be a lie about who is signed
+ * in, and a 404 is the correct, loud response.
+ */
+const DASHBOARD_STUBS: Record<string, unknown> = {
+  "/api/dashboard/plugins": [],
+  "/api/dashboard/themes": { themes: [], active: null },
+  "/api/dashboard/font": {},
+  "/api/profiles": { profiles: [] },
+  "/api/profiles/active": null,
+  "/api/config": {},
+  "/api/status": { ok: true, dashboard: false },
+};
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const { pathname } = new URL(request.url);
+
+    // Not stubbed, deliberately: `AuthMeResponse` requires a real user, and the client
+    // already passes `allowUnauthorized` for it. 401 is the true answer — there is no
+    // dashboard session here, the app authenticates through Supabase. It costs one console
+    // line, which is cheaper than a fabricated session.
+    if (pathname === "/api/auth/me") {
+      return new Response(JSON.stringify({ error: "no_dashboard_session" }), {
+        status: 401,
+        headers: { "content-type": "application/json; charset=utf-8" },
+      });
+    }
+
+    if (pathname in DASHBOARD_STUBS) {
+      return new Response(JSON.stringify(DASHBOARD_STUBS[pathname]), {
+        status: 200,
+        headers: {
+          "content-type": "application/json; charset=utf-8",
+          // Says plainly that this is the edge answering, not a backend — so nobody spends
+          // an afternoon looking for the service that returned an empty plugin list.
+          "x-vtlvs-stub": "dashboard-absent-in-this-deployment",
+          "cache-control": "no-store",
+        },
+      });
+    }
 
     if (pathname.startsWith("/api/v1/learn/")) {
       const origin = env.LEARN_API_ORIGIN;
       return origin ? proxy(request, origin) : unavailable("La plateforme de formation");
     }
 
-    if (pathname.startsWith("/api/")) {
+    // The gateway exposes both prefixes — /api/v1/approvals alongside /v1/rooms — so both
+    // have to be forwarded. Matching only /api/ sent half the product to the SPA fallback.
+    if (pathname.startsWith("/api/") || pathname.startsWith("/v1/")) {
       const origin = env.GATEWAY_ORIGIN;
       return origin ? proxy(request, origin) : unavailable("La passerelle VIGIL");
     }

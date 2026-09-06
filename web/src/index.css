@@ -310,3 +310,87 @@ code { font-size: 0.875rem; }
   display: none;
 }
 
+
+/* ------------------------------------------------------------------ */
+/* VTLVS — the product palette, matching hbs-formation.fr               */
+/*                                                                      */
+/* A visitor meets the organisme on the vitrine and continues into this  */
+/* application. If the two look like different companies, the second     */
+/* reads as a third-party tool the organisme bought. Same navy, same     */
+/* surfaces, same radii — the tokens are copied from                     */
+/* hbs-formation/tailwind.config.ts rather than re-picked.               */
+/*                                                                      */
+/* This block comes last on purpose: it overrides the LENS_0 defaults    */
+/* above without deleting them, so the Hermes theme is still there for   */
+/* anyone who selects it. ThemeProvider writes inline styles when a user */
+/* switches themes, and inline beats a stylesheet — so a chosen theme    */
+/* still wins over this.                                                 */
+/* ------------------------------------------------------------------ */
+
+:root {
+  /* The three bases. `midground` is the ink, not a surface: every derived
+     token below is a mix of it INTO the background. */
+  /* alpha 0 — Backdrop.tsx difference-blends this over everything to invert the stack.
+     The palette below is already light; inverting it would undo it. */
+  --foreground: color-mix(in srgb, #ffffff 0%, transparent);
+  --foreground-base: #ffffff;
+  --foreground-alpha: 0;
+  --midground: color-mix(in srgb, #0b2239 100%, transparent);
+  --midground-base: #0b2239;
+  --midground-alpha: 1;
+  --background: color-mix(in srgb, #f4f7fb 100%, transparent);
+  --background-base: #f4f7fb;
+  --background-alpha: 1;
+
+  --warm-glow: rgba(29, 63, 174, 0.14);
+  /* The film-grain overlay reads as dirt on a light canvas. */
+  --noise-opacity-mul: 0;
+
+  --theme-font-sans: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --theme-font-display: Poppins, Inter, system-ui, sans-serif;
+  --theme-base-size: 15px;
+  --theme-line-height: 1.6;
+  --radius: 0.75rem;
+  --theme-radius: 0.75rem;
+
+  /* --- surfaces -----------------------------------------------------
+     The defaults mix ink INTO the canvas, which lightens a card on a dark
+     theme and DARKENS it on a light one — cards would sit below the page
+     instead of above it. On a light canvas the surface has to go the other
+     way: white, lifted by a shadow rather than by tint. */
+  --color-card: #ffffff;
+  --color-card-foreground: var(--midground);
+  --color-popover: #ffffff;
+  --color-popover-foreground: var(--midground);
+  --color-secondary: #eef3f8;
+  --color-secondary-foreground: var(--midground);
+  --color-muted: #eef3f8;
+  --color-accent: #eaf0fe;
+  --color-accent-foreground: #16307f;
+
+  /* --- brand --------------------------------------------------------
+     Navy, from the vitrine. Its `teal` key holds navy for historical
+     reasons; the colour is what matters and it is this one. */
+  --color-primary: #1d3fae;
+  --color-primary-foreground: #ffffff;
+  --color-ring: #2e5fe0;
+
+  /* Borders were 15% ink on transparent — at this lightness that is a
+     grey smudge. A defined hairline reads as deliberate. */
+  --color-border: #e3eaf3;
+  --color-input: #dfe7f1;
+
+  /* Status colours that survive a black-and-white print of an audit file:
+     each is paired with a word in the UI, never used alone. */
+  --color-destructive: #c0392b;
+  --color-destructive-foreground: #ffffff;
+  --color-success: #1f7a4c;
+  --color-warning: #b4740b;
+}
+
+/* The dark-canvas decorations belong to the Hermes lens, not to a light
+   product surface. */
+:root body::before,
+:root body::after {
+  opacity: 0;
+}

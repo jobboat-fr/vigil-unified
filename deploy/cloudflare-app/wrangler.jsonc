@@ -18,7 +18,7 @@
   // the picture, since the browser only ever talks to app.vtlvs.com.
   "vars": {
     "LEARN_API_ORIGIN": "https://api.vtlvs.com",
-    "GATEWAY_ORIGIN": ""
+    "GATEWAY_ORIGIN": "https://gateway-production-d7e1.up.railway.app"
   },
   "assets": {
     "binding": "ASSETS",

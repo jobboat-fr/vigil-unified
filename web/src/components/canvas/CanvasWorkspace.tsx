@@ -72,7 +72,7 @@ const BLOCK_TYPES: {
 }[] = [
   { label: 'Block',     kind: 'block',     shape: 'block',     color: '#00e5ff', Icon: Square       },
   { label: 'Decision',  kind: 'decision',  shape: 'decision',  color: '#a78bfa', Icon: Diamond      },
-  { label: 'Note',      kind: 'note',      shape: 'note',      color: '#34d399', Icon: StickyNote   },
+  { label: 'Note',      kind: 'note',      shape: 'note',      color: '#1f7a4c', Icon: StickyNote   },
   { label: 'Circle',    kind: 'circle',    shape: 'circle',    color: '#00e5ff', Icon: Circle       },
   { label: 'Action',    kind: 'action',    shape: 'action',    color: '#fbbf24', Icon: Minus        },
   { label: 'Milestone', kind: 'milestone', shape: 'milestone', color: '#e8b544', Icon: Star         },
@@ -93,7 +93,7 @@ const LENSES: { key: string; label: string }[] = [
 const DIAGRAM_KIND: Record<string, { shape: BlockShape; color: string }> = {
   problem:  { shape: 'block',     color: '#00e5ff' },
   decision: { shape: 'decision',  color: '#a78bfa' },
-  outcome:  { shape: 'milestone', color: '#34d399' },
+  outcome:  { shape: 'milestone', color: '#1f7a4c' },
 };
 
 // ─── Edge style helpers ───────────────────────────────────────────────────────
@@ -236,7 +236,7 @@ function CanvasInner({ initialNodes = [], initialEdges = [], onCanvasChange, col
             label: b.text,
             kind: b.lens || b.kind || lens,
             shape: 'note',
-            color: b.color || '#34d399',
+            color: b.color || '#1f7a4c',
           } as VigilNodeData,
         }));
         setNodes((nds) => [...nds.map((n) => ({ ...n, selected: false })), ...created]);

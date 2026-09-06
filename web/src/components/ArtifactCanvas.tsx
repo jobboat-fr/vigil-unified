@@ -19,7 +19,7 @@ import { vigil, type Artifact, type MeetingCanvas } from "@/lib/vigil";
 const KIND_NODE: Record<string, { shape: string; color: string }> = {
   problem:  { shape: "block",     color: "#00e5ff" },
   decision: { shape: "decision",  color: "#a78bfa" },
-  outcome:  { shape: "milestone", color: "#34d399" },
+  outcome:  { shape: "milestone", color: "#1f7a4c" },
 };
 
 const EDGE_COLOR = "#00e5ff";

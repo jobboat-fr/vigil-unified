@@ -299,8 +299,59 @@ export const defaultLargeTheme: DashboardTheme = {
   },
 };
 
+/**
+ * VTLVS — the product theme, and the one this deployment ships with.
+ *
+ * Its palette is copied from `hbs-formation/tailwind.config.ts`, not re-picked. A visitor
+ * meets the organisme on the vitrine and continues into this application; if the two look
+ * like different companies, the second reads as a third-party tool the organisme bought.
+ *
+ * Note the direction of the palette. `midground` is the ink and `background` is the canvas,
+ * and every surface token in index.css is a mix of one into the other — a relationship that
+ * assumes a dark canvas, since mixing light ink into a dark ground *lifts* a card. Inverted
+ * for a light theme it would push cards below the page instead of above it, so index.css
+ * pins `--color-card` and friends explicitly for this palette.
+ *
+ * `noiseOpacity: 0` because the film grain reads as dirt on a light surface rather than as
+ * texture.
+ */
+export const vtlvsTheme: DashboardTheme = {
+  name: "vtlvs",
+  label: "VTLVS",
+  description: "Marine et blanc — la charte du site vitrine",
+  palette: {
+    background: { hex: "#f4f7fb", alpha: 1 },
+    midground: { hex: "#0b2239", alpha: 1 },
+    // alpha 0, and this is not cosmetic. Backdrop.tsx paints a full-bleed layer of
+    // `--foreground` with `mix-blend-mode: difference` — that is how this design system
+    // produces light mode from a DARK palette (LENS_5I): it inverts the whole stack.
+    // Supplying light colours here AND switching the inverter on inverts them a second
+    // time, which is what turned the canvas taupe and the cards pink. This palette is
+    // already light, so the inverter stays off.
+    foreground: { hex: "#ffffff", alpha: 0 },
+    warmGlow: "rgba(29, 63, 174, 0.14)",
+    noiseOpacity: 0,
+  },
+  typography: {
+    fontSans: 'Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
+    fontMono: SYSTEM_MONO,
+    baseSize: "15px",
+    lineHeight: "1.6",
+    letterSpacing: "0",
+  },
+  layout: {
+    radius: "0.75rem",
+    density: "comfortable",
+  },
+  terminalBackground: "#0b2239",
+};
+
 export const BUILTIN_THEMES: Record<string, DashboardTheme> = {
-  default: defaultTheme,
+  // `default` is what ThemeProvider applies when nobody has chosen — so this is the one
+  // line that decides how the product looks out of the box.
+  default: vtlvsTheme,
+  vtlvs: vtlvsTheme,
+  hermes: defaultTheme,
   "default-large": defaultLargeTheme,
   "nous-blue": nousBlueTheme,
   midnight: midnightTheme,

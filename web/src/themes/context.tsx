@@ -7,7 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { BUILTIN_THEMES, defaultTheme } from "./presets";
+import { BUILTIN_THEMES } from "./presets";
 import {
   FONT_CHOICES,
   THEME_DEFAULT_FONT_ID,
@@ -453,7 +453,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       return (
         BUILTIN_THEMES[name] ??
         userThemeDefs[name] ??
-        defaultTheme
+        // The registry's `default` entry, not the Hermes preset that happens to be exported
+        // under the name `defaultTheme`. Importing that one directly meant an unknown or
+        // unset theme silently fell back to the dark canvas, whatever the product shipped.
+        BUILTIN_THEMES.default
       );
     },
     [userThemeDefs],
@@ -586,7 +589,7 @@ export function useTheme(): ThemeContextValue {
 }
 
 const ThemeContext = createContext<ThemeContextValue>({
-  theme: defaultTheme,
+  theme: BUILTIN_THEMES.default,
   themeName: "default",
   availableThemes: Object.values(BUILTIN_THEMES).map((t) => ({
     name: t.name,

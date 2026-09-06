@@ -11,12 +11,12 @@ import { useSeo } from "@/lib/seo";
 // emerald positive. Display type is Mondwest (the Nous DS brand face, loaded in
 // index.css); labels are JetBrains Mono. Mirrors the dashboard so the marketing
 // site and the product read as one product.
-const BG = "#041c1c";       // teal canvas
-const INK = "#ffe6cb";      // cream
-const GOLD = "#ffbd38";     // warm accent (CTA / highlight)
-const EMER = "#34d399";     // positive
-const ROSE = "#fb7185";     // negative
-const PANEL = "#07211f";    // raised teal panel
+const BG = "#f4f7fb";       // teal canvas
+const INK = "#0b2239";      // cream
+const GOLD = "#1d3fae";     // warm accent (CTA / highlight)
+const EMER = "#1f7a4c";     // positive
+const ROSE = "#c0392b";     // negative
+const PANEL = "#ffffff";    // raised teal panel
 const LINE = "rgba(255,230,203,0.14)";
 const DISPLAY = "'Mondwest', ui-serif, Georgia, serif";
 const MONO = "'JetBrains Mono', ui-monospace, 'Cascadia Mono', Menlo, monospace";

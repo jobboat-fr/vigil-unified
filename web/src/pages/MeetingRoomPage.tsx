@@ -361,7 +361,7 @@ export default function MeetingRoomPage() {
               </button>
             )}
             <button onClick={() => setLiveJoin(null)} className="rounded px-2 py-1 text-xs" style={{ color: "#e7e9f3", border: "1px solid #ffffff33" }}>Minimize</button>
-            <button onClick={() => void closeMeeting()} disabled={summarizing} className="rounded px-2 py-1 text-xs font-semibold" style={{ color: "#fff", background: "#fb7185" }}>
+            <button onClick={() => void closeMeeting()} disabled={summarizing} className="rounded px-2 py-1 text-xs font-semibold" style={{ color: "#fff", background: "#c0392b" }}>
               {summarizing ? "Closing…" : "⏹ End meeting"}
             </button>
           </div>
@@ -371,7 +371,7 @@ export default function MeetingRoomPage() {
             <div className="min-h-0 flex-1"><LiveRoom token={liveJoin.token} url={liveJoin.url} onLeave={() => setLiveJoin(null)} /></div>
             {avatarSession && (
               <div className="relative min-h-0 flex-1" style={{ borderLeft: "1px solid #ffffff14", background: "#000" }}>
-                <div className="absolute left-2 top-2 z-10 flex items-center gap-2 rounded-full px-2 py-1 text-[10px] font-semibold" style={{ background: "#041c1ccc", color: "#34d399" }}>
+                <div className="absolute left-2 top-2 z-10 flex items-center gap-2 rounded-full px-2 py-1 text-[10px] font-semibold" style={{ background: "#0b2239cc", color: "#1f7a4c" }}>
                   <span className="vigil-breathe">●</span> AI {persona} · {avatarSession.provider === "tavus" ? "Tavus" : "Beyond Presence"}
                   <button onClick={() => void dismissAvatar()} className="ml-1 opacity-70 hover:opacity-100" title="Remove avatar">✕</button>
                 </div>
@@ -553,7 +553,7 @@ export default function MeetingRoomPage() {
                       {meetStatus && (
                         <div className="rounded-lg border border-current/10 p-2 space-y-2">
                           <div className="flex flex-wrap items-center gap-2 text-xs">
-                            <span className="rounded-full px-2 py-0.5" style={{ background: "#34d39922", color: "#34d399" }}>{meetStatus.state || (meetStatus.ok ? "in call" : meetStatus.reason || "—")}</span>
+                            <span className="rounded-full px-2 py-0.5" style={{ background: "#1f7a4c22", color: "#1f7a4c" }}>{meetStatus.state || (meetStatus.ok ? "in call" : meetStatus.reason || "—")}</span>
                             <button className="text-text-secondary hover:text-foreground" onClick={() => void refreshMeetStatus()}>Refresh</button>
                             <button className="text-text-secondary hover:text-foreground" disabled={meetBusy} onClick={() => void pullMeetNow()}>Pull transcript</button>
                             <button className="text-text-secondary hover:text-foreground" onClick={() => void leaveMeet()}>Leave</button>
@@ -580,7 +580,7 @@ export default function MeetingRoomPage() {
                         ))}
                       </div>
                       <label className="flex items-center gap-2 text-xs text-text-secondary pt-1">
-                        <button onClick={() => { setLiveAdvisor((v) => !v); setSuggestion(null); }} className="text-xs px-2.5 py-1 rounded-full border" style={{ borderColor: liveAdvisor ? "#34d39966" : "currentColor", color: liveAdvisor ? "#34d399" : undefined, background: liveAdvisor ? "#34d39914" : "transparent" }}>
+                        <button onClick={() => { setLiveAdvisor((v) => !v); setSuggestion(null); }} className="text-xs px-2.5 py-1 rounded-full border" style={{ borderColor: liveAdvisor ? "#1f7a4c66" : "currentColor", color: liveAdvisor ? "#1f7a4c" : undefined, background: liveAdvisor ? "#1f7a4c14" : "transparent" }}>
                           {liveAdvisor ? "● Live advisor listening" : "○ Live advisor off"}
                         </button>
                         <span>Raises its hand when it has something worth saying.</span>
@@ -696,7 +696,7 @@ function StepHeader({ n, title, hint }: { n: number; title: string; hint: string
       <div className="flex items-center gap-2">
         <span
           className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold"
-          style={{ background: "#ffbd38", color: "#041c1c" }}
+          style={{ background: "#1d3fae", color: "#0b2239" }}
         >
           {n}
         </span>
@@ -725,8 +725,8 @@ function ModeTile({
       onClick={onClick}
       className="vigil-lift flex flex-col items-start gap-1 rounded-xl border p-3 text-left transition"
       style={{
-        borderColor: active ? "#34d399" : "currentColor",
-        background: active ? "#34d39914" : "transparent",
+        borderColor: active ? "#1f7a4c" : "currentColor",
+        background: active ? "#1f7a4c14" : "transparent",
         opacity: active ? 1 : 0.72,
       }}
       aria-pressed={active}

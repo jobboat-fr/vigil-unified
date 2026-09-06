@@ -64,7 +64,6 @@ export default function WebhooksPage() {
   const [restartNeeded, setRestartNeeded] = useState(false);
   const [restartMessage, setRestartMessage] = useState<string | null>(null);
   const [restartError, setRestartError] = useState<string | null>(null);
-  const [restarting, setRestarting] = useState(false);
   const { toast, showToast } = useToast();
   const { setEnd } = usePageHeader();
 
@@ -130,24 +129,6 @@ export default function WebhooksPage() {
     setRestartMessage(null);
   }, [showToast]);
 
-  const handleRestart = useCallback(async () => {
-    setRestarting(true);
-    try {
-      await api.restartGateway();
-      setRestartNeeded(false);
-      setRestartError(null);
-      setRestartMessage("Gateway restarting…");
-      showToast("Gateway restarting…", "success");
-      setTimeout(() => void loadWebhooks(), 4000);
-      void watchRestartOutcome();
-    } catch (e) {
-      setRestartNeeded(true);
-      setRestartError(String(e));
-      showToast(`Failed to restart: ${e}`, "error");
-    } finally {
-      setRestarting(false);
-    }
-  }, [loadWebhooks, showToast, watchRestartOutcome]);
 
   const handleEnableWebhooks = useCallback(async () => {
     setEnabling(true);
@@ -504,18 +485,10 @@ export default function WebhooksPage() {
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
               <span>
                 {restartError ??
-                  "Webhooks are enabled, but the gateway still needs a restart before the receiver can come online."}
+                  "Les webhooks sont activés ; le récepteur sera en ligne au prochain redéploiement de la passerelle."}
               </span>
             </div>
-            <Button
-              size="sm"
-              className="uppercase shrink-0"
-              onClick={handleRestart}
-              disabled={restarting}
-              prefix={restarting ? <Spinner /> : <RotateCw className="h-4 w-4" />}
-            >
-              {restarting ? "Restarting…" : "Restart gateway"}
-            </Button>
+
           </CardContent>
         </Card>
       )}

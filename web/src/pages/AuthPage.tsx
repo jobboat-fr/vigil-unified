@@ -3,10 +3,25 @@ import { Link } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { BRAND } from "@/lib/brand";
 
-type Mode = "signin" | "signup" | "reset";
+type Mode = "signin" | "reset";
 
+/**
+ * L'écran d'entrée. Rien d'autre n'est accessible sans passer par ici : `AuthGate` échoue
+ * fermé et rend cette page pour toute session absente ou expirée.
+ *
+ * Le logo sert de fond, agrandi. C'est demandé, et c'est piégeux : le fichier ne contient
+ * que ~7 % de pixels sombres, donc à opacité naïve il disparaît sur fond clair. Il est donc
+ * posé en `background-size: cover` à une opacité assumée, avec un voile dégradé par-dessus
+ * — dense au centre, sous la carte, transparent sur les bords. Le motif reste visible sans
+ * qu'aucune couleur ne passe sous le texte.
+ *
+ * Les fournisseurs OAuth (Google/Apple/GitHub/Railway) hérités de Hermes ont été retirés :
+ * aucun n'est configuré sur ce projet Supabase, et un bouton qui renvoie la page d'erreur
+ * du fournisseur est pire que pas de bouton. L'identifiant reste e-mail + mot de passe,
+ * qui est ce que la plateforme provisionne pour chaque rôle.
+ */
 export default function AuthPage({ initialMode = "signin" }: { initialMode?: Mode }) {
-  const { signIn, signUp, resetPassword, signInWithGoogle, signInWithApple, signInWithGithub, signInWithRailway, authError } = useAuth();
+  const { signIn, resetPassword, authError } = useAuth();
   const [mode, setMode] = useState<Mode>(initialMode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -20,26 +35,28 @@ export default function AuthPage({ initialMode = "signin" }: { initialMode?: Mod
     try {
       if (mode === "signin") {
         const { error } = await signIn(email.trim(), password);
-        if (error) setErr(error.message);
-      } else if (mode === "signup") {
-        const { data, error } = await signUp(email.trim(), password);
-        if (error) setErr(error.message);
-        else if (!data?.session) setMsg("Check your email to confirm your account, then sign in.");
+        if (error) setErr(traduire(error.message));
       } else {
         const { error } = await resetPassword(email.trim());
-        if (error) setErr(error.message);
-        else setMsg("Password reset link sent — check your email.");
+        if (error) setErr(traduire(error.message));
+        else setMsg("Lien de réinitialisation envoyé — consultez votre messagerie.");
       }
     } catch (e2) {
-      setErr((e2 as Error).message);
+      setErr(traduire((e2 as Error).message));
     } finally {
       setBusy(false);
     }
   }
 
-  const heading = mode === "signin" ? "Sign in to your workspace"
-    : mode === "signup" ? "Create your account" : "Reset your password";
-  const cta = mode === "signin" ? "Sign in" : mode === "signup" ? "Create account" : "Send reset link";
+  const heading = mode === "signin" ? "Accéder à votre espace" : "Réinitialiser le mot de passe";
+  const cta = mode === "signin" ? "Se connecter" : "Envoyer le lien";
+  const label = {
+    fontFamily: BRAND.mono,
+    fontSize: 10,
+    letterSpacing: ".12em",
+    textTransform: "uppercase" as const,
+    color: `${BRAND.ink}99`,
+  };
 
   return (
     <div className="relative flex min-h-dvh items-center justify-center overflow-hidden p-4"
@@ -47,78 +64,87 @@ export default function AuthPage({ initialMode = "signin" }: { initialMode?: Mod
       <style>{`
         @keyframes ap-in{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
         .ap-in{animation:ap-in .6s cubic-bezier(.2,.7,.2,1) both}
-        .ap-grid{background-image:linear-gradient(${BRAND.line} 1px,transparent 1px),linear-gradient(90deg,${BRAND.line} 1px,transparent 1px);background-size:46px 46px}
-        .ap-field{width:100%;border-radius:.375rem;border:1px solid rgba(255,230,203,.45);background:rgba(255,230,203,.04);padding:.55rem .7rem;font-size:.875rem;color:${BRAND.ink};outline:none}
-        .ap-field:focus{border-color:${BRAND.gold}88}
-        .ap-oauth{border:1px solid ${BRAND.line};border-radius:.375rem;padding:.5rem;font-size:.8rem;color:${BRAND.ink};transition:background .15s,border-color .15s}
-        .ap-oauth:hover{background:rgba(255,230,203,.05);border-color:${BRAND.gold}55}
-        .ap-field:focus-visible,button:focus-visible,.ap-oauth:focus-visible{outline:2px solid ${BRAND.gold};outline-offset:2px}
+        .ap-mark{background-image:url("/logo.webp");background-repeat:no-repeat;background-position:center;background-size:cover;opacity:.16}
+        .ap-veil{background:radial-gradient(52% 44% at 50% 50%, ${BRAND.bg}f2 0%, ${BRAND.bg}d9 45%, ${BRAND.bg}66 78%, transparent 100%)}
+        .ap-card{background:rgba(255,255,255,.62);backdrop-filter:blur(14px) saturate(1.1);-webkit-backdrop-filter:blur(14px) saturate(1.1)}
+        .ap-field{width:100%;border-radius:.5rem;border:1px solid ${BRAND.line};background:rgba(255,255,255,.9);padding:.6rem .75rem;font-size:.875rem;color:${BRAND.ink};outline:none;transition:border-color .15s,box-shadow .15s}
+        .ap-field::placeholder{color:${BRAND.ink}55}
+        .ap-field:focus{border-color:${BRAND.gold};box-shadow:0 0 0 3px ${BRAND.gold}22}
+        .ap-field:focus-visible,button:focus-visible{outline:2px solid ${BRAND.gold};outline-offset:2px}
         @media (prefers-reduced-motion: reduce){.ap-in{animation:none!important}}
       `}</style>
-      <div aria-hidden className="ap-grid pointer-events-none absolute inset-0 opacity-50"
-           style={{ maskImage: "radial-gradient(70% 55% at 50% 0%, #000 30%, transparent 75%)" }} />
-      <div aria-hidden className="pointer-events-none absolute inset-0"
-           style={{ background: `radial-gradient(55% 40% at 50% -5%, ${BRAND.gold}1f, transparent 70%)` }} />
+      <div aria-hidden className="ap-mark pointer-events-none absolute inset-0" />
+      <div aria-hidden className="ap-veil pointer-events-none absolute inset-0" />
 
-      <div className="ap-in relative w-full max-w-sm flex flex-col gap-6">
+      <div className="ap-in relative flex w-full max-w-sm flex-col gap-6">
         <div className="flex flex-col items-center gap-2 text-center">
           <Link to="/" className="flex flex-col items-center gap-3 hover:opacity-90">
-            <img src="/vigil-mark.svg" alt="VIGIL" width={44} height={44} />
-            <h1 className="text-3xl font-bold" style={{ fontFamily: BRAND.display, letterSpacing: ".02em" }}>VIGIL</h1>
+            <img src="/logo.webp" alt="VTLVS" style={{ height: 56, width: "auto" }} />
+            <h1 className="text-3xl font-bold" style={{ fontFamily: BRAND.display, letterSpacing: ".02em" }}>VTLVS</h1>
           </Link>
-          <p style={{ fontFamily: BRAND.mono, fontSize: 11, letterSpacing: ".18em", textTransform: "uppercase", color: `${BRAND.ink}99` }}>
-            {heading}
-          </p>
+          <p style={{ ...label, fontSize: 11, letterSpacing: ".18em" }}>{heading}</p>
         </div>
 
-        <form onSubmit={submit} className="flex flex-col gap-3 rounded-xl p-6"
-              style={{ background: BRAND.panel, border: `1px solid ${BRAND.line}` }}>
+        <form onSubmit={submit} className="ap-card flex flex-col gap-3 rounded-xl p-6"
+              style={{ border: `1px solid ${BRAND.line}`, boxShadow: "0 18px 48px -24px rgba(11,34,57,.45)" }}>
           <label className="flex flex-col gap-1.5">
-            <span style={{ fontFamily: BRAND.mono, fontSize: 10, letterSpacing: ".12em", textTransform: "uppercase", color: `${BRAND.ink}99` }}>Email</span>
-            <input className="ap-field" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
+            <span style={label}>Adresse e-mail</span>
+            <input className="ap-field" type="email" autoComplete="email" required
+                   value={email} onChange={(e) => setEmail(e.target.value)}
+                   placeholder="prenom.nom@organisme.fr" />
           </label>
 
-          {mode !== "reset" && (
+          {mode === "signin" && (
             <label className="flex flex-col gap-1.5">
-              <span style={{ fontFamily: BRAND.mono, fontSize: 10, letterSpacing: ".12em", textTransform: "uppercase", color: `${BRAND.ink}99` }}>Password</span>
-              <input className="ap-field" type="password" autoComplete={mode === "signup" ? "new-password" : "current-password"} required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
+              <span style={label}>Mot de passe</span>
+              <input className="ap-field" type="password" autoComplete="current-password" required minLength={6}
+                     value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
             </label>
           )}
 
           {(err || authError) && <p role="alert" className="text-xs" style={{ color: BRAND.rose }}>{err || authError}</p>}
           {msg && <p role="status" className="text-xs" style={{ color: BRAND.emer }}>{msg}</p>}
 
-          <button type="submit" disabled={busy} className="mt-1 w-full rounded-md py-2.5 text-sm font-bold uppercase tracking-widest disabled:opacity-60"
-                  style={{ background: BRAND.gold, color: BRAND.bg, fontFamily: BRAND.mono }}>
+          <button type="submit" disabled={busy}
+                  className="mt-1 w-full rounded-md py-2.5 text-sm font-bold uppercase tracking-widest disabled:opacity-60"
+                  style={{ background: BRAND.gold, color: "#ffffff", fontFamily: BRAND.mono }}>
             {busy ? "…" : cta}
           </button>
+
+          <div className="flex items-center justify-between pt-1 text-xs" style={{ color: `${BRAND.ink}99` }}>
+            {mode === "signin" ? (
+              <button type="button" className="hover:underline"
+                      onClick={() => { setMode("reset"); setErr(""); setMsg(""); }}>
+                Mot de passe oublié ?
+              </button>
+            ) : (
+              <button type="button" className="hover:underline"
+                      onClick={() => { setMode("signin"); setErr(""); setMsg(""); }}>
+                ← Retour à la connexion
+              </button>
+            )}
+          </div>
         </form>
 
-        {mode !== "reset" && (
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-2" style={{ fontFamily: BRAND.mono, fontSize: 10, letterSpacing: ".12em", textTransform: "uppercase", color: `${BRAND.ink}99` }}>
-              <span className="h-px flex-1" style={{ background: BRAND.line }} /> or <span className="h-px flex-1" style={{ background: BRAND.line }} />
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <button type="button" className="ap-oauth" onClick={() => void signInWithGoogle()}>Google</button>
-              <button type="button" className="ap-oauth" onClick={() => void signInWithApple()}>Apple</button>
-              <button type="button" className="ap-oauth" onClick={() => void signInWithGithub()}>GitHub</button>
-              <button type="button" className="ap-oauth" onClick={() => void signInWithRailway()}>Railway</button>
-            </div>
-          </div>
-        )}
-
-        <div className="flex items-center justify-between text-xs" style={{ color: `${BRAND.ink}99` }}>
-          {mode === "signin" ? (
-            <>
-              <button type="button" className="hover:underline" onClick={() => setMode("signup")}>Create account</button>
-              <button type="button" className="hover:underline" onClick={() => setMode("reset")}>Forgot password?</button>
-            </>
-          ) : (
-            <button type="button" className="hover:underline" onClick={() => setMode("signin")}>← Back to sign in</button>
-          )}
-        </div>
+        {/* Les comptes sont créés par l'organisme, jamais en libre-service : un compte sans
+            rôle ni organisme ne verrait rien, et le parcours d'entrée public passe par le
+            test de positionnement du site vitrine. */}
+        <p className="text-center text-xs leading-relaxed" style={{ color: `${BRAND.ink}88` }}>
+          Pas encore de compte ? Les accès sont délivrés par votre organisme de formation.{" "}
+          <a href="https://hbs-formation.fr/preinscription" className="underline hover:opacity-80">
+            Demander une préinscription
+          </a>
+        </p>
       </div>
     </div>
   );
+}
+
+/** Les messages GoTrue arrivent en anglais ; les trois que voit réellement un utilisateur. */
+function traduire(m: string): string {
+  const s = m.toLowerCase();
+  if (s.includes("invalid login credentials")) return "Adresse e-mail ou mot de passe incorrect.";
+  if (s.includes("email not confirmed")) return "Adresse e-mail non confirmée — consultez votre messagerie.";
+  if (s.includes("rate limit") || s.includes("too many")) return "Trop de tentatives. Réessayez dans quelques minutes.";
+  return m;
 }

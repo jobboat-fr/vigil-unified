@@ -191,21 +191,14 @@ export default function ChannelsPage() {
     }
   };
 
+  // Le redémarrage de la passerelle a été retiré de l'interface : la passerelle est
+  // un service Railway managé, pas un processus local. Un bouton qui ne peut pas
+  // tenir sa promesse est pire que pas de bouton — et pire encore lorsqu'il prétend
+  // redémarrer ce qui sert les sessions en cours d'un organisme.
   useLayoutEffect(() => {
-    setEnd(
-      <Button
-        className="uppercase"
-        size="sm"
-        onClick={handleRestart}
-        disabled={restarting}
-        prefix={restarting ? <Spinner /> : <RotateCw className="h-4 w-4" />}
-      >
-        {restarting ? "Restarting…" : "Restart gateway"}
-      </Button>,
-    );
+    setEnd(null);
     return () => setEnd(null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [setEnd, restarting]);
+  }, [setEnd]);
 
   const configured = useMemo(
     () => platforms.filter((p) => p.configured).length,

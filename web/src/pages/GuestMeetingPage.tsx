@@ -68,7 +68,7 @@ export default function GuestMeetingPage() {
         >
           {joining ? "Joining…" : "Join meeting"}
         </button>
-        {error && <p className="text-xs" style={{ color: "#fb7185" }}>{error}</p>}
+        {error && <p className="text-xs" style={{ color: "#c0392b" }}>{error}</p>}
       </div>
     </div>
   );

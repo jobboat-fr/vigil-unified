@@ -155,3 +155,8 @@ meet_auth_state.json
 *.cfargotunnel.json
 deploy/cloudflared/*.json
 deploy/cloudflared/cert.pem
+
+# Configuration de build de app.vtlvs.com. Ne contient que des valeurs publiques
+# (URL du projet et clé anon, de toute façon intégrées au bundle) — mais un fichier
+# .env commité invite tôt ou tard à y mettre autre chose.
+web/.env.production

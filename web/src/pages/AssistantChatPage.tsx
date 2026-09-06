@@ -14,8 +14,8 @@ type Msg = { role: "user" | "assistant"; text: string; error?: boolean };
 
 const BG = "#04201d";       // terminal canvas (deep teal-black)
 const FG = "#f0e6d2";       // cream foreground (xterm theme)
-const GOLD = "#ffbd38";     // prompt accent
-const EMER = "#34d399";
+const GOLD = "#1d3fae";     // prompt accent
+const EMER = "#1f7a4c";
 const MONO = "'JetBrains Mono', ui-monospace, 'Cascadia Mono', Menlo, Consolas, monospace";
 
 function newSession(): string {
@@ -100,7 +100,7 @@ export default function AssistantChatPage() {
             );
           }
           return (
-            <div key={i} style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", color: m.error ? "#fb7185" : FG }}>
+            <div key={i} style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", color: m.error ? "#c0392b" : FG }}>
               <span style={{ color: EMER }}>vigil ❯ </span>{m.text}
               {isLastAssistant && busy && <span className="vt-cursor">&nbsp;</span>}
             </div>

@@ -27,7 +27,7 @@ export async function initNativeShell(): Promise<void> {
   try {
     const { StatusBar, Style } = await import("@capacitor/status-bar");
     await StatusBar.setStyle({ style: Style.Dark });
-    await StatusBar.setBackgroundColor({ color: "#041c1c" }); // brand teal
+    await StatusBar.setBackgroundColor({ color: "#0b2239" }); // brand teal
   } catch {
     // iOS shells throw on setBackgroundColor; style alone is fine there
   }

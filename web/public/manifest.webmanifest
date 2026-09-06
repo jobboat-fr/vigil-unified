@@ -1,18 +1,26 @@
 {
-  "name": "VIGIL — AI Workspace",
-  "short_name": "VIGIL",
-  "description": "The AI workspace that thinks before it acts: AI council, verified departments, and a human-in-the-loop trade desk.",
+  "name": "VTLVS — plateforme de formation",
+  "short_name": "VTLVS",
+  "description": "Planning, émargement, qualité et coffre-fort documentaire pour organismes de formation certifiés Qualiopi.",
   "id": "/",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "orientation": "any",
-  "background_color": "#041c1c",
-  "theme_color": "#041c1c",
-  "categories": ["business", "productivity", "finance"],
-  "lang": "en",
+  "orientation": "portrait-primary",
+  "background_color": "#f4f7fb",
+  "theme_color": "#0f2159",
+  "categories": ["education", "business", "productivity"],
+  "lang": "fr",
+  "dir": "ltr",
   "icons": [
-    { "src": "/vigil-mark.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
-    { "src": "/og.png", "sizes": "1200x630", "type": "image/png", "purpose": "any" }
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-192-maskable.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Planning", "url": "/learn/calendar" },
+    { "name": "Émargement", "url": "/learn/emargement" },
+    { "name": "Coffre-fort", "url": "/learn/vault" }
   ]
 }

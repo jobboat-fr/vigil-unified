@@ -807,7 +807,7 @@ export default function ChatPage({ isActive = true }: { isActive?: boolean }) {
             onClick={closeMobilePanel}
             className={cn(
               "fixed inset-0 z-[55] p-0 block",
-              "bg-black/60 backdrop-blur-sm",
+              "bg-[color-mix(in_srgb,var(--midground-base)_45%,transparent)] backdrop-blur-sm",
             )}
           />
         )}
@@ -904,7 +904,7 @@ export default function ChatPage({ isActive = true }: { isActive?: boolean }) {
               "absolute z-10",
               "normal-case tracking-normal font-normal",
               "rounded border border-current/30",
-              "bg-black/20 backdrop-blur-sm",
+              "bg-[color-mix(in_srgb,var(--midground-base)_18%,transparent)] backdrop-blur-sm",
               "opacity-70 hover:opacity-100 hover:border-current/60",
               "transition-opacity duration-150",
               "bottom-2 right-2 px-2 py-1 text-xs sm:bottom-3 sm:right-3 sm:px-2.5 sm:py-1.5",

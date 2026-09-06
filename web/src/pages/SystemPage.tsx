@@ -230,24 +230,6 @@ export default function SystemPage() {
   }, [loadAll]);
 
   // ── Gateway lifecycle ──────────────────────────────────────────────
-  const runGateway = async (verb: "start" | "stop" | "restart") => {
-    try {
-      if (verb === "start") {
-        await api.startGateway();
-        setActiveAction("gateway-start");
-      } else if (verb === "stop") {
-        await api.stopGateway();
-        setActiveAction("gateway-stop");
-      } else {
-        await api.restartGateway();
-        setActiveAction("gateway-restart");
-      }
-      showToast(`Gateway ${verb} started`, "success");
-      setTimeout(loadAll, 3000);
-    } catch (e) {
-      showToast(`Gateway ${verb} failed: ${e}`, "error");
-    }
-  };
 
   // ── Curator ────────────────────────────────────────────────────────
   const toggleCuratorPaused = async () => {
@@ -891,33 +873,11 @@ export default function SystemPage() {
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <Button
-                size="sm"
-                className="uppercase"
-                onClick={() => runGateway("start")}
-                disabled={gatewayRunning}
-                prefix={<Play className="h-3.5 w-3.5" />}
-              >
-                Start
-              </Button>
-              <Button
-                size="sm"
-                className="uppercase"
-                onClick={() => runGateway("restart")}
-                prefix={<RotateCw className="h-3.5 w-3.5" />}
-              >
-                Restart
-              </Button>
-              <Button
-                size="sm"
-                className="uppercase text-warning"
-                ghost
-                onClick={() => runGateway("stop")}
-                disabled={!gatewayRunning}
-                prefix={<Power className="h-3.5 w-3.5" />}
-              >
-                Stop
-              </Button>
+              <span className="text-xs text-muted-foreground">
+                {/* Service managé : le cycle de vie appartient à la plateforme d'hébergement,
+                    pas à ce tableau de bord. */}
+                Service managé — cycle de vie piloté par l&apos;hébergeur
+              </span>
             </div>
           </CardContent>
         </Card>
