@@ -231,19 +231,32 @@ function ChatRouteSink() {
 }
 
 const BUILTIN_NAV_REST: NavItem[] = [
+  // ── Workspace ──
+  //
+  // Ces sept pages n'avaient aucune restriction de rôle : tout compte connecté y entrait par
+  // l'URL, apprenant compris. Elles pilotent l'exploitation — sessions de l'agent, connexions
+  // sortantes, file de validation, artéfacts — et aucune n'a de raison d'apparaître depuis un
+  // compte d'organisme client.
+  //
+  // `/approvals` est celle qui comptait : c'est la file où l'agent dépose ce qu'il propose
+  // d'écrire, et une file que n'importe qui peut valider ne valide rien.
+  //
+  // La garde de route reste cosmétique par nature — elle cache et redirige, elle ne protège
+  // pas la donnée. Ce qui protège la donnée est en base. Elle évite qu'un rôle se retrouve
+  // devant un écran qui ne le concerne pas et dont les commandes échoueraient de toute façon.
   {
     path: "/sessions",
     label: "Sessions Vigil",
     icon: MessageSquare,
     group: "workspace",
+    roles: ["super_admin", "admin"],
   },
-  // ── Workspace ──
-  { path: "/ops-team", label: "Équipe agentique", icon: Network, group: "workspace" },
-  { path: "/connections", label: "Connexions", icon: Plug, group: "workspace" },
-  { path: "/approvals", label: "Validations", icon: ShieldCheck, group: "workspace" },
-  { path: "/meeting-room", label: "Salle de réunion", icon: Video, group: "workspace" },
-  { path: "/studio", label: "Studio", icon: PenLine, group: "workspace" },
-  { path: "/vault", label: "Artéfacts", icon: Lock, group: "workspace" },
+  { path: "/ops-team", label: "Équipe agentique", icon: Network, group: "workspace", roles: ["super_admin", "admin"] },
+  { path: "/connections", label: "Connexions", icon: Plug, group: "workspace", roles: ["super_admin", "admin"] },
+  { path: "/approvals", label: "Validations", icon: ShieldCheck, group: "workspace", roles: ["super_admin", "admin"] },
+  { path: "/meeting-room", label: "Salle de réunion", icon: Video, group: "workspace", roles: ["super_admin", "admin"] },
+  { path: "/studio", label: "Studio", icon: PenLine, group: "workspace", roles: ["super_admin", "admin"] },
+  { path: "/vault", label: "Artéfacts", icon: Lock, group: "workspace", roles: ["super_admin", "admin"] },
   // ── Company ──
   { path: "/learn", label: "Tableau de bord", icon: GraduationCap, group: "learn" },
   { path: "/learn/calendar", label: "Calendrier", icon: CalendarDays, group: "learn" },
