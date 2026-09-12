@@ -65,16 +65,25 @@ async function call<T>(method: string, path: string, body?: unknown): Promise<T>
   const token = await getAccessToken();
   if (!token) throw new GatewayError("Session expirée — reconnectez-vous.", "NO_SESSION");
 
+  // `FormData` doit partir tel quel : c'est le navigateur qui écrit l'en-tête
+  // `multipart/form-data` **et sa frontière**. Poser `content-type` soi-même produirait
+  // une frontière absente, et le serveur lirait un corps qu'il ne sait pas découper.
+  const estFormulaire = typeof FormData !== "undefined" && body instanceof FormData;
+
   let res: Response;
   try {
     res = await fetch(`${BASE}${path}`, {
       method,
       headers: {
-        "content-type": "application/json",
+        ...(estFormulaire ? {} : { "content-type": "application/json" }),
         accept: "application/json",
         authorization: `Bearer ${token}`,
       },
-      body: body != null ? JSON.stringify(body) : undefined,
+      body: estFormulaire
+        ? (body as FormData)
+        : body != null
+          ? JSON.stringify(body)
+          : undefined,
     });
   } catch (e) {
     throw new GatewayError(`gateway unreachable: ${(e as Error).message}`, "UNREACHABLE");
@@ -470,6 +479,28 @@ export const getVault = (kind?: string) =>
   call<{ items: VaultObject[]; _can?: Can }>(
     "GET",
     `/vault${kind ? `?kind=${encodeURIComponent(kind)}` : ""}`,
+  );
+
+/** Déposer une pièce au coffre. `FormData`, donc pas de `content-type` posé à la main :
+ *  le navigateur doit écrire lui-même la frontière multipart. */
+export async function uploadVault(
+  fichier: File,
+  opts: { kind?: string; session_id?: string; subject_id?: string; visibility?: string } = {},
+): Promise<VaultObject> {
+  const fd = new FormData();
+  fd.append("fichier", fichier);
+  fd.append("kind", opts.kind ?? "piece_jointe");
+  fd.append("visibility", opts.visibility ?? "self");
+  if (opts.session_id) fd.append("session_id", opts.session_id);
+  if (opts.subject_id) fd.append("subject_id", opts.subject_id);
+  return call<VaultObject>("POST", "/vault", fd);
+}
+
+/** L'URL signée d'une pièce — valable deux minutes, redemandée à chaque clic. */
+export const getVaultUrl = (objectId: string) =>
+  call<{ url: string; expires_in: number; filename: string }>(
+    "GET",
+    `/vault/${encodeURIComponent(objectId)}/url`,
   );
 
 export const getDocuments = () =>

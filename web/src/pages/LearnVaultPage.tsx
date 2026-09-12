@@ -6,7 +6,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@nous-research/ui/ui/components/card";
-import { getVault, LearnError, type VaultObject } from "@/lib/learn";
+import { getVault, getVaultUrl, uploadVault, LearnError, type VaultObject } from "@/lib/learn";
 
 /**
  * Documents et coffre.
@@ -20,17 +20,60 @@ import { getVault, LearnError, type VaultObject } from "@/lib/learn";
 export default function LearnVaultPage() {
   const [items, setItems] = useState<VaultObject[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [can, setCan] = useState<{ create?: boolean } | null>(null);
+  const [envoi, setEnvoi] = useState(false);
+  const [envoiErreur, setEnvoiErreur] = useState<string | null>(null);
+  const [ouverture, setOuverture] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setError(null);
     try {
       const r = await getVault();
       setItems(r.items);
+      setCan(r._can ?? null);
     } catch (e) {
       setItems([]);
       setError(e instanceof LearnError ? e.message : "Chargement impossible.");
     }
   }, []);
+
+  const telecharger = useCallback(async (o: VaultObject) => {
+    setOuverture(o.id);
+    setError(null);
+    try {
+      // Signature demandée maintenant, jamais mémorisée : chaque clic repasse par le
+      // contrôle d'accès, et le lien expire en deux minutes.
+      const r = await getVaultUrl(o.id);
+      window.open(r.url, "_blank", "noopener,noreferrer");
+    } catch (e) {
+      setError(
+        e instanceof LearnError
+          ? e.message
+          : "Le téléchargement a échoué. La pièce est peut-être hors de votre périmètre.",
+      );
+    } finally {
+      setOuverture(null);
+    }
+  }, []);
+
+  const deposer = useCallback(
+    async (f: File | undefined) => {
+      if (!f) return;
+      setEnvoi(true);
+      setEnvoiErreur(null);
+      try {
+        await uploadVault(f);
+        await load();
+      } catch (e) {
+        setEnvoiErreur(
+          e instanceof LearnError ? e.message : "Le dépôt a échoué.",
+        );
+      } finally {
+        setEnvoi(false);
+      }
+    },
+    [load],
+  );
 
   useEffect(() => {
     void load();
@@ -50,6 +93,31 @@ export default function LearnVaultPage() {
           conservation · {held.length} sous suspension légale
         </p>
       </header>
+
+      {can?.create ? (
+        <Card>
+          <CardContent className="flex flex-wrap items-center gap-3 py-4 text-sm">
+            <label className="cursor-pointer rounded border border-current/25 px-3 py-1.5 hover:bg-current/5">
+              {envoi ? "Dépôt en cours…" : "Déposer une pièce"}
+              <input
+                type="file"
+                className="sr-only"
+                disabled={envoi}
+                accept=".pdf,.png,.jpg,.jpeg,.webp,.docx,.xlsx,.csv,.txt"
+                onChange={(e) => {
+                  void deposer(e.currentTarget.files?.[0]);
+                  e.currentTarget.value = "";
+                }}
+              />
+            </label>
+            <span className="text-xs opacity-60">
+              PDF, image, document ou tableur — 25 Mio au plus. Une pièce déposée porte une
+              échéance de conservation et ne peut plus être supprimée avant ce terme.
+            </span>
+            {envoiErreur && <span className="text-xs text-red-400">{envoiErreur}</span>}
+          </CardContent>
+        </Card>
+      ) : null}
 
       {error ? (
         <Card>
@@ -83,6 +151,7 @@ export default function LearnVaultPage() {
                     <Th>Nature</Th>
                     <Th>Conservation</Th>
                     <Th>Taille</Th>
+                    <Th>&nbsp;</Th>
                   </tr>
                 </thead>
                 <tbody>
@@ -109,6 +178,16 @@ export default function LearnVaultPage() {
                       </td>
                       <td className="px-4 py-2.5 tabular-nums opacity-70">
                         {o.size_bytes ? `${Math.round(o.size_bytes / 1024)} ko` : "—"}
+                      </td>
+                      <td className="px-4 py-2.5 text-right">
+                        <button
+                          type="button"
+                          onClick={() => void telecharger(o)}
+                          disabled={ouverture === o.id}
+                          className="rounded border border-current/25 px-2.5 py-1 text-xs hover:bg-current/5 disabled:opacity-50"
+                        >
+                          {ouverture === o.id ? "Ouverture…" : "Télécharger"}
+                        </button>
                       </td>
                     </tr>
                   ))}
