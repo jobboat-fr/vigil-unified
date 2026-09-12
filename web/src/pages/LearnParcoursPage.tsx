@@ -43,12 +43,21 @@ import {
  * Un écran pour tous les profils : la RLS décide du nombre de cartes, pas ce fichier.
  */
 
-const COLUMNS: { key: string; label: string; hint: string }[] = [
-  { key: "draft", label: "Brouillon", hint: "pas encore ouverte aux inscriptions" },
-  { key: "planned", label: "Planifiée", hint: "dates posées, inscriptions ouvertes" },
-  { key: "running", label: "En cours", hint: "émargement en cours" },
-  { key: "finished", label: "Terminée", hint: "dossier à clore" },
-  { key: "cancelled", label: "Annulée", hint: "conservée pour la traçabilité" },
+// Deux légendes par colonne. Les états sont ceux de la base et ne changent pas ; ce qui
+// change est ce qu'ils veulent dire selon le côté du bureau où l'on se trouve. « Dossier à
+// clore » décrit une tâche d'organisme ; pour le stagiaire, la même session est simplement
+// terminée. `gestion` est montrée à qui peut agir sur la session, `suivi` aux autres.
+const COLUMNS: { key: string; label: string; gestion: string; suivi: string }[] = [
+  { key: "draft", label: "Brouillon",
+    gestion: "pas encore ouverte aux inscriptions", suivi: "en préparation" },
+  { key: "planned", label: "Planifiée",
+    gestion: "dates posées, inscriptions ouvertes", suivi: "dates connues, à venir" },
+  { key: "running", label: "En cours",
+    gestion: "émargement en cours", suivi: "en cours — pensez à émarger" },
+  { key: "finished", label: "Terminée",
+    gestion: "dossier à clore", suivi: "terminée" },
+  { key: "cancelled", label: "Annulée",
+    gestion: "conservée pour la traçabilité", suivi: "annulée" },
 ];
 
 const MODALITE: Record<string, string> = {
@@ -94,6 +103,13 @@ export default function LearnParcoursPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  // Vrai si l'on peut agir sur au moins une des sessions visibles : c'est ce qui distingue
+  // celui qui pilote de celui qui suit. Mesuré sur `_can`, jamais sur le profil.
+  const gere = useMemo(
+    () => (sessions ?? []).some((x) => x._can?.update),
+    [sessions],
+  );
 
   const byStatus = useMemo(() => {
     const m: Record<string, Session[]> = {};
@@ -150,7 +166,7 @@ export default function LearnParcoursPage() {
                 </h2>
                 <span className="text-[11px] tabular-nums opacity-50">{items.length}</span>
               </header>
-              <p className="px-1 text-[11px] leading-snug opacity-45">{col.hint}</p>
+              <p className="px-1 text-[11px] leading-snug opacity-45">{gere ? col.gestion : col.suivi}</p>
 
               <div className="flex flex-col gap-2">
                 {items.length === 0 && (
@@ -309,8 +325,9 @@ export default function LearnParcoursPage() {
       <LiensLearn />
 
       <p className="px-1 text-[11px] leading-relaxed opacity-45">
-        Les colonnes sont les états que la base autorise. Le nombre de cartes visibles
-        dépend de votre profil : c&apos;est la base qui filtre, pas cette page.
+        {gere
+          ? "Les colonnes sont les états que la base autorise. Le nombre de cartes visibles dépend de votre profil : c'est la base qui filtre, pas cette page."
+          : "Vous ne voyez ici que les sessions auxquelles vous êtes inscrit."}
       </p>
     </div>
   );

@@ -107,7 +107,12 @@ export default function LearnAcquisPage() {
   // le rôle : la page continue de ne jamais tester un profil, conformément à son en-tête.
   const solo = useMemo(() => {
     const ids = new Set((grades ?? []).map((g) => g.profile_id));
-    return ids.size === 1;
+    // `<= 1` et non `=== 1` : à zéro ligne l'ensemble est vide, et c'est précisément le cas
+    // d'un apprenant qui n'a encore rien passé. Avec `=== 1`, il retombait sur le cadrage
+    // de l'organisme — « Résultats par apprenant », « Apprenants évalués », « indicateur 1 »
+    // — exactement là où l'écran est le plus nu et le moins explicable. Constaté en parcourant
+    // l'application avec un vrai compte apprenant.
+    return ids.size <= 1;
   }, [grades]);
 
   const parApprenant = useMemo(() => {

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { LiensLearn } from "@/components/LiensLearn";
 import {
   Card,
   CardContent,
@@ -66,6 +67,12 @@ export default function LearnPeoplePage() {
 
   if (people === null) return <p className="p-6 text-sm opacity-60">Chargement…</p>;
 
+  // Un annuaire d'une seule personne, qui ne peut créer personne, n'est pas un annuaire :
+  // c'est une fiche. L'apprenant y lisait « Comptes et accès · 1 compte · vous ne pouvez
+  // créer aucun compte », soit un écran d'administration qui ne lui annonce que ce qu'il
+  // n'a pas le droit de faire. Condition tirée des données et de `_can`, pas du rôle.
+  const fiche = people.length <= 1 && !(can?.create ?? false);
+
   const byRole = new Map<string, Person[]>();
   for (const p of people) {
     if (!byRole.has(p.role)) byRole.set(p.role, []);
@@ -75,12 +82,18 @@ export default function LearnPeoplePage() {
   return (
     <div className="space-y-6 p-6">
       <header>
-        <h1 className="text-2xl font-semibold">Comptes et accès</h1>
+        <h1 className="text-2xl font-semibold">{fiche ? "Mon profil" : "Comptes et accès"}</h1>
         <p className="mt-1 text-sm opacity-70">
-          {people.length} compte{people.length > 1 ? "s" : ""}
-          {assignable.length > 0
-            ? ` · vous pouvez créer : ${assignable.map((r) => ROLE_LABEL[r] ?? r).join(", ")}`
-            : " · vous ne pouvez créer aucun compte"}
+          {fiche ? (
+            "Les coordonnées rattachées à votre compte de formation."
+          ) : (
+            <>
+              {people.length} compte{people.length > 1 ? "s" : ""}
+              {assignable.length > 0
+                ? ` · vous pouvez créer : ${assignable.map((r) => ROLE_LABEL[r] ?? r).join(", ")}`
+                : " · vous ne pouvez créer aucun compte"}
+            </>
+          )}
         </p>
       </header>
 
@@ -130,12 +143,19 @@ export default function LearnPeoplePage() {
         </Card>
       ))}
 
-      {can && !can.create ? (
+      {fiche ? (
+        <p className="text-xs opacity-60">
+          Une erreur dans vos coordonnées ? Signalez-la à votre organisme de formation :
+          elles figurent sur vos attestations.
+        </p>
+      ) : can && !can.create ? (
         <p className="text-xs opacity-60">
           Votre profil ne permet pas de créer de compte. La règle vient de la hiérarchie des
           rôles en base, pas de cet écran.
         </p>
       ) : null}
+
+      <LiensLearn />
     </div>
   );
 }
