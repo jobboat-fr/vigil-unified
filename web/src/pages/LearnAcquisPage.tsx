@@ -102,6 +102,14 @@ export default function LearnAcquisPage() {
     return { reussite, moyenne, juges: juges.length, notes: notes.length, apprenants };
   }, [grades]);
 
+  // Vrai quand tout le périmètre visible tient en une personne. C'est le cas de
+  // l'apprenant, qui ne voit que lui — mais la condition porte sur les données, pas sur
+  // le rôle : la page continue de ne jamais tester un profil, conformément à son en-tête.
+  const solo = useMemo(() => {
+    const ids = new Set((grades ?? []).map((g) => g.profile_id));
+    return ids.size === 1;
+  }, [grades]);
+
   const parApprenant = useMemo(() => {
     const m = new Map<string, GradeRow[]>();
     for (const g of grades ?? []) {
@@ -150,23 +158,31 @@ export default function LearnAcquisPage() {
         <Chiffre
           valeur={stats.reussite == null ? "—" : `${stats.reussite} %`}
           libelle="Taux de réussite"
-          note={`sur ${stats.juges} tentative${stats.juges > 1 ? "s" : ""} évaluée${stats.juges > 1 ? "s" : ""} — indicateur 1`}
+          note={`sur ${stats.juges} tentative${stats.juges > 1 ? "s" : ""} évaluée${stats.juges > 1 ? "s" : ""}${solo ? "" : " — indicateur 1"}`}
         />
         <Chiffre
           valeur={stats.moyenne == null ? "—" : `${stats.moyenne} %`}
           libelle="Score moyen"
           note={`sur ${stats.notes} note${stats.notes > 1 ? "s" : ""}`}
         />
-        <Chiffre
-          valeur={String(stats.apprenants)}
-          libelle="Apprenants évalués"
-          note={queue.length ? `${queue.length} copie${queue.length > 1 ? "s" : ""} à corriger` : "aucune copie en attente"}
-        />
+        {solo ? (
+          <Chiffre
+            valeur={String(stats.notes)}
+            libelle="Évaluations passées"
+            note={stats.notes === 0 ? "aucune tentative soumise" : "tentatives notées"}
+          />
+        ) : (
+          <Chiffre
+            valeur={String(stats.apprenants)}
+            libelle="Apprenants évalués"
+            note={queue.length ? `${queue.length} copie${queue.length > 1 ? "s" : ""} à corriger` : "aucune copie en attente"}
+          />
+        )}
       </div>
 
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-base">Résultats par apprenant</CardTitle>
+          <CardTitle className="text-base">{solo ? "Mes résultats" : "Résultats par apprenant"}</CardTitle>
         </CardHeader>
         <CardContent className="pt-0">
           {parApprenant.length === 0 ? (
@@ -179,7 +195,7 @@ export default function LearnAcquisPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-left text-[11px] uppercase tracking-wider opacity-55">
-                    <th className="py-2 pr-3 font-medium">Apprenant</th>
+                    {!solo && <th className="py-2 pr-3 font-medium">Apprenant</th>}
                     <th className="py-2 pr-3 font-medium">Évaluation</th>
                     <th className="py-2 pr-3 font-medium">Type</th>
                     <th className="py-2 pr-3 font-medium">Tentative</th>
@@ -192,7 +208,9 @@ export default function LearnAcquisPage() {
                   {parApprenant.map(([id, rows]) =>
                     rows.map((g, i) => (
                       <tr key={`${id}-${g.assessment_title}-${g.attempt_no}`} className="border-t border-current/10">
-                        <td className="py-2 pr-3">{i === 0 ? (g.apprenant_name ?? "—") : ""}</td>
+                        {!solo && (
+                          <td className="py-2 pr-3">{i === 0 ? (g.apprenant_name ?? "—") : ""}</td>
+                        )}
                         <td className="py-2 pr-3">{g.assessment_title ?? "—"}</td>
                         <td className="py-2 pr-3 opacity-70">{KIND[g.assessment_kind] ?? g.assessment_kind}</td>
                         <td className="py-2 pr-3 tabular-nums opacity-70">{g.attempt_no}</td>
@@ -230,7 +248,7 @@ export default function LearnAcquisPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-left text-[11px] uppercase tracking-wider opacity-55">
-                    <th className="py-2 pr-3 font-medium">Apprenant</th>
+                    {!solo && <th className="py-2 pr-3 font-medium">Apprenant</th>}
                     <th className="py-2 pr-3 font-medium">Bloc</th>
                     <th className="py-2 pr-3 font-medium">Questions</th>
                     <th className="py-2 pr-3 font-medium">Score</th>
@@ -239,7 +257,7 @@ export default function LearnAcquisPage() {
                 <tbody>
                   {blocs.map((b, i) => (
                     <tr key={`${b.profile_id}-${b.bloc}-${i}`} className="border-t border-current/10">
-                      <td className="py-2 pr-3">{b.apprenant_name ?? "—"}</td>
+                      {!solo && <td className="py-2 pr-3">{b.apprenant_name ?? "—"}</td>}
                       <td className="py-2 pr-3">{b.bloc}</td>
                       <td className="py-2 pr-3 tabular-nums opacity-70">{b.questions}</td>
                       <td className="py-2 pr-3 tabular-nums">{pct(b.percent)}</td>

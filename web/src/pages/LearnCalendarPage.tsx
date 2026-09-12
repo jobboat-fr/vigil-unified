@@ -164,8 +164,15 @@ export default function LearnCalendarPage() {
                                   {s.formateur_name}
                                 </div>
                               )}
+                              {/* Le taux de remplissage est un chiffre de gestion : il sert
+                                  à qui place les stagiaires, pas à qui suit la formation.
+                                  Conditionné à `_can.update` — la capacité à modifier le
+                                  créneau — et non à un test de rôle, conformément à
+                                  l'en-tête de ce fichier. La salle, elle, reste : c'est
+                                  l'information dont on a besoin pour s'y rendre. */}
                               <div className="text-text-secondary text-xs">
-                                {s.room_name ?? "—"} · {s.enrolled}/{s.capacity ?? "?"}
+                                {s.room_name ?? "—"}
+                                {s._can.update ? ` · ${s.enrolled}/${s.capacity ?? "?"}` : ""}
                               </div>
                               {/* Rendered from _can, never from a role check. */}
                               {(s._can.sign || s._can.update) && (

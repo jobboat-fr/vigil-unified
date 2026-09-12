@@ -193,7 +193,9 @@ export default function LearnParcoursPage() {
                         </CardHeader>
                         <CardContent className="flex items-center justify-between gap-2 pb-3 text-[11px]">
                           <span className="opacity-60">
-                            {s.enrolled ?? 0}/{s.capacity} inscrits
+                            {s._can?.update
+                              ? `${s.enrolled ?? 0}/${s.capacity} inscrits`
+                              : `${MODALITE[s.modality] ?? s.modality}${s.place ? ` · ${s.place}` : ""}`}
                           </span>
                           {prog?.certifiante && (
                             <span
@@ -221,6 +223,7 @@ export default function LearnParcoursPage() {
                               : <p className="opacity-45">Aucun créneau attribué.</p>}
                           </Bloc>
 
+                          {s._can?.update && (
                           <Bloc titre={`Inscrits (${d?.learners?.length ?? 0})`}>
                             {d?.learners?.length
                               ? (
@@ -236,6 +239,7 @@ export default function LearnParcoursPage() {
                               )
                               : <p className="opacity-45">Aucun inscrit.</p>}
                           </Bloc>
+                          )}
 
                           <Bloc titre={`Cours (${progCourses.length})`}>
                             {progCourses.length === 0 && <p className="opacity-45">Aucun cours rattaché au programme.</p>}
