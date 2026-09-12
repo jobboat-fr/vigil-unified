@@ -6,6 +6,7 @@ import {
   CardTitle,
 } from "@nous-research/ui/ui/components/card";
 import {
+import { LiensLearn } from "@/components/LiensLearn";
   getGradebook,
   getBlocs,
   getReviewQueue,
@@ -250,6 +251,8 @@ export default function LearnAcquisPage() {
           </CardContent>
         </Card>
       )}
+
+      <LiensLearn />
 
       <p className="px-1 text-[11px] leading-relaxed opacity-45">
         Les taux ci-dessus sont calculés sur les lignes affichées et publiés avec

@@ -6,6 +6,7 @@ import {
   CardTitle,
 } from "@nous-research/ui/ui/components/card";
 import {
+import { LiensLearn } from "@/components/LiensLearn";
   getSessions,
   getSession,
   getPrograms,
@@ -300,6 +301,8 @@ export default function LearnParcoursPage() {
           );
         })}
       </div>
+
+      <LiensLearn />
 
       <p className="px-1 text-[11px] leading-relaxed opacity-45">
         Les colonnes sont les états que la base autorise. Le nombre de cartes visibles

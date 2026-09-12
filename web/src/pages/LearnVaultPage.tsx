@@ -6,6 +6,7 @@ import {
   CardTitle,
 } from "@nous-research/ui/ui/components/card";
 import { getVault, LearnError, type VaultObject } from "@/lib/learn";
+import { LiensLearn } from "@/components/LiensLearn";
 
 /**
  * Documents et coffre.
@@ -117,6 +118,8 @@ export default function LearnVaultPage() {
           </CardContent>
         </Card>
       )}
+
+      <LiensLearn />
     </div>
   );
 }

@@ -6,6 +6,7 @@ import {
   CardTitle,
 } from "@nous-research/ui/ui/components/card";
 import {
+import { LiensLearn } from "@/components/LiensLearn";
   getPrograms,
   getSessions,
   getCourses,
@@ -197,6 +198,8 @@ export default function LearnFormationsPage() {
           );
         })}
       </div>
+
+      <LiensLearn />
     </div>
   );
 }

@@ -15,6 +15,7 @@ import {
   type SheetRow,
 } from "@/lib/learn";
 import { isoDay } from "@/lib/day";
+import { LiensLearn } from "@/components/LiensLearn";
 
 /**
  * Émargement — signer avant et après chaque demi-journée.
@@ -185,6 +186,8 @@ export default function LearnEmargementPage() {
           </Card>
         );
       })}
+
+      <LiensLearn />
     </div>
   );
 }

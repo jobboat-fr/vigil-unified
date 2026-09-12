@@ -5,8 +5,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@nous-research/ui/ui/components/card";
-import { getCalendar, LearnError, type Slot } from "@/lib/learn";
+import { Link } from "react-router-dom";
+import { getCalendar, issueCalendarToken, LearnError, type Slot } from "@/lib/learn";
 import { isoDay } from "@/lib/day";
+import { LiensLearn } from "@/components/LiensLearn";
 
 /**
  * The calendar — one component for every profile.
@@ -43,6 +45,8 @@ export default function LearnCalendarPage() {
   const [slots, setSlots] = useState<Slot[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [unavailable, setUnavailable] = useState(false);
+  const [ics, setIcs] = useState<string | null>(null);
+  const [icsErreur, setIcsErreur] = useState<string | null>(null);
 
   const days = useMemo(
     () => Array.from({ length: 5 }, (_, i) => new Date(anchor.getTime() + i * 86_400_000)),
@@ -145,7 +149,13 @@ export default function LearnCalendarPage() {
                               className="border-current/20 mb-1 rounded border p-2"
                               style={{ borderLeft: `3px solid ${s.room_colour ?? "#2E5FE0"}` }}
                             >
-                              <div className="truncate font-medium">{s.title ?? "Session"}</div>
+                              <Link
+                                to="/learn/parcours"
+                                className="block truncate font-medium underline-offset-2 hover:underline"
+                                title={s.title ?? "Session"}
+                              >
+                                {s.title ?? "Session"}
+                              </Link>
                               <div className="text-text-secondary text-xs tabular-nums">
                                 {hhmm(s.starts_at)}–{hhmm(s.ends_at)}
                               </div>
@@ -160,10 +170,16 @@ export default function LearnCalendarPage() {
                               {/* Rendered from _can, never from a role check. */}
                               {(s._can.sign || s._can.update) && (
                                 <div className="mt-1.5 flex gap-1.5">
+                                  {/* C'était un `span` : le contrôle avait l'apparence d'un
+                                      bouton et ne menait nulle part. Il conduit maintenant
+                                      à la page d'émargement, qui s'ouvre sur le jour même. */}
                                   {s._can.sign && (
-                                    <span className="border-current/20 rounded border px-1.5 py-0.5 text-[11px]">
+                                    <Link
+                                      to="/learn/emargement"
+                                      className="border-current/20 rounded border px-1.5 py-0.5 text-[11px] hover:bg-current/5"
+                                    >
                                       Émarger
-                                    </span>
+                                    </Link>
                                   )}
                                   {s._can.update && (
                                     <span className="border-current/20 rounded border px-1.5 py-0.5 text-[11px]">
@@ -189,6 +205,46 @@ export default function LearnCalendarPage() {
       </Card>
 
       {error && <p className="text-sm text-red-400">{error}</p>}
+
+      {/* L'abonnement ICS existait côté API (`POST /calendar/token`) et n'était exposé
+          nulle part. Un planning qu'on relit dans son propre agenda est celui qu'on relit
+          vraiment — et le flux porte la portée du profil, donc chacun ne voit que ses
+          propres créneaux. Émettre un jeton révoque le précédent : c'est ainsi qu'on
+          reprend la main sur un lien partagé par erreur. */}
+      <Card>
+        <CardContent className="flex flex-wrap items-center gap-3 py-4 text-sm">
+          <button
+            type="button"
+            onClick={() => {
+              setIcsErreur(null);
+              void issueCalendarToken()
+                .then((r) => setIcs(r.url))
+                .catch((e) => setIcsErreur((e as Error).message));
+            }}
+            className="border-current/25 rounded border px-3 py-1.5 hover:bg-current/5"
+          >
+            {ics ? "Régénérer mon lien d'agenda" : "S'abonner depuis mon agenda"}
+          </button>
+          {ics && (
+            <input
+              readOnly
+              value={ics}
+              onFocus={(e) => e.currentTarget.select()}
+              className="border-current/20 min-w-0 flex-1 rounded border bg-transparent px-2 py-1.5 font-mono text-xs"
+              aria-label="Lien d'abonnement à copier dans votre agenda"
+            />
+          )}
+          <span className="text-text-secondary text-xs">
+            {ics
+              ? "Collez ce lien dans Google Agenda, Outlook ou Apple Calendrier. Régénérer annule le lien précédent."
+              : "Vos créneaux, à jour, dans l'agenda que vous utilisez déjà."}
+          </span>
+          {icsErreur && <span className="text-xs text-red-400">{icsErreur}</span>}
+        </CardContent>
+      </Card>
+
+      <LiensLearn />
+
       <p className="text-text-secondary text-xs">
         Même écran pour tous les profils. Le nombre de créneaux affichés diffère parce que la
         base filtre, pas parce que cette page teste un rôle.
