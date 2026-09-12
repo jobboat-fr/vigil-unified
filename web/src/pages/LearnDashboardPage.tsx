@@ -5,6 +5,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@nous-research/ui/ui/components/card";
+import { useLearnRole } from "@/lib/supabase";
+import LearnDashboardApprenant from "@/pages/LearnDashboardApprenant";
 import {
   getDashboard,
   getAuditOverview,
@@ -23,6 +25,13 @@ import {
  * Nothing here filters by role. The same request from a formateur returns their own
  * numbers because row-level security narrowed them — a `role === "admin"` branch in this
  * file would be a second copy of a rule the database already owns.
+ *
+ * L'apprenant fait exception, et c'est la seule. Il ne lui manquait pas des lignes : ces
+ * tuiles ne posent pas ses questions. Réclamations au titre de l'indicateur 31, dossiers
+ * d'audit incomplets, « à régler avant d'accueillir un second organisme » — il lisait le
+ * tableau de bord de l'organisme, exact et entièrement hors sujet pour lui. La règle
+ * ci-dessus porte sur le périmètre des données, que RLS continue de tenir ; celle-ci porte
+ * sur les questions posées, que RLS ne peut pas deviner. Voir `LearnDashboardApprenant`.
  */
 
 type Tile = { label: string; value: number; hint: string; urgent?: boolean };
@@ -66,6 +75,7 @@ function tilesFrom(d: Dashboard): Tile[] {
 }
 
 export default function LearnDashboardPage() {
+  const { role, resolu } = useLearnRole();
   const [data, setData] = useState<Dashboard | null>(null);
   const [audit, setAudit] = useState<{ code: string; readiness: string; missing: string[] }[]>([]);
   const [blocking, setBlocking] = useState<{ requirement: string; detail: string | null }[]>([]);
@@ -89,11 +99,18 @@ export default function LearnDashboardPage() {
     }
   }, []);
 
+  // Tant que le rôle n'est pas résolu, on ne demande rien : un apprenant verrait sinon
+  // l'écran de l'organisme le temps d'un aller-retour, et les requêtes partiraient pour
+  // un écran qu'on s'apprête à remplacer.
   useEffect(() => {
+    if (!resolu || role === "apprenant") return;
     void load();
     const t = setInterval(() => void load(), 30_000);
     return () => clearInterval(t);
-  }, [load]);
+  }, [load, resolu, role]);
+
+  if (!resolu) return null;
+  if (role === "apprenant") return <LearnDashboardApprenant />;
 
   if (unavailable) {
     return (
