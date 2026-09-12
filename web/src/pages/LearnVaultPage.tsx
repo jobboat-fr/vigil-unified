@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { LiensLearn } from "@/components/LiensLearn";
 import {
   Card,
   CardContent,
@@ -6,7 +7,6 @@ import {
   CardTitle,
 } from "@nous-research/ui/ui/components/card";
 import { getVault, LearnError, type VaultObject } from "@/lib/learn";
-import { LiensLearn } from "@/components/LiensLearn";
 
 /**
  * Documents et coffre.

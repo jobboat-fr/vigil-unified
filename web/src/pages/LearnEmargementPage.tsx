@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { LiensLearn } from "@/components/LiensLearn";
 import {
   Card,
   CardContent,
@@ -15,7 +16,6 @@ import {
   type SheetRow,
 } from "@/lib/learn";
 import { isoDay } from "@/lib/day";
-import { LiensLearn } from "@/components/LiensLearn";
 
 /**
  * Émargement — signer avant et après chaque demi-journée.

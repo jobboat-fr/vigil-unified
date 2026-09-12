@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { LiensLearn } from "@/components/LiensLearn";
 import {
   Card,
   CardContent,
@@ -8,7 +9,6 @@ import {
 import { Link } from "react-router-dom";
 import { getCalendar, issueCalendarToken, LearnError, type Slot } from "@/lib/learn";
 import { isoDay } from "@/lib/day";
-import { LiensLearn } from "@/components/LiensLearn";
 
 /**
  * The calendar — one component for every profile.
