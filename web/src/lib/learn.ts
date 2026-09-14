@@ -490,7 +490,9 @@ export async function uploadVault(
   const fd = new FormData();
   fd.append("fichier", fichier);
   fd.append("kind", opts.kind ?? "piece_jointe");
-  fd.append("visibility", opts.visibility ?? "self");
+  // `tenant` par défaut : une pièce déposée est destinée au dossier, donc à l'organisme
+  // qui la traite. `self` la rendait illisible pour lui (migration 0033).
+  fd.append("visibility", opts.visibility ?? "tenant");
   if (opts.session_id) fd.append("session_id", opts.session_id);
   if (opts.subject_id) fd.append("subject_id", opts.subject_id);
   return call<VaultObject>("POST", "/vault", fd);
