@@ -46,6 +46,7 @@ import {
   Star,
   Terminal,
   Users,
+  ClipboardList,
   GraduationCap,
   Layers,
   KanbanSquare,
@@ -124,6 +125,7 @@ import LearnFormationsPage from "@/pages/LearnFormationsPage";
 import LearnEmargementPage from "@/pages/LearnEmargementPage";
 import LearnVaultPage from "@/pages/LearnVaultPage";
 import LearnPeoplePage from "@/pages/LearnPeoplePage";
+import LearnDemandesPage from "@/pages/LearnDemandesPage";
 import { useLearnRole } from "@/lib/supabase";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
@@ -200,6 +202,7 @@ const BUILTIN_ROUTES_CORE: Record<string, ComponentType> = {
   "/learn/emargement": LearnEmargementPage,
   "/learn/coffre": LearnVaultPage,
   "/learn/comptes": LearnPeoplePage,
+  "/learn/demandes": LearnDemandesPage,
 
   // WinnyWoo workspace
   "/audit": AuditPage,
@@ -266,6 +269,7 @@ const BUILTIN_NAV_REST: NavItem[] = [
   { path: "/learn/emargement", label: "Émargement", icon: PenLine, group: "learn" },
   { path: "/learn/coffre", label: "Coffre", icon: Archive, group: "learn" },
   { path: "/learn/comptes", label: "Comptes", icon: Users, group: "learn" },
+  { path: "/learn/demandes", label: "Demandes", icon: ClipboardList, group: "learn", roles: ["super_admin", "admin", "auditeur"] },
 
   { path: "/finance", label: "Finance", icon: Receipt, group: "company", roles: ["super_admin"] },
   { path: "/crm", label: "CRM", icon: Contact, group: "company", roles: ["super_admin", "admin"] },

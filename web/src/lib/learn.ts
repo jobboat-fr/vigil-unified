@@ -536,6 +536,40 @@ export const getLeads = (status?: string) =>
     `/leads${status ? `?status=${encodeURIComponent(status)}` : ""}`,
   );
 
+export interface LeadDetail {
+  id: string;
+  full_name: string;
+  email: string;
+  company_name: string | null;
+  status: string;
+  level: string | null;
+  score: number | null;
+  campaign: string | null;
+  created_at: string;
+  program_title: string | null;
+  session_code: string | null;
+  starts_on: string | null;
+  phone: string | null;
+  message: string | null;
+  program_id: string | null;
+  session_id: string | null;
+  positioning_answers: { bloc: string | null; question: string; kind: string; reponse: string | string[] }[];
+  events: { event: string; detail: Record<string, unknown>; actor_role: string; at: string }[];
+  _can?: Can;
+}
+
+export const getLead = (id: string) => call<LeadDetail>("GET", `/leads/${encodeURIComponent(id)}`);
+
+export const convertLead = (id: string, sessionId: string) =>
+  call<{ lead_id: string; profile_id: string; enrollment_id: string; invited: boolean }>(
+    "POST",
+    `/leads/${encodeURIComponent(id)}/convert`,
+    { session_id: sessionId, invite_redirect: `${window.location.origin}/learn` },
+  );
+
+export const refuseLead = (id: string, reason: string) =>
+  call<unknown>("POST", `/leads/${encodeURIComponent(id)}/refuse`, { reason });
+
 export const getActions = (status?: string) =>
   call<{ items: Record<string, unknown>[] }>(
     "GET",
