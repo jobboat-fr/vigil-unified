@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { BookOpen, CalendarDays, PenLine, Check, ArrowRight, X, Sparkles } from "lucide-react";
 import { getPrograms, getSessions } from "@/lib/learn";
 import { BRAND } from "@/lib/brand";
+import { useLearnRole } from "@/lib/supabase";
 
 const DONE_KEY = "vtlvs.onboarding.done";
 
@@ -41,8 +42,12 @@ export function OnboardingWizard() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [state, setState] = useState<StepState>({ connected: false, ran: false, met: false });
+  // Publier un programme, planifier une session : les trois pas sont ceux de la direction.
+  // Un formateur, un auditeur ou un apprenant ne les fait pas — le panneau ne s'ouvre pas pour eux.
+  const { role, resolu } = useLearnRole();
 
   useEffect(() => {
+    if (!resolu || (role !== "admin" && role !== "super_admin")) return;
     try {
       if (localStorage.getItem(DONE_KEY) === "1") return;
     } catch { /* private mode — show it */ }
@@ -61,7 +66,7 @@ export function OnboardingWizard() {
       setOpen(true);
     })();
     return () => { on = false; };
-  }, []);
+  }, [resolu, role]);
 
   // Modal a11y: focus the dialog on open, trap Tab inside it, close on Escape,
   // and restore focus to the previously-focused element on close.

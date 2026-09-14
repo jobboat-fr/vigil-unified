@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { LiensLearn } from "@/components/LiensLearn";
+import { FormulaireProgramme, FormulaireSession } from "@/components/learn/Gestion";
 import {
   Card,
   CardContent,
@@ -17,6 +18,7 @@ import {
   type Session,
   type Course,
   type Assessment,
+  type Can,
 } from "@/lib/learn";
 
 /**
@@ -38,6 +40,8 @@ export default function LearnFormationsPage() {
   const [error, setError] = useState<string | null>(null);
   const [openCourse, setOpenCourse] = useState<string | null>(null);
   const [outline, setOutline] = useState<Record<string, { id: string; title: string }[]>>({});
+  const [canProg, setCanProg] = useState<Can | null>(null);
+  const [canSess, setCanSess] = useState<Can | null>(null);
 
   const load = useCallback(async () => {
     setError(null);
@@ -49,12 +53,18 @@ export default function LearnFormationsPage() {
       getCourses(),
       getAssessments(),
     ]);
-    if (p.status === "fulfilled") setPrograms(p.value.items);
+    if (p.status === "fulfilled") {
+      setPrograms(p.value.items);
+      setCanProg(p.value._can ?? null);
+    }
     else {
       setPrograms([]);
       setError(p.reason instanceof LearnError ? p.reason.message : "Chargement impossible.");
     }
-    if (s.status === "fulfilled") setSessions(s.value.items);
+    if (s.status === "fulfilled") {
+      setSessions(s.value.items);
+      setCanSess(s.value._can ?? null);
+    }
     if (c.status === "fulfilled") setCourses(c.value.items);
     if (a.status === "fulfilled") setExams(a.value.items);
   }, []);
@@ -96,6 +106,19 @@ export default function LearnFormationsPage() {
           Chaque programme avec ses sessions, ses cours et ses évaluations.
         </p>
       </header>
+
+      {canProg?.create ? (
+        <Card>
+          <CardContent className="p-4">
+            <details>
+              <summary className="cursor-pointer text-sm font-medium">Nouveau programme</summary>
+              <div className="mt-4">
+                <FormulaireProgramme onCree={() => void load()} />
+              </div>
+            </details>
+          </CardContent>
+        </Card>
+      ) : null}
 
       {error ? (
         <Card>
@@ -148,6 +171,15 @@ export default function LearnFormationsPage() {
                   <p className="rounded px-2 py-1.5 text-xs ring-1 ring-current">
                     Programme certifiant sans évaluation rattachée — indicateur 3.
                   </p>
+                ) : null}
+
+                {canSess?.create ? (
+                  <details>
+                    <summary className="cursor-pointer text-xs font-medium opacity-80">Planifier une session</summary>
+                    <div className="mt-3">
+                      <FormulaireSession programId={p.id} modalite={p.modality} onCree={() => void load()} />
+                    </div>
+                  </details>
                 ) : null}
 
                 <Group title="Sessions" count={ps.length}>

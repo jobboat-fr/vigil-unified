@@ -527,6 +527,48 @@ export const getProfiles = (role?: string) =>
     `/profiles${role ? `?role=${encodeURIComponent(role)}` : ""}`,
   );
 
+// ---------------------------------------------------------------- Gestion (admin)
+
+export const createProfile = (body: {
+  full_name: string;
+  email: string;
+  role: string;
+  username?: string | null;
+  phone?: string | null;
+  company_id?: string | null;
+  password?: string | null;
+}) => call<Person & { password_set: boolean }>("POST", "/profiles", body);
+
+export const createProgram = (body: {
+  title: string;
+  code?: string | null;
+  nature?: string;
+  objectives?: string | null;
+  prerequisites?: string | null;
+  duration_hours?: number;
+  modality?: string;
+  published?: boolean;
+}) => call<Program>("POST", "/programs", body);
+
+export const createSession = (body: {
+  program_id: string;
+  code?: string | null;
+  title?: string | null;
+  starts_on: string;
+  ends_on: string;
+  modality?: string;
+  place?: string | null;
+  capacity?: number;
+}) => call<Session>("POST", "/sessions", body);
+
+export const generateSlots = (
+  sessionId: string,
+  body: { dates: string[]; halves: ("am" | "pm")[]; formateur_id?: string | null; room_id?: string | null },
+) => call<{ created: number }>("POST", `/sessions/${encodeURIComponent(sessionId)}/slots:generate`, body);
+
+export const enrollLearner = (sessionId: string, apprenantId: string) =>
+  call<unknown>("POST", `/sessions/${encodeURIComponent(sessionId)}/enrollments`, { apprenant_id: apprenantId });
+
 export const getAssignableRoles = () =>
   call<{ items: { role: string; level: number; scope: string }[] }>("GET", "/roles");
 

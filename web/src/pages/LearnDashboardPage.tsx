@@ -7,6 +7,7 @@ import {
 } from "@nous-research/ui/ui/components/card";
 import { useLearnRole } from "@/lib/supabase";
 import LearnDashboardApprenant from "@/pages/LearnDashboardApprenant";
+import LearnDashboardFormateur from "@/pages/LearnDashboardFormateur";
 import {
   getDashboard,
   getAuditOverview,
@@ -111,6 +112,7 @@ export default function LearnDashboardPage() {
 
   if (!resolu) return null;
   if (role === "apprenant") return <LearnDashboardApprenant />;
+  if (role === "formateur") return <LearnDashboardFormateur />;
 
   if (unavailable) {
     return (

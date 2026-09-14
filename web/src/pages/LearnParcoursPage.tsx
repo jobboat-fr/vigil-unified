@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { LiensLearn } from "@/components/LiensLearn";
+import { GestionSession } from "@/components/learn/Gestion";
+import { useLearnRole } from "@/lib/supabase";
 import {
   Card,
   CardContent,
@@ -72,6 +74,7 @@ function jour(d: string) {
 }
 
 export default function LearnParcoursPage() {
+  const { role } = useLearnRole();
   const [sessions, setSessions] = useState<Session[] | null>(null);
   const [programs, setPrograms] = useState<Program[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
@@ -226,6 +229,20 @@ export default function LearnParcoursPage() {
 
                       {isOpen && (
                         <div className="border-t border-current/10 px-4 py-3 text-[11px]">
+                          {s._can?.update && (
+                            <div className="mb-3">
+                              <GestionSession
+                                sessionId={s.id}
+                                startsOn={s.starts_on}
+                                endsOn={s.ends_on}
+                                onChange={() => {
+                                  void getSession(s.id).then((d2) => setDetail((m) => ({ ...m, [s.id]: d2 }))).catch(() => undefined);
+                                  void load();
+                                }}
+                              />
+                            </div>
+                          )}
+
                           <Bloc titre="Programme">
                             <p className="opacity-70">
                               {prog?.title ?? "—"}
@@ -327,7 +344,9 @@ export default function LearnParcoursPage() {
       <p className="px-1 text-[11px] leading-relaxed opacity-45">
         {gere
           ? "Les colonnes sont les états que la base autorise. Le nombre de cartes visibles dépend de votre profil : c'est la base qui filtre, pas cette page."
-          : "Vous ne voyez ici que les sessions auxquelles vous êtes inscrit."}
+          : role === "formateur"
+            ? "Vous ne voyez ici que les sessions où vous intervenez."
+            : "Vous ne voyez ici que les sessions auxquelles vous êtes inscrit."}
       </p>
     </div>
   );

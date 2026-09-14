@@ -1,4 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
+import { useLearnRole } from "@/lib/supabase";
 
 /**
  * Le maillage entre les écrans de formation.
@@ -16,7 +17,7 @@ import { Link, useLocation } from "react-router-dom";
  * fait douter de là où l'on se trouve.
  */
 
-const DESTINATIONS = [
+const APPRENANT = [
   { to: "/learn", libelle: "Tableau de bord" },
   { to: "/learn/calendar", libelle: "Mon calendrier" },
   { to: "/learn/emargement", libelle: "Émargement" },
@@ -24,9 +25,32 @@ const DESTINATIONS = [
   { to: "/learn/formations", libelle: "Programmes" },
   { to: "/learn/acquis", libelle: "Mes acquis" },
   { to: "/learn/coffre", libelle: "Mes documents" },
-] as const;
+];
+
+const FORMATEUR = [
+  { to: "/learn", libelle: "Tableau de bord" },
+  { to: "/learn/calendar", libelle: "Mon planning" },
+  { to: "/learn/emargement", libelle: "Émargement" },
+  { to: "/learn/parcours", libelle: "Mes sessions" },
+  { to: "/learn/formations", libelle: "Programmes" },
+  { to: "/learn/acquis", libelle: "Suivi des acquis" },
+  { to: "/learn/coffre", libelle: "Documents" },
+];
+
+const ORGANISME = [
+  { to: "/learn", libelle: "Tableau de bord" },
+  { to: "/learn/calendar", libelle: "Calendrier" },
+  { to: "/learn/emargement", libelle: "Émargement" },
+  { to: "/learn/parcours", libelle: "Sessions" },
+  { to: "/learn/formations", libelle: "Programmes" },
+  { to: "/learn/acquis", libelle: "Acquis" },
+  { to: "/learn/coffre", libelle: "Coffre" },
+  { to: "/learn/comptes", libelle: "Comptes" },
+];
 
 export function LiensLearn({ sauf }: { sauf?: string[] }) {
+  const { role } = useLearnRole();
+  const DESTINATIONS = role === "apprenant" ? APPRENANT : role === "formateur" ? FORMATEUR : ORGANISME;
   const { pathname } = useLocation();
   const courant = pathname.replace(/\/$/, "") || "/";
   const exclus = new Set([courant, ...(sauf ?? [])]);

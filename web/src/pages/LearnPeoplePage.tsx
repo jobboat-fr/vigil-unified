@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { LiensLearn } from "@/components/LiensLearn";
+import { FormulaireCompte } from "@/components/learn/Gestion";
 import {
   Card,
   CardContent,
@@ -96,6 +97,19 @@ export default function LearnPeoplePage() {
           )}
         </p>
       </header>
+
+      {can?.create && assignable.length > 0 ? (
+        <Card>
+          <CardContent className="p-4">
+            <details>
+              <summary className="cursor-pointer text-sm font-medium">Créer un compte</summary>
+              <div className="mt-4">
+                <FormulaireCompte roles={assignable} onCree={() => void load()} />
+              </div>
+            </details>
+          </CardContent>
+        </Card>
+      ) : null}
 
       {error ? (
         <Card>
