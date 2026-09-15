@@ -159,6 +159,34 @@ function UnknownRouteFallback({ pluginsLoading }: { pluginsLoading: boolean }) {
 // L'assistant garde le nom VIGIL : c'est l'agent, pas l'application. VTLVS est le
 // produit, et la distinction tient quand la plateforme est revendue — seul AGENTS.md
 // adopte la marque du nouvel organisme.
+/**
+ * L'assistant est coupé, volontairement.
+ *
+ * Il appelait la passerelle Railway, qui relayait vers `/chat/stream` sur l'ancien
+ * serveur de l'agent. Ce serveur est éteint : chaque message revenait en erreur, y
+ * compris pendant une démonstration. Plutôt que de laisser une page qui échoue, la
+ * route affiche l'indisponibilité et l'entrée de navigation disparaît.
+ *
+ * Remettre `false` quand l'assistant est rebranché sur le nouveau runtime — c'est le
+ * seul changement à faire ici.
+ */
+const ASSISTANT_EN_MAINTENANCE = true;
+
+/** Ce que voit une personne qui ouvre /chat pendant la coupure. */
+function AssistantEnMaintenance() {
+  return (
+    <div className="flex min-h-0 flex-1 items-center justify-center p-8">
+      <div className="max-w-md text-center">
+        <h1 className="text-xl font-semibold">Vigil est momentanément indisponible</h1>
+        <p className="mt-3 text-sm opacity-70">
+          L&apos;assistant est en cours de reconstruction. Vos données et vos sessions de
+          formation ne sont pas concernées : seules ses réponses sont suspendues.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 const CHAT_NAV_ITEM: NavItem = {
   path: "/chat",
   label: "Vigil",
@@ -538,7 +566,11 @@ export default function App() {
       // Embedded TUI (PTY over WS) when the dashboard serves it; otherwise the
       // gateway-backed VIGIL assistant (HTTP SSE) — the only chat that works
       // through the Vercel product.
-      "/chat": embeddedChat ? ChatRouteSink : AssistantChatPage,
+      "/chat": ASSISTANT_EN_MAINTENANCE
+        ? AssistantEnMaintenance
+        : embeddedChat
+          ? ChatRouteSink
+          : AssistantChatPage,
       //
       // `CHAT_NAV_ITEM` est dans cette liste et pas seulement dans la navigation : il vit
       // hors de `BUILTIN_NAV_REST`, si bien que le garde l'oubliait. Le lien disparaissait
@@ -562,7 +594,9 @@ export default function App() {
   const builtinNav = useMemo(() => {
     // Chat is always in the nav now: the embedded TUI when the dashboard serves
     // it, otherwise the gateway-backed VIGIL assistant.
-    const base = [CHAT_NAV_ITEM, ...BUILTIN_NAV_REST];
+    const base = ASSISTANT_EN_MAINTENANCE
+      ? [...BUILTIN_NAV_REST]
+      : [CHAT_NAV_ITEM, ...BUILTIN_NAV_REST];
     const visible = base.filter((n) => !n.roles || (learnRole && n.roles.includes(learnRole)));
     return showTokenAnalytics
       ? visible
@@ -927,7 +961,8 @@ export default function App() {
                   </div>
                 </ProfileKeyedRoutes>
 
-                {embeddedChat &&
+                {!ASSISTANT_EN_MAINTENANCE &&
+                  embeddedChat &&
                   !chatOverriddenByPlugin &&
                   (pluginsLoading ? (
                     isChatRoute ? (
