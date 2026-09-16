@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- AZZCO — monogramme AZZ, édité par AZZ&CO Labs. Accent #1F8A70. -->
+<svg viewBox="0 0 940 520" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="AZZCO — AZZ by AZZ&amp;CO LABS">
+  <rect width="940" height="520" fill="#2E3240"/>
+  <g fill="#ffffff">
+    <!-- A — jambe gauche : fine au sommet, large au pied, comme un geste de pinceau -->
+    <path d="M286 52 C 236 164 158 292 60 428 L 116 428 C 206 296 268 168 306 62 Z"/>
+    <!-- A — jambe droite -->
+    <path d="M306 62 C 316 172 326 300 334 428 L 386 412 C 368 292 340 164 320 56 Z"/>
+    <!-- A — barre, mince, légèrement montante -->
+    <path d="M156 344 C 218 328 280 318 342 314 L 338 282 C 274 288 212 300 148 320 Z"/>
+
+    <!-- Z n°1 — barre haute -->
+    <path d="M356 176 C 428 164 500 152 572 142 L 566 106 C 492 116 420 130 348 144 Z"/>
+    <!-- Z n°1 — diagonale -->
+    <path d="M572 142 C 508 226 440 314 378 400 L 424 424 C 488 338 556 250 620 166 Z"/>
+    <!-- Z n°1 — barre basse -->
+    <path d="M378 400 C 444 404 512 404 578 400 L 574 366 C 510 370 446 368 384 364 Z"/>
+  </g>
+  <g fill="#1F8A70">
+    <!-- Z n°2 — barre haute -->
+    <path d="M584 188 C 646 180 708 174 770 170 L 764 134 C 700 138 638 146 576 156 Z"/>
+    <!-- Z n°2 — diagonale -->
+    <path d="M770 170 C 714 240 658 310 604 380 L 648 402 C 702 332 758 262 814 192 Z"/>
+    <!-- Z n°2 — barre basse, qui file et s'affine jusqu'à la pointe -->
+    <path d="M604 380 C 676 386 752 382 826 368 C 866 360 898 350 914 340
+             C 921 336 923 331 920 326 C 917 321 910 322 902 325
+             C 872 337 838 346 800 352 C 730 364 668 366 608 358 Z"/>
+  </g>
+  <text x="470" y="494" text-anchor="middle" fill="#ffffff" fill-opacity=".6"
+        font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="22"
+        letter-spacing="6.5">by AZZ&amp;CO LABS</text>
+</svg>

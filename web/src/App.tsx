@@ -79,6 +79,7 @@ import { useSidebarStatus } from "@/hooks/useSidebarStatus";
 import { AuthWidget } from "@/components/AuthWidget";
 import { OnboardingWizard } from "@/components/OnboardingWizard";
 import AssistantChatPage from "@/pages/AssistantChatPage";
+import AbonnementPage from "@/pages/AbonnementPage";
 import { PageHeaderProvider } from "@/contexts/PageHeaderProvider";
 import { ProfileProvider } from "@/contexts/ProfileProvider";
 import { useProfileScope } from "@/contexts/useProfileScope";
@@ -212,6 +213,7 @@ const BUILTIN_ROUTES_CORE: Record<string, ComponentType> = {
   "/sessions": SessionsPage,
   // VIGIL workspace
   "/ops-team": OpsTeamPage,
+  "/abonnement": AbonnementPage,
   "/connections": ConnectionsPage,
   "/approvals": ApprovalsPage,
   "/meeting-room": MeetingRoomPage,
@@ -283,6 +285,8 @@ const BUILTIN_NAV_REST: NavItem[] = [
     roles: ["super_admin", "admin"],
   },
   { path: "/ops-team", label: "Équipe agentique", icon: Network, group: "workspace", roles: ["super_admin", "admin"] },
+  // L'abonnement aux agents : visible pour ceux qui décident, pas pour les apprenants.
+  { path: "/abonnement", label: "Abonnement agents", icon: CreditCard, group: "company", roles: ["super_admin", "admin"] },
   { path: "/connections", label: "Connexions", icon: Plug, group: "workspace", roles: ["super_admin", "admin"] },
   { path: "/approvals", label: "Validations", icon: ShieldCheck, group: "workspace", roles: ["super_admin", "admin"] },
   { path: "/meeting-room", label: "Salle de réunion", icon: Video, group: "workspace", roles: ["super_admin", "admin"] },

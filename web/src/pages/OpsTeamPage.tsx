@@ -4,6 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/c
 import { Button } from "@nous-research/ui/ui/components/button";
 import { vigil, type Department, type OpsEvent, type OpsTask, type OpsUsage } from "@/lib/vigil";
 import { GatewayError } from "@/lib/ww";
+import AgentsMarques from "@/components/AgentsMarques";
+import { useLearnRole } from "@/lib/supabase";
 
 // Ops Team — the agentic company. Departments are on-demand agent units; each
 // only counts as "working" once its effectiveness selftest passes. P0 ships the
@@ -31,6 +33,7 @@ export default function OpsTeamPage() {
   const [busy, setBusy] = useState<Record<string, string>>({});
   const [result, setResult] = useState<Record<string, OpsTask>>({});
   const [pausing, setPausing] = useState(false);
+  const { role } = useLearnRole();
 
   const refresh = useCallback(async () => {
     try {
@@ -97,6 +100,9 @@ export default function OpsTeamPage() {
           {pausing ? "…" : anyPaused ? "Tout reprendre" : "Tout suspendre"}
         </Button>
       </header>
+
+      {/* Les agents d'AZZ&CO Labs passent avant les pôles : c'est ce que le client achète. */}
+      <AgentsMarques role={role as never} />
 
       {authError && (
         <Card><CardContent className="py-4 text-sm" style={{ color: "#f59e0b" }}>{authError}</CardContent></Card>
