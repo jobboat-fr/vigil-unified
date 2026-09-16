@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/c
 import { Button } from "@nous-research/ui/ui/components/button";
 import { vigil, googleMeet, streamRoomCouncil, type Room, type CouncilRecord, type SseEvent, type LiveIntervention, type MeetingSummary, type MeetBotStatus, type AvatarSession } from "@/lib/vigil";
 import { LiveRoom } from "@/components/LiveRoom";
+import { EcartsEmargement } from "@/components/EcartsEmargement";
 
 const PERSONAS = ["CFO", "CTO", "COO", "CRM", "CRO", "advisor"] as const;
 import { GatewayError } from "@/lib/ww";
@@ -619,10 +620,16 @@ export default function MeetingRoomPage() {
                 {summary && (
                   <div className="mt-3 rounded-lg border border-current/15 p-3 space-y-2 text-sm">
                     <div className="flex flex-wrap gap-3 text-xs text-text-secondary">
-                      {summary.artifact_id && <button className="underline hover:text-foreground" onClick={() => navigate(`/studio?artifact=${summary.artifact_id}`)}>✓ Open in Studio</button>}
-                      <span>{summary.commitments_saved} commitments</span>
-                      <span>{summary.contacts_saved} guests → CRM</span>
+                      {summary.artifact_id && <button className="underline hover:text-foreground" onClick={() => navigate(`/studio?artifact=${summary.artifact_id}`)}>✓ Ouvrir dans le Studio</button>}
+                      <span>{summary.commitments_saved} engagements</span>
+                      {active.kind !== "formation" && <span>{summary.contacts_saved} invités → CRM</span>}
+                      {active.kind === "formation" && (
+                        summary.vault_object_id
+                          ? <span>✓ Compte rendu déposé au coffre de la session</span>
+                          : <span className="text-amber-500">Compte rendu non déposé au coffre{summary.vault_error ? ` (${summary.vault_error})` : summary.stub ? " (assistant indisponible)" : ""}</span>
+                      )}
                     </div>
+                    {active.kind === "formation" && <EcartsEmargement roomId={active.id} />}
                     {summary.summary_markdown && <pre className="max-h-48 overflow-auto whitespace-pre-wrap rounded bg-current/5 p-2 text-xs leading-relaxed">{summary.summary_markdown}</pre>}
                     {summary.commitments.length > 0 && (
                       <div className="text-xs"><span className="text-text-secondary">Décisions à suivre :</span><ul className="list-disc pl-4">{summary.commitments.map((c, i) => <li key={i}>{c.text}{c.owner ? ` — ${c.owner}` : ""}</li>)}</ul></div>

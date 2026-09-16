@@ -20,7 +20,7 @@ import os
 import re
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
@@ -29,7 +29,7 @@ from winny.council.intervention import WEIGHT_DEFAULTS, check_intervention
 from winny.council.summarizer import summarize_meeting
 from winny.council.structurer import structure_meeting
 from winny_gateway import avatar as avatar_mod
-from winny_gateway import learn_link
+from winny_gateway import learn_api, learn_link, presence
 from winny_gateway import livekit as lk
 from winny_gateway.auth import get_current_user, scoped_user
 from winny_gateway.db import DatabaseError, db_delete, db_insert, db_select, db_update
@@ -70,6 +70,9 @@ def _public(row: dict[str, Any]) -> dict[str, Any]:
         "summary": row.get("summary") or "",
         "concluded_at": row.get("concluded_at"),
         "created_at": row.get("created_at"),
+        "kind": row.get("kind") or "meeting",
+        "learn_session_id": row.get("learn_session_id"),
+        "learn_slot_id": row.get("learn_slot_id"),
     }
 
 
@@ -606,6 +609,69 @@ async def join_learn_slot(slot_id: str, user: dict = Depends(get_current_user)) 
     }}
 
 
+# ── Présence : webhook LiveKit et rapprochement avec l'émargement (phase 1.7) ──
+@router.post("/livekit/webhook")
+async def livekit_webhook(request: Request) -> dict[str, Any]:
+    """PUBLIC, signé par LiveKit. Enregistre entrées et sorties des salles `vigil-*`."""
+    from datetime import UTC, datetime
+
+    body = await request.body()
+    try:
+        presence.verify_webhook(body, request.headers.get("authorization"))
+    except presence.WebhookRefused as exc:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail={"error": str(exc)}) from exc
+    ev = json.loads(body or b"{}")
+    kind = {"participant_joined": "joined", "participant_left": "left"}.get(ev.get("event"))
+    room_name = (ev.get("room") or {}).get("name") or ""
+    part = ev.get("participant") or {}
+    if not kind or not room_name.startswith("vigil-") or part.get("kind") in ("AGENT", 4):
+        return {"ok": True, "data": {"ignored": True}}
+    created = int(ev.get("createdAt") or 0)
+    at = datetime.fromtimestamp(created, UTC) if created else datetime.now(UTC)
+    try:
+        await db_insert("room_presence", {
+            "room_id": room_name.removeprefix("vigil-"),
+            "identity": part.get("identity") or "",
+            "name": part.get("name") or None,
+            "event": kind,
+            "at": at.isoformat(),
+            "livekit_event_id": ev.get("id") or None,
+        }, allow_unscoped=True)
+    except DatabaseError as exc:
+        # Événement rejoué (id déjà vu) ou salle inconnue : sans conséquence.
+        logger.info("livekit_webhook.skip %s: %s", ev.get("id"), exc.reason[:120])
+    return {"ok": True, "data": {"recorded": kind}}
+
+
+@router.get("/{room_id}/attendance-check")
+async def attendance_check(room_id: str, user: dict = Depends(get_current_user)) -> dict[str, Any]:
+    """Écarts entre présence en visio et émargement, pour la salle d'un créneau LEARN.
+    Réservé à qui anime la salle. Signale seulement : ne signe ni ne corrige rien."""
+    uid = _uid(user)
+    room = await _owned_row(room_id, uid)
+    slot_id = room.get("learn_slot_id")
+    if not slot_id:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail={"error": "not_a_formation_room"})
+    slots = await db_select("learn_session_slots", filters={"id": slot_id}, limit=1, allow_unscoped=True)
+    if not slots:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail={"error": "slot_not_found"})
+    slot = slots[0]
+    enrolled = await db_select("learn_enrollments", filters={"session_id": slot["session_id"]},
+                               limit=500, allow_unscoped=True)
+    learners = [e for e in enrolled if e.get("status") in learn_link.VALID_ENROLLMENT]
+    for learner in learners:
+        prof = await db_select("learn_profiles", filters={"id": learner["apprenant_id"]}, limit=1,
+                               allow_unscoped=True)
+        learner["full_name"] = (prof[0] if prof else {}).get("full_name")
+    sheet = await db_select("learn_attendance_sheet", filters={"slot_id": slot_id}, limit=500, allow_unscoped=True)
+    events = await db_select("room_presence", filters={"room_id": room_id}, limit=5000, allow_unscoped=True)
+    rows = presence.reconcile(slot, learners, sheet, events)
+    return {"ok": True, "data": {
+        "slot_id": slot_id, "starts_at": slot.get("starts_at"), "ends_at": slot.get("ends_at"),
+        "learners": rows, "ecarts": [r for r in rows if r["ecart"]],
+    }}
+
+
 class GuestJoinBody(BaseModel):
     name: str = Field(default="Guest", max_length=80)
 
@@ -711,7 +777,10 @@ async def summarize_room(room_id: str, body: SummarizeBody, user: dict = Depends
                 commitments_n += 1
 
     contacts_n = 0
-    if body.onboard_guests:
+    formation = bool(room.get("learn_session_id"))
+    # Une séance de formation n'alimente pas le CRM : ses participants sont des apprenants,
+    # pas des prospects.
+    if body.onboard_guests and not formation:
         for f in result["follow_ups"]:
             name = str(f.get("name") or "").strip()
             if not name:
@@ -760,9 +829,29 @@ async def summarize_room(room_id: str, body: SummarizeBody, user: dict = Depends
         "live_url": None, "live_provider": None, "live_persona": None,
     }, filters={"id": room_id, "user_id": uid})
 
+    # Séance de formation : le compte rendu rejoint le coffre LEARN de la session, déposé au
+    # nom du formateur (propriétaire de la salle) et marqué produit par l'IA. Jamais un
+    # compte rendu de repli (IA indisponible) : mieux vaut rien qu'un faux document.
+    vault_object_id = None
+    vault_error = None
+    if formation and result["summary_markdown"] and not result.get("stub"):
+        try:
+            obj = await learn_api.deposit_text(
+                on_behalf_of=str(room.get("user_id") or uid),
+                session_id=str(room["learn_session_id"]),
+                filename=f"compte-rendu-{datetime.now(UTC):%Y-%m-%d}-{room_id[:8]}.txt",
+                text=f"{room.get('title') or 'Séance'}\n\n" + result["summary_markdown"],
+            )
+            vault_object_id = obj.get("id")
+        except Exception as exc:  # noqa: BLE001 — la clôture ne dépend pas du coffre
+            vault_error = str(exc)[:200]
+            logger.warning("summarize.vault_deposit_failed room=%s: %s", room_id, exc)
+
     return {
         "ok": True,
         "data": {
+            "vault_object_id": vault_object_id,
+            "vault_error": vault_error,
             "summary_markdown": result["summary_markdown"],
             "decisions": result["decisions"],
             "next_steps": result["next_steps"],

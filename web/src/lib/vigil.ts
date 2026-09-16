@@ -186,6 +186,8 @@ export interface MeetingSummary {
   commitments_saved: number;
   contacts_saved: number;
   stub: boolean;
+  vault_object_id?: string | null;
+  vault_error?: string | null;
 }
 
 export interface LiveIntervention {
@@ -205,6 +207,9 @@ export interface Room {
   members: RoomMember[];
   transcript: { speaker: string; text: string; ts: string }[];
   created_at: string;
+  kind?: "meeting" | "formation";
+  learn_session_id?: string | null;
+  learn_slot_id?: string | null;
 }
 
 export interface SseEvent {
@@ -553,6 +558,7 @@ export const vigil = {
     share: (id: string) => vigilCall<{ share_token: string }>("POST", `/v1/rooms/${id}/share`),
     summarize: (id: string) => vigilCall<MeetingSummary>("POST", `/v1/rooms/${id}/summarize`, {}),
     /** Entrer dans la salle d'un créneau LEARN à distance (phase 1.2). */
+    attendanceCheck: (id: string) => vigilCall<AttendanceCheck>("GET", `/v1/rooms/${id}/attendance-check`),
     joinSlot: (slotId: string) => vigilCall<SlotRoomJoin>("POST", `/v1/rooms/learn/slots/${slotId}/join`),
     bringAgent: (id: string, persona: string, evidence?: string) =>
       vigilCall<{ dispatched: boolean; persona: string; room: string }>("POST", `/v1/rooms/${id}/bring-agent`, { persona, evidence }),
@@ -895,3 +901,12 @@ export type SlotRoomJoin = LiveKitJoin & {
   starts_at: string;
   ends_at: string;
 };
+
+export type AttendanceRow = {
+  apprenant_id: string;
+  nom: string;
+  presence_ratio: number;
+  signe: boolean;
+  ecart: "present_non_signe" | "signe_non_present" | "presence_courte" | null;
+};
+export type AttendanceCheck = { slot_id: string; starts_at: string; ends_at: string; learners: AttendanceRow[]; ecarts: AttendanceRow[] };
