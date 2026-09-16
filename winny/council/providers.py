@@ -24,6 +24,8 @@ from typing import Any
 
 import httpx
 
+from winny.council import guard
+
 ANTHROPIC_URL = "https://api.anthropic.com/v1/messages"
 OPENAI_URL = "https://api.openai.com/v1/chat/completions"
 ANTHROPIC_VERSION = "2023-06-01"
@@ -79,7 +81,7 @@ def _cost(model: str, prompt_tokens: int, completion_tokens: int) -> float:
     return round((prompt_tokens / 1_000_000) * inp + (completion_tokens / 1_000_000) * out, 6)
 
 
-def _stub(model: str, family: str, reason: str) -> dict[str, Any]:
+def _stub(model: str, family: str, reason: str, *, unavailable: bool = False) -> dict[str, Any]:
     """Offline response: valid JSON output so downstream parsing stays sane."""
     payload = {
         "should_intervene": False,
@@ -99,6 +101,10 @@ def _stub(model: str, family: str, reason: str) -> dict[str, Any]:
         "cost_usd": 0.0,
         "finish_reason": "stub",
         "stub": True,
+        # Vrai quand le coupe-circuit ou un interrupteur a refusé l'appel, ou que le
+        # fournisseur a échoué : l'app affiche alors « assistant indisponible ».
+        "ai_unavailable": unavailable,
+        "unavailable_reason": reason if unavailable else None,
     }
 
 
@@ -111,9 +117,26 @@ async def ask(
     max_tokens: int = 1024,
     timeout: float = DEFAULT_TIMEOUT,
 ) -> dict[str, Any]:
-    """Single-shot completion for a council worker. Never raises on missing key."""
+    """Single-shot completion for a council worker. Never raises on missing key.
+
+    Passe d'abord par le coupe-circuit (guard) : interrupteur général, interrupteur de la
+    fonction en cours, circuit du fournisseur. Le délai demandé est plafonné par AI_TIMEOUT_S.
+    """
     family = str(worker.get("family", "")).lower()
     model = worker.get("model", "")
+    refused = guard.refusal(family)
+    if refused:
+        return _stub(model, family, refused, unavailable=True)
+    timeout = guard.max_timeout(timeout)
+    result = await _dispatch(family, model, system, user_prompt, temperature, max_tokens, timeout)
+    if not result.get("stub"):
+        guard.record_success(family)
+    else:
+        guard.release_probe(family)
+    return result
+
+
+async def _dispatch(family, model, system, user_prompt, temperature, max_tokens, timeout) -> dict[str, Any]:
     messages: list[dict[str, str]] = []
     if system:
         messages.append({"role": "system", "content": system})
@@ -157,10 +180,17 @@ async def ask(
             return await _call_openai(f"{base}/chat/completions", os.getenv(key_env), family, model, messages, temperature, max_tokens, timeout)
         return _stub(model, family or "unknown", f"unknown family '{family}'")
     except _MissingKey as exc:
-        return _stub(model, family, str(exc))
+        guard.record_not_configured(family, str(exc))
+        return _stub(model, family, str(exc), unavailable=True)
+    except httpx.HTTPStatusError as exc:
+        # 402 crédits épuisés, 429 quota, 5xx fournisseur : un échec qui compte.
+        reason = f"http {exc.response.status_code}: {exc.response.text[:200]}"
+        guard.record_failure(family, reason)
+        return _stub(model, family, reason, unavailable=True)
     except httpx.HTTPError as exc:
         # Transport/timeout — degrade rather than crash the council.
-        return _stub(model, family, f"transport error: {exc}")
+        guard.record_failure(family, f"transport error: {exc}")
+        return _stub(model, family, f"transport error: {exc}", unavailable=True)
 
 
 # ── Cheap tier: multi-provider router with failover + a rate-limit ledger ───────

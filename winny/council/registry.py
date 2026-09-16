@@ -16,51 +16,53 @@ from typing import Any
 def worker_registry() -> dict[str, dict[str, Any]]:
     """Resolved at call time so env overrides (and tests) take effect.
 
-    Default provider is the HuggingFace Inference Router (HF_TOKEN), so the
-    council runs on one configured key instead of three separate Anthropic/
-    OpenAI/Google keys (ports the AZZCO OVH architecture). Set
-    ``COUNCIL_PROVIDER`` to ``anthropic``/``openai``/``google`` to revert; pin
-    models with ``COUNCIL_*_MODEL``. Diversity is kept within HF (gpt-oss-120b
-    for reasoning, gpt-oss-20b for the fast reviewer) to limit bias collapse
-    while staying on one provider/key.
+    Fournisseur par défaut : **Together** (``TOGETHER_API_KEY``) depuis le 2026-09-17 — les
+    crédits Hugging Face sont épuisés, et les agents AZZCOM/AZZCO/AZZMIN tournent déjà sur
+    Together. Modèles vérifiés en appel direct ce jour-là : GLM-5.3 pour le raisonnement
+    principal et la synthèse, DeepSeek-V4-Pro et gpt-oss-120b pour les deux relectures
+    (trois familles différentes, pour limiter l'effondrement des biais).
+
+    ``COUNCIL_PROVIDER`` = ``huggingface`` / ``anthropic`` / ``openai`` / ``google`` pour
+    revenir en arrière ; ``COUNCIL_*_MODEL`` pour épingler un modèle.
     """
-    fam = os.getenv("COUNCIL_PROVIDER", "huggingface").lower()
-    hf = fam in ("huggingface", "hf")
-    prov = "HuggingFace" if hf else fam.title()
+    fam = os.getenv("COUNCIL_PROVIDER", "together").lower()
+    defaults = _DEFAULT_MODELS.get(fam, _DEFAULT_MODELS["_other"])
+    prov = {"huggingface": "HuggingFace", "hf": "HuggingFace"}.get(fam, fam.title())
+
+    def worker(slot: str, env: str, specialization: str, weight: float) -> dict[str, Any]:
+        return {
+            "provider": prov,
+            "model": os.getenv(env) or defaults[slot],
+            "family": fam,
+            "specialization": specialization,
+            "voteWeight": weight,
+            "enabled": True,
+        }
+
     return {
-        "primary": {
-            "provider": prov,
-            "model": os.getenv("COUNCIL_PRIMARY_MODEL") or ("openai/gpt-oss-120b" if hf else (os.getenv("ANTHROPIC_MODEL") or "claude-sonnet-4-5-20250929")),
-            "family": fam,
-            "specialization": "ROLE_SPECIALIST",
-            "voteWeight": 1.5,
-            "enabled": True,
-        },
-        "reviewer_1": {
-            "provider": prov,
-            "model": os.getenv("COUNCIL_REVIEWER_1_MODEL") or ("openai/gpt-oss-120b" if hf else "gpt-4o"),
-            "family": fam,
-            "specialization": "BALANCED_REVIEWER",
-            "voteWeight": 1.3,
-            "enabled": True,
-        },
-        "reviewer_2": {
-            "provider": prov,
-            "model": os.getenv("COUNCIL_REVIEWER_2_MODEL") or ("openai/gpt-oss-20b" if hf else (os.getenv("GEMINI_MODEL") or "gemini-2.5-flash")),
-            "family": fam,
-            "specialization": "FAST_REVIEWER",
-            "voteWeight": 1.2,
-            "enabled": True,
-        },
-        "chairman": {
-            "provider": prov,
-            "model": os.getenv("COUNCIL_CHAIRMAN_MODEL") or ("openai/gpt-oss-120b" if hf else "gemini-2.5-flash"),
-            "family": fam,
-            "specialization": "CHAIRMAN",
-            "voteWeight": 2.0,
-            "enabled": True,
-        },
+        "primary": worker("primary", "COUNCIL_PRIMARY_MODEL", "ROLE_SPECIALIST", 1.5),
+        "reviewer_1": worker("reviewer_1", "COUNCIL_REVIEWER_1_MODEL", "BALANCED_REVIEWER", 1.3),
+        "reviewer_2": worker("reviewer_2", "COUNCIL_REVIEWER_2_MODEL", "FAST_REVIEWER", 1.2),
+        "chairman": worker("chairman", "COUNCIL_CHAIRMAN_MODEL", "CHAIRMAN", 2.0),
     }
+
+
+_HF_MODELS = {
+    "primary": "openai/gpt-oss-120b", "reviewer_1": "openai/gpt-oss-120b",
+    "reviewer_2": "openai/gpt-oss-20b", "chairman": "openai/gpt-oss-120b",
+}
+_DEFAULT_MODELS: dict[str, dict[str, str]] = {
+    "together": {
+        "primary": "zai-org/GLM-5.3", "reviewer_1": "deepseek-ai/DeepSeek-V4-Pro-0813",
+        "reviewer_2": "openai/gpt-oss-120b", "chairman": "zai-org/GLM-5.3",
+    },
+    "huggingface": _HF_MODELS,
+    "hf": _HF_MODELS,
+    "_other": {
+        "primary": os.getenv("ANTHROPIC_MODEL") or "claude-sonnet-4-5-20250929", "reviewer_1": "gpt-4o",
+        "reviewer_2": os.getenv("GEMINI_MODEL") or "gemini-2.5-flash", "chairman": "gemini-2.5-flash",
+    },
+}
 
 
 def cheap_worker() -> dict[str, Any]:
@@ -104,7 +106,7 @@ def cheap_pool() -> list[dict[str, Any]]:
     failover by ``providers.ask_cheap``.
 
     ``CHEAP_POOL`` (comma-separated specs) overrides; otherwise: a local model first
-    (if ``LOCAL_LLM_BASE`` is set), then a paid-cheap HF fallback so there is always a
+    (if ``LOCAL_LLM_BASE`` is set), then a paid-cheap Together fallback so there is always a
     working tier. Commercial note: free third-party tiers must not serve paying
     tenants (ToS) — keep those out of the pool when serving customers.
     """
@@ -114,7 +116,7 @@ def cheap_pool() -> list[dict[str, Any]]:
     pool: list[dict[str, Any]] = []
     if os.getenv("LOCAL_LLM_BASE"):
         pool.append(_worker_from_spec("local"))
-    pool.append(_worker_from_spec(f"hf:{os.getenv('CHEAP_HF_MODEL', 'openai/gpt-oss-20b')}"))
+    pool.append(_worker_from_spec(f"together:{os.getenv('CHEAP_TOGETHER_MODEL', 'deepseek-ai/DeepSeek-V4.1-Flash')}"))
     return pool
 
 

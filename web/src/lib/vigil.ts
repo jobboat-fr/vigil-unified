@@ -862,3 +862,15 @@ export function usePagePermissions(role: string | null): PagePermissions | null 
   }, [role]);
   return perms;
 }
+
+// ── Coupe-circuit IA ─────────────────────────────────────────────────────────
+export type AiHealth = {
+  enabled: boolean;
+  available: boolean;
+  provider: string;
+  disabled_features: string[];
+  features: Record<string, boolean>;
+  providers: Record<string, { state: string; retry_in_s: number; last_error: string | null }>;
+};
+
+export const vigilAiHealth = () => vigilCall<AiHealth>("GET", "/v1/ai/health");

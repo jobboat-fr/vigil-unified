@@ -46,7 +46,7 @@ def test_cheap_pool_default_has_paid_fallback(monkeypatch):
     monkeypatch.delenv("CHEAP_POOL", raising=False)
     monkeypatch.delenv("LOCAL_LLM_BASE", raising=False)
     pool = cheap_pool()
-    assert pool and pool[-1]["family"] == "huggingface"   # always a working tier
+    assert pool and pool[-1]["family"] == "together"   # always a working tier (Together since 2026-09-17)
 
 
 def test_ask_cheap_fails_over_past_a_stubbing_provider(monkeypatch):

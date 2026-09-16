@@ -131,6 +131,7 @@ import LearnPeoplePage from "@/pages/LearnPeoplePage";
 import LearnDemandesPage from "@/pages/LearnDemandesPage";
 import { useLearnRole } from "@/lib/supabase";
 import { usePagePermissions, type PagePermissions } from "@/lib/vigil";
+import { AssistantIndisponible } from "@/components/AssistantIndisponible";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { useI18n } from "@/i18n";
@@ -956,6 +957,7 @@ export default function App() {
               >
                 {/* Sur une page métier, dire quel agent la couvre — et rien ailleurs. */}
                 <AgentDeLaPage />
+                <AssistantIndisponible />
 
                 <ProfileKeyedRoutes>
                   {/* key re-triggers the enter animation per navigation (delight.css) */}
