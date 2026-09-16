@@ -130,6 +130,7 @@ import LearnVaultPage from "@/pages/LearnVaultPage";
 import LearnPeoplePage from "@/pages/LearnPeoplePage";
 import LearnDemandesPage from "@/pages/LearnDemandesPage";
 import { useLearnRole } from "@/lib/supabase";
+import { usePagePermissions, type PagePermissions } from "@/lib/vigil";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { useI18n } from "@/i18n";
@@ -287,15 +288,15 @@ const BUILTIN_NAV_REST: NavItem[] = [
     group: "workspace",
     roles: ["super_admin", "admin"],
   },
-  { path: "/ops-team", label: "Équipe agentique", icon: Network, group: "workspace", roles: ["super_admin", "admin"] },
+  { path: "/ops-team", label: "Équipe agentique", icon: Network, group: "workspace", roles: ["super_admin", "admin"], capability: ["ops", "read"] },
   // L'abonnement aux agents : visible pour ceux qui décident, pas pour les apprenants.
   { path: "/produits", label: "Nos produits", icon: Package, group: "company", roles: ["super_admin", "admin", "formateur", "auditeur"] },
   { path: "/abonnement", label: "Abonnement agents", icon: CreditCard, group: "company", roles: ["super_admin", "admin"] },
   { path: "/connections", label: "Connexions", icon: Plug, group: "workspace", roles: ["super_admin", "admin"] },
   { path: "/approvals", label: "Validations", icon: ShieldCheck, group: "workspace", roles: ["super_admin", "admin"] },
-  { path: "/meeting-room", label: "Salle de réunion", icon: Video, group: "workspace", roles: ["super_admin", "admin"] },
+  { path: "/meeting-room", label: "Salle de réunion", icon: Video, group: "workspace", roles: ["super_admin", "admin", "formateur", "entreprise", "apprenant", "auditeur"], capability: ["room", "read"] },
   { path: "/studio", label: "Studio", icon: PenLine, group: "workspace", roles: ["super_admin", "admin"] },
-  { path: "/vault", label: "Artéfacts", icon: Lock, group: "workspace", roles: ["super_admin", "admin"] },
+  { path: "/vault", label: "Artéfacts", icon: Lock, group: "workspace", roles: ["super_admin", "admin"], capability: ["legal", "read"] },
   // ── Company ──
   { path: "/learn", label: "Tableau de bord", icon: GraduationCap, group: "learn" },
   { path: "/learn/calendar", label: "Calendrier", icon: CalendarDays, group: "learn" },
@@ -307,9 +308,9 @@ const BUILTIN_NAV_REST: NavItem[] = [
   { path: "/learn/comptes", label: "Comptes", icon: Users, group: "learn" },
   { path: "/learn/demandes", label: "Demandes", icon: ClipboardList, group: "learn", roles: ["super_admin", "admin", "auditeur"] },
 
-  { path: "/finance", label: "Finance", icon: Receipt, group: "company", roles: ["super_admin"] },
-  { path: "/crm", label: "CRM", icon: Contact, group: "company", roles: ["super_admin", "admin"] },
-  { path: "/mail", label: "Mail", icon: Mail, group: "company", roles: ["super_admin", "admin"] },
+  { path: "/finance", label: "Finance", icon: Receipt, group: "company", roles: ["super_admin", "admin"], capability: ["finance", "read"] },
+  { path: "/crm", label: "CRM", icon: Contact, group: "company", roles: ["super_admin", "admin"], capability: ["crm", "read"] },
+  { path: "/mail", label: "Mail", icon: Mail, group: "company", roles: ["super_admin", "admin"], capability: ["mail", "read"] },
   // ── Trade desk ──
   // ── Insight ──
   { path: "/audit", label: "Audit", icon: ScrollText, group: "insight", roles: ["super_admin", "auditeur"] },
@@ -562,6 +563,7 @@ export default function App() {
   // loads and for signed-out users, so gated entries stay hidden until a role is known —
   // failing closed rather than flashing a link that then disappears.
   const { role: learnRole, resolu: roleResolu } = useLearnRole();
+  const pagePerms = usePagePermissions(learnRole);
 
   const chatOverriddenByPlugin = useMemo(
     () => manifests.some((m) => m.tab.override === "/chat"),
@@ -591,12 +593,12 @@ export default function App() {
       ...(roleResolu
         ? Object.fromEntries(
             [CHAT_NAV_ITEM, ...BUILTIN_NAV_REST].filter(
-              (n) => n.roles && !(learnRole && n.roles.includes(learnRole)),
+              (n) => (n.roles || n.capability) && !navAllowed(n, learnRole, pagePerms),
             ).map((n) => [n.path, RootRedirect]),
           )
         : {}),
     }),
-    [embeddedChat, learnRole, roleResolu],
+    [embeddedChat, learnRole, roleResolu, pagePerms],
   );
 
   const builtinNav = useMemo(() => {
@@ -605,11 +607,11 @@ export default function App() {
     const base = ASSISTANT_EN_MAINTENANCE
       ? [...BUILTIN_NAV_REST]
       : [CHAT_NAV_ITEM, ...BUILTIN_NAV_REST];
-    const visible = base.filter((n) => !n.roles || (learnRole && n.roles.includes(learnRole)));
+    const visible = base.filter((n) => navAllowed(n, learnRole, pagePerms));
     return showTokenAnalytics
       ? visible
       : visible.filter((n) => n.path !== "/analytics");
-  }, [showTokenAnalytics, learnRole]);
+  }, [showTokenAnalytics, learnRole, pagePerms]);
 
   const sidebarNav = useMemo(
     () => partitionSidebarNav(builtinNav, manifests),
@@ -1403,6 +1405,16 @@ interface NavItem {
   /** Absent means everyone. Present means only these LEARN roles see the entry.
    *  Hiding a link is tidiness, not security — the gateway re-checks every call. */
   roles?: string[];
+  /** Page métier : visible si la passerelle accorde (ressource, action) — learn_capabilities.
+   *  Tant que ces droits ne sont pas connus, `roles` sert de repli. */
+  capability?: [string, string];
+}
+
+function navAllowed(n: NavItem, role: string | null, perms: PagePermissions | null): boolean {
+  if (n.capability && perms) {
+    return perms.grants[n.capability[0]]?.includes(n.capability[1]) ?? false;
+  }
+  return !n.roles || (!!role && n.roles.includes(role));
 }
 
 interface SidebarIconWithTooltipProps {

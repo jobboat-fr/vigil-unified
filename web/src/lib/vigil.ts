@@ -4,6 +4,7 @@
 // /v1/* namespace (council, rooms) ported from VIGIL backendv2. Auth is the
 // shared Supabase JWT. SSE endpoints are consumed with fetch + a stream reader
 // because EventSource cannot attach an Authorization header.
+import { useEffect, useState } from "react";
 import { getAccessToken } from "./supabase";
 import { WW_BASE, GatewayError } from "./ww";
 
@@ -832,4 +833,30 @@ export function streamAssistantChat(
     method: "POST",
     body: { message, session_id: sessionId, page_context: pageContext },
   });
+}
+
+// ── Droits des pages métier ─────────────────────────────────────────────────
+//
+// La passerelle lit learn_capabilities (migration LEARN 0039) et renvoie, pour la personne
+// connectée, les actions permises par ressource : room, mail, crm, finance, ops, legal.
+// Le menu s'en sert. `null` tant que la réponse n'est pas arrivée, ou si la passerelle ne
+// répond pas : le menu retombe alors sur les listes de rôles écrites dans App.tsx.
+export type PagePermissions = { role: string | null; grants: Record<string, string[]> };
+
+export function usePagePermissions(role: string | null): PagePermissions | null {
+  const [perms, setPerms] = useState<PagePermissions | null>(null);
+  useEffect(() => {
+    if (!role) {
+      setPerms(null);
+      return;
+    }
+    let alive = true;
+    vigilCall<PagePermissions>("GET", "/v1/permissions/me")
+      .then((p) => alive && setPerms(p))
+      .catch(() => alive && setPerms(null));
+    return () => {
+      alive = false;
+    };
+  }, [role]);
+  return perms;
 }

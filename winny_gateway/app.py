@@ -9,7 +9,7 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from typing import Any
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 
@@ -56,6 +56,7 @@ from winny_gateway.routes.vigil import ops as vigil_ops
 from winny_gateway.routes.vigil import finance_connect as vigil_finance_connect
 from winny_gateway.routes.vigil import connect as vigil_connect
 from winny_gateway.routes.vigil import privacy as vigil_privacy
+from winny_gateway import permissions
 from winny_gateway.security import SecurityMiddleware
 
 logger = get_logger(__name__)
@@ -216,28 +217,30 @@ def create_app(config: GatewayConfig | None = None) -> FastAPI:
     # VIGIL assistant — bridges the vigil-web AssistantWidget to Hermes.
     app.include_router(assistant.router)
     # VIGIL vault — user document store grounding the agent in real docs.
-    app.include_router(vault.router)
+    app.include_router(vault.router, dependencies=[Depends(permissions.guard("legal"))])
     # VIGIL integrations — runtime MCP servers, single source of truth.
     app.include_router(integrations.router)
     # VIGIL meeting room + council — ported from VIGIL backendv2 (Node→Python).
     app.include_router(vigil_council.router)
-    app.include_router(vigil_rooms.router)
+    app.include_router(vigil_rooms.router, dependencies=[Depends(permissions.guard("room"))])
     # Studio — artifact drafting behind the brainstorm-first gate.
     app.include_router(vigil_studio.router)
     # Finance — the books/ledger backend the cfo-* skills route into.
-    app.include_router(vigil_finance.router)
+    app.include_router(vigil_finance.router, dependencies=[Depends(permissions.guard("finance"))])
     # Finance connector — bank (Plaid) / accounting platform sync into the ledger.
-    app.include_router(vigil_finance_connect.router)
+    app.include_router(vigil_finance_connect.router, dependencies=[Depends(permissions.guard("finance"))])
     # Connector kit — generic per-tenant system-of-record connectors (GitHub, …).
     app.include_router(vigil_connect.router)
     # Privacy / GDPR — tenant data export + erasure.
     app.include_router(vigil_privacy.router)
     # CRM — contacts + deal pipeline the crm skill routes into.
-    app.include_router(vigil_crm.router)
+    app.include_router(vigil_crm.router, dependencies=[Depends(permissions.guard("crm"))])
     # Mail — inbox triage store (himalaya transport) the mail-triage skill uses.
-    app.include_router(vigil_mail.router)
+    app.include_router(vigil_mail.router, dependencies=[Depends(permissions.guard("mail"))])
     # Ops Team — agentic-company departments (on-demand runs + effectiveness gate).
-    app.include_router(vigil_ops.router)
+    app.include_router(vigil_ops.router, dependencies=[Depends(permissions.guard("ops"))])
+    # Droits des pages métier, lus dans learn_capabilities — le menu de l'app s'en sert.
+    app.include_router(permissions.router)
 
     @app.get("/health")
     async def health() -> dict[str, Any]:
