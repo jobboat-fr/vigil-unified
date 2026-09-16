@@ -144,6 +144,8 @@ export interface Slot {
   ends_at: string;
   status: "planned" | "confirmed" | "done" | "cancelled";
   title: string | null;
+  /** Modalité (vue learn_calendar) : présentiel, distanciel ou mixte. */
+  modality?: "presentiel" | "distanciel" | "mixte" | null;
   formateur_id: string | null;
   formateur_name: string | null;
   room_id: string | null;

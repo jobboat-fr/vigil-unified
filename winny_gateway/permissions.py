@@ -60,6 +60,7 @@ OVERRIDES: dict[tuple[str, str], str] = {
     ("POST", "/v1/rooms/{room_id}/messages"): "join",
     ("POST", "/v1/rooms/{room_id}/intervention-check"): "join",
     ("POST", "/v1/rooms/{room_id}/livekit-token"): "join",
+    ("POST", "/v1/rooms/learn/slots/{slot_id}/join"): "join",
     ("GET", "/v1/rooms/meeting/{share_token}"): PUBLIC,
     ("POST", "/v1/rooms/guest/{share_token}/join"): PUBLIC,
     # Mail : synchroniser et trier modifient, ils ne créent rien de nouveau pour l'utilisateur.

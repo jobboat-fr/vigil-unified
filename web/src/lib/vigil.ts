@@ -552,6 +552,8 @@ export const vigil = {
     livekitToken: (id: string) => vigilCall<LiveKitJoin>("POST", `/v1/rooms/${id}/livekit-token`),
     share: (id: string) => vigilCall<{ share_token: string }>("POST", `/v1/rooms/${id}/share`),
     summarize: (id: string) => vigilCall<MeetingSummary>("POST", `/v1/rooms/${id}/summarize`, {}),
+    /** Entrer dans la salle d'un créneau LEARN à distance (phase 1.2). */
+    joinSlot: (slotId: string) => vigilCall<SlotRoomJoin>("POST", `/v1/rooms/learn/slots/${slotId}/join`),
     bringAgent: (id: string, persona: string, evidence?: string) =>
       vigilCall<{ dispatched: boolean; persona: string; room: string }>("POST", `/v1/rooms/${id}/bring-agent`, { persona, evidence }),
   },
@@ -884,3 +886,12 @@ export type AiHealth = {
 };
 
 export const vigilAiHealth = () => vigilCall<AiHealth>("GET", "/v1/ai/health");
+
+/** Réponse de l'entrée dans la salle d'un créneau : le jeton LiveKit et le rôle attribué. */
+export type SlotRoomJoin = LiveKitJoin & {
+  room_id: string;
+  title: string;
+  role: "host" | "participant";
+  starts_at: string;
+  ends_at: string;
+};

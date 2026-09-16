@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/components/card";
 import { getCalendar, getSessions, getReviewQueue, LearnError, type Slot, type Session } from "@/lib/learn";
+import { RejoindreSalle } from "@/components/RejoindreSalle";
 import { isoDay } from "@/lib/day";
 
 /**
@@ -105,6 +106,7 @@ export default function LearnDashboardFormateur() {
                     {heure(x.starts_at)} – {heure(x.ends_at)} · {x.title ?? "Session"}
                     {x.room_name ? ` · ${x.room_name}` : ""} · {x.enrolled} inscrit{x.enrolled > 1 ? "s" : ""}
                   </span>
+                  <span className="w-full sm:w-auto"><RejoindreSalle slot={x} compact /></span>
                 </li>
               ))}
             </ul>

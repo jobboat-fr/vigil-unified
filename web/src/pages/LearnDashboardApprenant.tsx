@@ -15,6 +15,7 @@ import {
   type Session,
   type GradeRow,
 } from "@/lib/learn";
+import { RejoindreSalle } from "@/components/RejoindreSalle";
 import { isoDay } from "@/lib/day";
 
 /**
@@ -155,7 +156,10 @@ export default function LearnDashboardApprenant() {
                 </div>
                 {prochain.title && <div className="mt-1 text-sm">{prochain.title}</div>}
               </div>
-              <div className="text-sm font-medium">{quand(prochain.on_date)}</div>
+              <div className="flex items-center gap-3 text-sm font-medium">
+                {quand(prochain.on_date)}
+                <RejoindreSalle slot={prochain} />
+              </div>
             </div>
           )}
 
@@ -168,6 +172,7 @@ export default function LearnDashboardApprenant() {
                     {heure(s.starts_at)} – {heure(s.ends_at)}
                     {s.room_name ? ` · ${s.room_name}` : ""}
                   </span>
+                  <RejoindreSalle slot={s} compact />
                 </li>
               ))}
             </ul>

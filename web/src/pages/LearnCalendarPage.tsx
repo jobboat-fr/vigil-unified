@@ -9,6 +9,7 @@ import {
 import { Link } from "react-router-dom";
 import { getCalendar, issueCalendarToken, LearnError, type Slot } from "@/lib/learn";
 import { isoDay } from "@/lib/day";
+import { RejoindreSalle } from "@/components/RejoindreSalle";
 
 /**
  * The calendar — one component for every profile.
@@ -195,6 +196,9 @@ export default function LearnCalendarPage() {
                                   )}
                                 </div>
                               )}
+                              <div className="mt-1.5">
+                                <RejoindreSalle slot={s} compact />
+                              </div>
                               {s.status === "cancelled" && (
                                 <div className="mt-1 text-[11px] text-amber-500">Annulé</div>
                               )}

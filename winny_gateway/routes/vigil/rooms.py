@@ -29,9 +29,10 @@ from winny.council.intervention import WEIGHT_DEFAULTS, check_intervention
 from winny.council.summarizer import summarize_meeting
 from winny.council.structurer import structure_meeting
 from winny_gateway import avatar as avatar_mod
+from winny_gateway import learn_link
 from winny_gateway import livekit as lk
 from winny_gateway.auth import get_current_user
-from winny_gateway.db import db_delete, db_insert, db_select, db_update
+from winny_gateway.db import DatabaseError, db_delete, db_insert, db_select, db_update
 from winny_gateway.logging import get_logger
 from winny_gateway.routes.vigil.council import _run_council_sse
 
@@ -538,6 +539,59 @@ async def _ensure_share_token(room: dict[str, Any], uid: str) -> tuple[str, str]
     await db_update("rooms", {"share_token": token, "share_expires_at": expires_at},
                     filters={"id": room["id"], "user_id": uid})
     return token, expires_at
+
+
+# ── Salle d'un créneau de formation LEARN (phase 1.2) ──
+@router.post("/learn/slots/{slot_id}/join")
+async def join_learn_slot(slot_id: str, user: dict = Depends(get_current_user)) -> dict[str, Any]:
+    """Entrer dans la salle d'un créneau distanciel ou mixte.
+
+    La salle est créée à la première entrée, au nom du formateur du créneau (propriétaire et
+    animateur). Qui entre, à quel titre et à quelle heure : voir winny_gateway/learn_link.py.
+    Le jeton LiveKit porte le rôle (host / participant) dans ses métadonnées.
+    """
+    if not lk.livekit_configured():
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail={"error": "livekit_not_configured"})
+    learn_role = (user.get("app_metadata") or {}).get("learn_role")
+    access = await learn_link.slot_access(slot_id, user, learn_role)
+    slot, session = access.slot, access.session
+
+    rows = await db_select(_TABLE, filters={"learn_slot_id": slot_id}, limit=1, allow_unscoped=True)
+    if rows:
+        room = rows[0]
+    else:
+        owner = str(slot.get("formateur_id") or _uid(user))
+        half = "matin" if slot.get("half") == "am" else "après-midi"
+        title = f"{session.get('title') or session.get('code') or 'Formation'} — {slot.get('on_date')} ({half})"
+        try:
+            room = await db_insert(_TABLE, {
+                "user_id": owner,
+                "title": title[:200],
+                "kind": "formation",
+                "learn_session_id": session["id"],
+                "learn_slot_id": slot_id,
+                "default_lens": "cfo_review",
+                "members": [],
+                "transcript": [],
+                "status": "active",
+            })
+        except DatabaseError:
+            room = None
+        if room is None:
+            # Deux entrées simultanées : l'autre a créé la salle (index unique sur le créneau).
+            rows = await db_select(_TABLE, filters={"learn_slot_id": slot_id}, limit=1, allow_unscoped=True)
+            if not rows:
+                raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail={"error": "room_write_failed"})
+            room = rows[0]
+    if room.get("status") == "closed":
+        raise HTTPException(status_code=status.HTTP_410_GONE, detail={"error": "meeting_closed"})
+
+    payload = lk.join_payload(room=f"vigil-{room['id']}", identity=_uid(user), name=access.display_name,
+                              metadata=f"role={access.role}")
+    return {"ok": True, "data": {
+        "room_id": room["id"], "title": room.get("title"), "role": access.role,
+        "starts_at": slot.get("starts_at"), "ends_at": slot.get("ends_at"), **payload,
+    }}
 
 
 class GuestJoinBody(BaseModel):
