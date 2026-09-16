@@ -80,6 +80,7 @@ import { AuthWidget } from "@/components/AuthWidget";
 import { OnboardingWizard } from "@/components/OnboardingWizard";
 import AssistantChatPage from "@/pages/AssistantChatPage";
 import AbonnementPage from "@/pages/AbonnementPage";
+import ProduitsPage from "@/pages/ProduitsPage";
 import AgentDeLaPage from "@/components/AgentDeLaPage";
 import { PageHeaderProvider } from "@/contexts/PageHeaderProvider";
 import { ProfileProvider } from "@/contexts/ProfileProvider";
@@ -215,6 +216,7 @@ const BUILTIN_ROUTES_CORE: Record<string, ComponentType> = {
   // VIGIL workspace
   "/ops-team": OpsTeamPage,
   "/abonnement": AbonnementPage,
+  "/produits": ProduitsPage,
   "/connections": ConnectionsPage,
   "/approvals": ApprovalsPage,
   "/meeting-room": MeetingRoomPage,
@@ -287,6 +289,7 @@ const BUILTIN_NAV_REST: NavItem[] = [
   },
   { path: "/ops-team", label: "Équipe agentique", icon: Network, group: "workspace", roles: ["super_admin", "admin"] },
   // L'abonnement aux agents : visible pour ceux qui décident, pas pour les apprenants.
+  { path: "/produits", label: "Nos produits", icon: Package, group: "company", roles: ["super_admin", "admin", "formateur", "auditeur"] },
   { path: "/abonnement", label: "Abonnement agents", icon: CreditCard, group: "company", roles: ["super_admin", "admin"] },
   { path: "/connections", label: "Connexions", icon: Plug, group: "workspace", roles: ["super_admin", "admin"] },
   { path: "/approvals", label: "Validations", icon: ShieldCheck, group: "workspace", roles: ["super_admin", "admin"] },
