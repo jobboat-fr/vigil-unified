@@ -558,6 +558,12 @@ export const vigil = {
     share: (id: string) => vigilCall<{ share_token: string }>("POST", `/v1/rooms/${id}/share`),
     summarize: (id: string) => vigilCall<MeetingSummary>("POST", `/v1/rooms/${id}/summarize`, {}),
     /** Entrer dans la salle d'un créneau LEARN à distance (phase 1.2). */
+    breakouts: (id: string) => vigilCall<{ role: string; breakouts: Breakout[] }>("GET", `/v1/rooms/${id}/breakouts`),
+    createBreakouts: (id: string, count: number) =>
+      vigilCall<{ breakouts: Breakout[] }>("POST", `/v1/rooms/${id}/breakouts`, { count }),
+    joinBreakout: (id: string, gid: string) =>
+      vigilCall<LiveKitJoin & { group: string; role: string }>("POST", `/v1/rooms/${id}/breakouts/${gid}/join`),
+    closeBreakouts: (id: string) => vigilCall<{ closed: number }>("DELETE", `/v1/rooms/${id}/breakouts`),
     attendanceCheck: (id: string) => vigilCall<AttendanceCheck>("GET", `/v1/rooms/${id}/attendance-check`),
     joinSlot: (slotId: string) => vigilCall<SlotRoomJoin>("POST", `/v1/rooms/learn/slots/${slotId}/join`),
     bringAgent: (id: string, persona: string, evidence?: string) =>
@@ -910,3 +916,5 @@ export type AttendanceRow = {
   ecart: "present_non_signe" | "signe_non_present" | "presence_courte" | null;
 };
 export type AttendanceCheck = { slot_id: string; starts_at: string; ends_at: string; learners: AttendanceRow[]; ecarts: AttendanceRow[] };
+
+export type Breakout = { id: string; name: string; members: string[]; member_names?: string[]; open?: boolean };

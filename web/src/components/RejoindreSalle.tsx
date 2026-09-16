@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { createPortal } from "react-dom";
 import { Video } from "lucide-react";
 import { LiveRoom } from "@/components/LiveRoom";
-import { vigil, type SlotRoomJoin } from "@/lib/vigil";
+import { SousSalles } from "@/components/SousSalles";
+import { vigil, type LiveKitJoin, type SlotRoomJoin } from "@/lib/vigil";
 import type { GatewayError } from "@/lib/ww";
 import type { Slot } from "@/lib/learn";
 
@@ -46,6 +47,20 @@ export function RejoindreSalle({ slot, compact = false }: { slot: Slot; compact?
   const [join, setJoin] = useState<SlotRoomJoin | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
   const [attente, setAttente] = useState(false);
+  // La vidéo affichée : la plénière, ou une sous-salle.
+  const [video, setVideo] = useState<LiveKitJoin | null>(null);
+  const [groupe, setGroupe] = useState<{ id: string; nom: string } | null>(null);
+
+  const pleniere = useCallback(async () => {
+    try {
+      const j = await vigil.rooms.joinSlot(slot.id);
+      setJoin(j);
+      setVideo(j);
+      setGroupe(null);
+    } catch (e) {
+      setErreur(message(e as GatewayError));
+    }
+  }, [slot.id]);
 
   if (!creneauDistant(slot)) return null;
 
@@ -53,7 +68,10 @@ export function RejoindreSalle({ slot, compact = false }: { slot: Slot; compact?
     setAttente(true);
     setErreur(null);
     try {
-      setJoin(await vigil.rooms.joinSlot(slot.id));
+      const j = await vigil.rooms.joinSlot(slot.id);
+      setJoin(j);
+      setVideo(j);
+      setGroupe(null);
     } catch (e) {
       setErreur(message(e as GatewayError));
     } finally {
@@ -78,15 +96,36 @@ export function RejoindreSalle({ slot, compact = false }: { slot: Slot; compact?
       </button>
       {erreur && <div className="mt-1 text-[11px] text-amber-500">{erreur}</div>}
       {join &&
+        video &&
         createPortal(
           <div className="fixed inset-0 z-[100] flex flex-col" style={{ background: "#07080d" }}>
-            <div className="flex items-center justify-between px-4 py-2 text-xs text-white/70">
+            <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2 text-xs text-white/70">
               <span className="truncate">
-                {join.title} · {join.role === "host" ? "vous animez" : "participant"}
+                {join.title}
+                {groupe ? ` · ${groupe.nom}` : " · plénière"} · {join.role === "host" ? "vous animez" : "participant"}
               </span>
+              <SousSalles
+                roomId={join.room_id}
+                role={join.role}
+                groupeActuel={groupe?.id ?? null}
+                onEntrer={(j, gid, nom) => {
+                  setVideo(j);
+                  setGroupe({ id: gid, nom });
+                }}
+                onPleniere={() => void pleniere()}
+              />
             </div>
             <div className="min-h-0 flex-1">
-              <LiveRoom token={join.token} url={join.url ?? ""} onLeave={() => setJoin(null)} />
+              <LiveRoom
+                key={video.token}
+                token={video.token}
+                url={video.url ?? ""}
+                onLeave={() => {
+                  setJoin(null);
+                  setVideo(null);
+                  setGroupe(null);
+                }}
+              />
             </div>
           </div>,
           document.body,

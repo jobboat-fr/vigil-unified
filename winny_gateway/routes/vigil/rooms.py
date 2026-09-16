@@ -29,6 +29,7 @@ from winny.council.intervention import WEIGHT_DEFAULTS, check_intervention
 from winny.council.summarizer import summarize_meeting
 from winny.council.structurer import structure_meeting
 from winny_gateway import avatar as avatar_mod
+from winny_gateway import breakouts as bk
 from winny_gateway import learn_api, learn_link, presence
 from winny_gateway import livekit as lk
 from winny_gateway.auth import get_current_user, scoped_user
@@ -630,7 +631,7 @@ async def livekit_webhook(request: Request) -> dict[str, Any]:
     at = datetime.fromtimestamp(created, UTC) if created else datetime.now(UTC)
     try:
         await db_insert("room_presence", {
-            "room_id": room_name.removeprefix("vigil-"),
+            "room_id": bk.parent_room_id(room_name),
             "identity": part.get("identity") or "",
             "name": part.get("name") or None,
             "event": kind,
@@ -670,6 +671,123 @@ async def attendance_check(room_id: str, user: dict = Depends(get_current_user))
         "slot_id": slot_id, "starts_at": slot.get("starts_at"), "ends_at": slot.get("ends_at"),
         "learners": rows, "ecarts": [r for r in rows if r["ecart"]],
     }}
+
+
+# ── Sous-salles (phase 1.8) ──
+async def _room_role(room_id: str, user: dict[str, Any]) -> tuple[dict[str, Any], str]:
+    """(salle, "host" | "participant"). Propriétaire → host ; salle de formation → règles
+    LEARN (learn_link) ; sinon 404, sans rien révéler."""
+    uid = _uid(user)
+    rows = await db_select(_TABLE, filters={"id": room_id}, limit=1, allow_unscoped=True)
+    if not rows:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail={"error": "room_not_found", "room_id": room_id})
+    room = rows[0]
+    if str(room.get("user_id")) == uid:
+        return room, "host"
+    if room.get("learn_slot_id"):
+        learn_role = (user.get("app_metadata") or {}).get("learn_role")
+        access = await learn_link.slot_access(str(room["learn_slot_id"]), user, learn_role)
+        return room, access.role
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail={"error": "room_not_found", "room_id": room_id})
+
+
+class BreakoutPerson(BaseModel):
+    id: str
+    name: str | None = None
+
+
+class BreakoutsBody(BaseModel):
+    count: int = Field(ge=1, le=20)
+    members: list[BreakoutPerson] | None = Field(default=None, description="Hors formation : qui répartir.")
+
+
+@router.post("/{room_id}/breakouts")
+async def create_breakouts(room_id: str, body: BreakoutsBody, user: dict = Depends(get_current_user)) -> dict[str, Any]:
+    """Créer les sous-salles et répartir les participants. Remplace une répartition ouverte."""
+    room, role = await _room_role(room_id, user)
+    if role != "host":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail={"error": "host_only"})
+    if room.get("status") == "closed":
+        raise HTTPException(status_code=status.HTTP_410_GONE, detail={"error": "meeting_closed"})
+    people: list[dict[str, Any]]
+    if room.get("learn_session_id"):
+        enrolled = await db_select("learn_enrollments", filters={"session_id": room["learn_session_id"]},
+                                   limit=500, allow_unscoped=True)
+        people = []
+        for e in enrolled:
+            if e.get("status") not in learn_link.VALID_ENROLLMENT:
+                continue
+            prof = await db_select("learn_profiles", filters={"id": e["apprenant_id"]}, limit=1, allow_unscoped=True)
+            people.append({"id": e["apprenant_id"], "name": (prof[0] if prof else {}).get("full_name")})
+    else:
+        people = [m.model_dump() for m in (body.members or [])]
+    if not people:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail={"error": "nobody_to_distribute"})
+    groups = bk.distribute(people, body.count)
+    await db_update(_TABLE, {"breakouts": groups}, filters={"id": room_id, "user_id": room["user_id"]})
+    names = {str(p["id"]): p.get("name") for p in people}
+    return {"ok": True, "data": {"breakouts": [
+        {**g, "member_names": [names.get(m) or m for m in g["members"]]} for g in groups
+    ]}}
+
+
+@router.get("/{room_id}/breakouts")
+async def list_breakouts(room_id: str, user: dict = Depends(get_current_user)) -> dict[str, Any]:
+    """Animateur : toutes les sous-salles. Participant : la sienne, ou aucune."""
+    room, role = await _room_role(room_id, user)
+    groups = [g for g in (room.get("breakouts") or []) if g.get("open", True)]
+    if role == "host":
+        return {"ok": True, "data": {"role": role, "breakouts": groups}}
+    mine = bk.group_of(groups, _uid(user))
+    return {"ok": True, "data": {"role": role, "breakouts": [mine] if mine else []}}
+
+
+@router.post("/{room_id}/breakouts/{gid}/join")
+async def join_breakout(room_id: str, gid: str, user: dict = Depends(get_current_user)) -> dict[str, Any]:
+    if not lk.livekit_configured():
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail={"error": "livekit_not_configured"})
+    room, role = await _room_role(room_id, user)
+    uid = _uid(user)
+    group = next((g for g in (room.get("breakouts") or []) if g.get("id") == gid and g.get("open", True)), None)
+    if group is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail={"error": "breakout_not_found"})
+    if role != "host" and uid not in (group.get("members") or []):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail={"error": "not_in_group"})
+    name = str(user.get("email") or "Participant").split("@")[0]
+    if room.get("learn_slot_id"):
+        prof = await db_select("learn_profiles", filters={"id": uid}, limit=1, allow_unscoped=True)
+        name = (prof[0] if prof else {}).get("full_name") or name
+    payload = lk.join_payload(room=bk.livekit_room(room_id, gid), identity=uid, name=name,
+                              metadata=f"role={role};breakout={gid}")
+    return {"ok": True, "data": {"group": group.get("name"), "role": role, **payload}}
+
+
+@router.delete("/{room_id}/breakouts")
+async def close_breakouts(room_id: str, user: dict = Depends(get_current_user)) -> dict[str, Any]:
+    """Fermer les sous-salles : tout le monde revient en plénière."""
+    room, role = await _room_role(room_id, user)
+    if role != "host":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail={"error": "host_only"})
+    groups = room.get("breakouts") or []
+    await db_update(_TABLE, {"breakouts": []}, filters={"id": room_id, "user_id": room["user_id"]})
+    closed = 0
+    if groups and lk.livekit_configured():
+        try:
+            from livekit import api as lkapi
+
+            client = lkapi.LiveKitAPI(os.getenv("LIVEKIT_URL"), os.getenv("LIVEKIT_API_KEY"), os.getenv("LIVEKIT_API_SECRET"))
+            try:
+                for g in groups:
+                    try:
+                        await client.room.delete_room(lkapi.DeleteRoomRequest(room=bk.livekit_room(room_id, g["id"])))
+                        closed += 1
+                    except Exception as exc:  # noqa: BLE001 — salle déjà vide
+                        logger.info("breakouts.delete_room %s: %s", g.get("id"), exc)
+            finally:
+                await client.aclose()
+        except ImportError:
+            logger.warning("breakouts.close: livekit-api absent, les sous-salles se videront seules")
+    return {"ok": True, "data": {"closed": closed}}
 
 
 class GuestJoinBody(BaseModel):
