@@ -16,6 +16,7 @@ from fastapi.testclient import TestClient
 import winny_gateway.db as db_mod
 from winny_gateway.auth import get_current_user
 from winny_gateway.integrations import finance_connect as fc
+from winny_gateway.ops import billing as ops_billing_mod
 from winny_gateway.ops import engine as engine_mod
 from winny_gateway.ops import finance as finance_mod
 from winny_gateway.ops import revenue as revenue_mod
@@ -55,7 +56,7 @@ class FakeDB:
 @pytest.fixture
 def client(monkeypatch):
     db = FakeDB()
-    for mod in (ops_mod, engine_mod, support_mod, finance_mod, revenue_mod, fc, db_mod):
+    for mod in (ops_mod, engine_mod, support_mod, finance_mod, revenue_mod, fc, db_mod, ops_billing_mod):
         monkeypatch.setattr(mod, "db_insert", db.insert, raising=False)
         monkeypatch.setattr(mod, "db_select", db.select, raising=False)
         monkeypatch.setattr(mod, "db_update", db.update, raising=False)

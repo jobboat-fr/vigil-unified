@@ -6,7 +6,7 @@
 // because EventSource cannot attach an Authorization header.
 import { useEffect, useState } from "react";
 import { getAccessToken } from "./supabase";
-import { WW_BASE, GatewayError } from "./ww";
+import { WW_BASE, GatewayError, gatewayErrorMessage, type GatewayPayload } from "./ww";
 
 async function vigilCall<T = unknown>(method: string, path: string, body?: unknown): Promise<T> {
   const token = await getAccessToken();
@@ -25,14 +25,14 @@ async function vigilCall<T = unknown>(method: string, path: string, body?: unkno
   } catch (e) {
     throw new GatewayError(`gateway unreachable: ${(e as Error).message}`, "UNREACHABLE");
   }
-  let payload: { ok?: boolean; data?: unknown; error?: string };
+  let payload: GatewayPayload;
   try {
     payload = await res.json();
   } catch {
     payload = { ok: false, error: "BAD_JSON" };
   }
   if (!res.ok || payload.ok === false) {
-    throw new GatewayError(payload.error || `HTTP ${res.status}`, "HTTP_ERROR", res.status);
+    throw new GatewayError(gatewayErrorMessage(res.status, payload), "HTTP_ERROR", res.status, payload.detail);
   }
   return payload.data as T;
 }
@@ -116,8 +116,9 @@ export async function joinGuestRoom(shareToken: string, name: string): Promise<G
     headers: { "content-type": "application/json", accept: "application/json" },
     body: JSON.stringify({ name }),
   });
-  const payload = (await res.json().catch(() => ({}))) as { ok?: boolean; data?: GuestRoomJoin; error?: string };
-  if (!res.ok || payload.ok === false) throw new GatewayError(payload.error || `HTTP ${res.status}`, "HTTP_ERROR", res.status);
+  const payload = (await res.json().catch(() => ({}))) as GatewayPayload & { data?: GuestRoomJoin };
+  if (!res.ok || payload.ok === false)
+    throw new GatewayError(gatewayErrorMessage(res.status, payload), "HTTP_ERROR", res.status, payload.detail);
   return payload.data as GuestRoomJoin;
 }
 
@@ -126,8 +127,9 @@ export async function resolvePublicMeeting(shareToken: string): Promise<PublicMe
   const res = await fetch(`${WW_BASE}/v1/rooms/meeting/${encodeURIComponent(shareToken)}`, {
     headers: { accept: "application/json" },
   });
-  const payload = (await res.json().catch(() => ({}))) as { ok?: boolean; data?: PublicMeeting; error?: string };
-  if (!res.ok || payload.ok === false) throw new GatewayError(payload.error || `HTTP ${res.status}`, "HTTP_ERROR", res.status);
+  const payload = (await res.json().catch(() => ({}))) as GatewayPayload & { data?: PublicMeeting };
+  if (!res.ok || payload.ok === false)
+    throw new GatewayError(gatewayErrorMessage(res.status, payload), "HTTP_ERROR", res.status, payload.detail);
   return payload.data as PublicMeeting;
 }
 

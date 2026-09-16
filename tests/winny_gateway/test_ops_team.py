@@ -17,6 +17,7 @@ from fastapi.testclient import TestClient
 
 from winny_gateway.auth import get_current_user
 from winny_gateway.integrations import connector as conn_mod
+from winny_gateway.ops import billing as ops_billing_mod
 from winny_gateway.ops import engine as engine_mod
 from winny_gateway.ops import support as support_mod
 from winny_gateway.routes.vigil import ops as ops_mod
@@ -71,7 +72,7 @@ def _stub_classifier(category: str):
 @pytest.fixture
 def client(monkeypatch):
     db = FakeDB()
-    for mod in (ops_mod, engine_mod, support_mod):
+    for mod in (ops_mod, engine_mod, support_mod, ops_billing_mod):
         monkeypatch.setattr(mod, "db_insert", db.insert, raising=False)
         monkeypatch.setattr(mod, "db_select", db.select, raising=False)
         monkeypatch.setattr(mod, "db_update", db.update, raising=False)

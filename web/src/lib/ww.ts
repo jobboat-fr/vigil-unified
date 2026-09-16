@@ -36,11 +36,49 @@ export const WW_BASE = resolveBase();
 export class GatewayError extends Error {
   code: string;
   status?: number;
-  constructor(message: string, code: string, status?: number) {
+  detail?: unknown;
+  constructor(message: string, code: string, status?: number, detail?: unknown) {
     super(message);
     this.code = code;
     this.status = status;
+    this.detail = detail;
   }
+}
+
+/** Ce que la passerelle renvoie : `{ok, data, error}` pour ses propres réponses, et
+ *  `{detail}` quand FastAPI lève une HTTPException — `detail` étant un texte ou un objet. */
+export type GatewayPayload = { ok?: boolean; data?: unknown; error?: string; detail?: unknown };
+
+const RESSOURCES: Record<string, string> = {
+  room: "la salle de réunion", mail: "le mail", crm: "le CRM", finance: "la finance",
+  ops: "l'équipe agentique", legal: "le juridique",
+};
+const ACTIONS: Record<string, string> = {
+  read: "consulter", create: "créer dans", update: "modifier", delete: "supprimer dans",
+  host: "animer", join: "rejoindre",
+};
+
+/** Un message en français, précis, à partir de n'importe quelle réponse d'erreur. */
+export function gatewayErrorMessage(status: number, payload: GatewayPayload): string {
+  const d = payload.detail;
+  const obj = d && typeof d === "object" ? (d as Record<string, unknown>) : null;
+  const code = (obj?.error as string | undefined) ?? payload.error;
+  if (status === 401) return "Session expirée — reconnectez-vous.";
+  if (code === "forbidden" && obj) {
+    const quoi = RESSOURCES[obj.resource as string] ?? String(obj.resource);
+    const faire = ACTIONS[obj.action as string] ?? String(obj.action);
+    const role = obj.role ? ` (${obj.role})` : "";
+    return `Accès refusé : votre rôle${role} ne permet pas de ${faire} ${quoi}.`;
+  }
+  if (code === "database_unavailable") {
+    const table = obj?.table ? ` (${obj.table})` : "";
+    return `La base de données ne répond pas${table}. Réessayez dans un instant.`;
+  }
+  if (code === "permissions_unavailable") return "Les droits d'accès sont momentanément illisibles. Réessayez dans un instant.";
+  if (code === "internal_scope_error") return "Requête refusée par sécurité : elle ne précisait pas à qui appartiennent les données.";
+  if (typeof d === "string" && d) return d;
+  if (code) return code;
+  return `Erreur ${status}`;
 }
 
 async function call<T = unknown>(
@@ -68,14 +106,14 @@ async function call<T = unknown>(
   } catch (e) {
     throw new GatewayError(`gateway unreachable: ${(e as Error).message}`, "UNREACHABLE");
   }
-  let payload: { ok?: boolean; data?: unknown; error?: string };
+  let payload: GatewayPayload;
   try {
     payload = await res.json();
   } catch {
     payload = { ok: false, error: "BAD_JSON" };
   }
   if (!res.ok || payload.ok === false) {
-    throw new GatewayError(payload.error || `HTTP ${res.status}`, "HTTP_ERROR", res.status);
+    throw new GatewayError(gatewayErrorMessage(res.status, payload), "HTTP_ERROR", res.status, payload.detail);
   }
   return payload.data as T;
 }

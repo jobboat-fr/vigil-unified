@@ -36,10 +36,14 @@ export function WwGate({
     );
   }
   if (state.data == null && state.error) {
+    // Le vrai motif, pas un « hors ligne » générique : un refus de droit, une base absente et
+    // une passerelle injoignable ne se règlent pas de la même façon.
+    const refus = state.error.status === 403;
     return (
       <Card>
         <CardContent className="py-10 text-center text-sm text-text-secondary">
-          Live feed offline — retrying…
+          <p className="font-medium">{state.error.message}</p>
+          {refus ? null : <p className="mt-1 text-xs opacity-70">Nouvel essai automatique…</p>}
         </CardContent>
       </Card>
     );

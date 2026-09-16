@@ -9,7 +9,8 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from typing import Any
 
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 
@@ -57,6 +58,7 @@ from winny_gateway.routes.vigil import finance_connect as vigil_finance_connect
 from winny_gateway.routes.vigil import connect as vigil_connect
 from winny_gateway.routes.vigil import privacy as vigil_privacy
 from winny_gateway import permissions
+from winny_gateway.db import DatabaseError
 from winny_gateway.security import SecurityMiddleware
 
 logger = get_logger(__name__)
@@ -241,6 +243,20 @@ def create_app(config: GatewayConfig | None = None) -> FastAPI:
     app.include_router(vigil_ops.router, dependencies=[Depends(permissions.guard("ops"))])
     # Droits des pages métier, lus dans learn_capabilities — le menu de l'app s'en sert.
     app.include_router(permissions.router)
+
+    # Une erreur de base devient une réponse lisible, jamais une liste vide.
+    @app.exception_handler(DatabaseError)
+    async def database_error(_request: Request, exc: DatabaseError) -> JSONResponse:
+        scope = exc.reason == "cross_tenant_blocked"
+        return JSONResponse(
+            status_code=500 if scope else 503,
+            content={
+                "ok": False,
+                "error": "internal_scope_error" if scope else "database_unavailable",
+                "detail": {"table": exc.table, "operation": exc.operation,
+                           **({} if scope else {"reason": exc.reason})},
+            },
+        )
 
     @app.get("/health")
     async def health() -> dict[str, Any]:

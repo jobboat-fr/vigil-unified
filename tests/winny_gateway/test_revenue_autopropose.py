@@ -16,6 +16,7 @@ from winny_gateway.auth import get_current_user
 from winny_gateway.integrations import connector as conn_mod
 from winny_gateway.integrations import gmail as _gmail  # noqa: F401 — registers GmailConnector
 from winny_gateway.integrations.secrets import encrypt_secret
+from winny_gateway.ops import billing as ops_billing_mod
 from winny_gateway.ops import engine as engine_mod
 from winny_gateway.ops import revenue as revenue_mod
 from winny_gateway.routes.vigil import ops as ops_mod
@@ -45,7 +46,7 @@ class FakeDB:
 @pytest.fixture
 def client(monkeypatch):
     db = FakeDB()
-    for mod in (ops_mod, engine_mod, revenue_mod, conn_mod, db_mod):
+    for mod in (ops_mod, engine_mod, revenue_mod, conn_mod, db_mod, ops_billing_mod):
         monkeypatch.setattr(mod, "db_insert", db.insert, raising=False)
         monkeypatch.setattr(mod, "db_select", db.select, raising=False)
         monkeypatch.setattr(mod, "db_update", db.update, raising=False)

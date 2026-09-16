@@ -13,7 +13,7 @@ Environment:
 from __future__ import annotations
 
 import os
-from typing import Any
+from typing import Any, NoReturn
 
 from winny_gateway.logging import get_logger
 
@@ -78,6 +78,34 @@ def get_user_client(access_token: str) -> Any:
     return client
 
 
+# ── Erreurs visibles ─────────────────────────────────────────────────────────
+#
+# Ces fonctions renvoyaient `[]` ou `None` quand la base refusait une requête : table absente,
+# clé de service manquante, droit refusé. Une page cassée ressemblait alors à une page vide,
+# et c'est exactement ce qui a caché, pendant des semaines, que la passerelle interrogeait un
+# projet Supabase qui n'existait plus. Elles lèvent désormais `DatabaseError`, que
+# l'application transforme en réponse 503 lisible (voir app.py). `None` et `[]` gardent leur
+# sens propre : aucune ligne.
+
+
+class DatabaseError(Exception):
+    """La base n'a pas répondu comme prévu. Jamais « aucun résultat »."""
+
+    def __init__(self, table: str, operation: str, reason: str) -> None:
+        super().__init__(f"{operation} {table}: {reason}")
+        self.table = table
+        self.operation = operation
+        self.reason = reason
+
+
+def _raise(table: str, operation: str, exc: Exception) -> NoReturn:
+    logger.error(
+        "DB %s failed: %s", operation, exc,
+        extra={"action": f"db.{operation}_fail", "table": table, "error": str(exc), "component": "db"},
+    )
+    raise DatabaseError(table, operation, str(exc)[:300]) from exc
+
+
 # ── Cross-tenant guard (audit F4) ─────────────────────────────────────────────
 #
 # Every helper below defaults to the service-role client, which BYPASSES
@@ -140,7 +168,7 @@ def _scope_ok_filters(
         "Blocked unscoped query on user-owned table — missing user_id filter",
         extra={"action": "db.cross_tenant_blocked", "table": table, "component": "db"},
     )
-    return False
+    raise DatabaseError(table, "scope", "cross_tenant_blocked")
 
 
 def _scope_ok_row(
@@ -157,7 +185,7 @@ def _scope_ok_row(
         "Blocked unscoped write to user-owned table — missing user_id",
         extra={"action": "db.cross_tenant_blocked", "table": table, "component": "db"},
     )
-    return False
+    raise DatabaseError(table, "scope", "cross_tenant_blocked")
 
 
 # ── Helper functions ──────────────────────────────────────────────────────────
@@ -181,12 +209,7 @@ async def db_upsert(
             return dict(result.data[0])
         return None
     except Exception as e:
-        logger.error(
-            "DB upsert failed: %s",
-            e,
-            extra={"action": "db.upsert_fail", "table": table, "error": str(e), "component": "db"},
-        )
-        return None
+        _raise(table, "upsert", e)
 
 
 async def db_select(
@@ -221,12 +244,7 @@ async def db_select(
         result = query.execute()
         return result.data or []
     except Exception as e:
-        logger.error(
-            "DB select failed: %s",
-            e,
-            extra={"action": "db.select_fail", "table": table, "error": str(e), "component": "db"},
-        )
-        return []
+        _raise(table, "select", e)
 
 
 async def db_insert(
@@ -246,12 +264,7 @@ async def db_insert(
             return dict(result.data[0])
         return None
     except Exception as e:
-        logger.error(
-            "DB insert failed: %s",
-            e,
-            extra={"action": "db.insert_fail", "table": table, "error": str(e), "component": "db"},
-        )
-        return None
+        _raise(table, "insert", e)
 
 
 async def audit_log(
@@ -307,12 +320,7 @@ async def db_update(
         result = query.execute()
         return result.data or []
     except Exception as e:
-        logger.error(
-            "DB update failed: %s",
-            e,
-            extra={"action": "db.update_fail", "table": table, "error": str(e), "component": "db"},
-        )
-        return []
+        _raise(table, "update", e)
 
 
 async def db_delete(
@@ -333,9 +341,4 @@ async def db_delete(
         query.execute()
         return True
     except Exception as e:
-        logger.error(
-            "DB delete failed: %s",
-            e,
-            extra={"action": "db.delete_fail", "table": table, "error": str(e), "component": "db"},
-        )
-        return False
+        _raise(table, "delete", e)

@@ -20,6 +20,7 @@ from winny_gateway.auth import get_current_user
 from winny_gateway.integrations import connector as conn_mod
 from winny_gateway.integrations import github as _gh  # noqa: F401 — registers a connector w/ an action
 from winny_gateway.ops import cos as cos_mod
+from winny_gateway.ops import billing as ops_billing_mod
 from winny_gateway.ops import engine as engine_mod
 from winny_gateway.ops import finance as finance_mod
 from winny_gateway.routes.vigil import connect as connect_mod
@@ -54,7 +55,7 @@ class FakeDB:
         return True
 
 
-_ALL = [ops_mod, engine_mod, finance_mod, cos_mod, conn_mod, connect_mod, db_mod]
+_ALL = [ops_mod, engine_mod, finance_mod, cos_mod, conn_mod, connect_mod, db_mod, ops_billing_mod]
 
 
 @pytest.fixture

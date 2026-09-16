@@ -22,6 +22,7 @@ import winny_gateway.db as db_mod
 from winny_gateway.auth import get_current_user
 from winny_gateway.integrations import finance_connect as fc
 from winny_gateway.ops import cos as cos_mod
+from winny_gateway.ops import billing as ops_billing_mod
 from winny_gateway.ops import engine as engine_mod
 from winny_gateway.ops import finance as finance_mod
 from winny_gateway.ops import growth as growth_mod
@@ -61,7 +62,7 @@ class FakeDB:
         return True
 
 
-_ALL = [ops_mod, engine_mod, support_mod, finance_mod, revenue_mod,
+_ALL = [ops_billing_mod, ops_mod, engine_mod, support_mod, finance_mod, revenue_mod,
         growth_mod, legal_mod, marketing_mod, ops_dept_mod, cos_mod, fc, db_mod]
 
 
