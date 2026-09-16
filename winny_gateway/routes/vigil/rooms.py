@@ -397,12 +397,11 @@ async def start_avatar(room_id: str, body: AvatarBody, user: dict = Depends(get_
     _AVATAR_SESSIONS[room_id] = session
     # Persist the live room URL + a share token so external guests can resolve
     # and join the SAME room via a public link.
-    share_token = room.get("share_token") or lk.new_share_token()
+    share_token, _expires = await _ensure_share_token(room, uid)
     await db_update("rooms", {
         "live_url": session.get("conversation_url"),
         "live_provider": session.get("provider"),
         "live_persona": body.persona,
-        "share_token": share_token,
     }, filters={"id": room_id, "user_id": uid})
     return {"ok": True, "data": {**session, "share_token": share_token}}
 
@@ -418,15 +417,38 @@ async def end_avatar(room_id: str, user: dict = Depends(get_current_user)) -> di
     return {"ok": True, "data": {"ended": room_id, "had_session": had_session}}
 
 
+def _share_ttl_hours() -> float:
+    try:
+        return float(os.getenv("ROOM_SHARE_TTL_HOURS", "72") or 72)
+    except ValueError:
+        return 72.0
+
+
+async def _room_for_share_token(share_token: str) -> dict[str, Any]:
+    """La salle d'un lien d'invitation encore valable — sinon 404 ou 410, sans rien révéler.
+
+    Un lien vaut tant que la salle n'est pas close et que son échéance n'est pas passée.
+    """
+    from datetime import UTC, datetime
+
+    rows = await db_select("rooms", filters={"share_token": share_token}, limit=1, allow_unscoped=True)
+    if not rows:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail={"error": "invalid_share_token"})
+    room = rows[0]
+    if room.get("status") == "closed":
+        raise HTTPException(status_code=status.HTTP_410_GONE, detail={"error": "meeting_closed"})
+    expires = room.get("share_expires_at")
+    if not expires or datetime.fromisoformat(str(expires).replace("Z", "+00:00")) <= datetime.now(UTC):
+        raise HTTPException(status_code=status.HTTP_410_GONE, detail={"error": "expired_share_token"})
+    return room
+
+
 @router.get("/meeting/{share_token}")
 async def public_meeting(share_token: str) -> dict[str, Any]:
     """PUBLIC — resolve a share token to the live meeting an external guest joins.
     No auth; the opaque token is the capability. Returns the embeddable room URL
     (the same room the AI avatar + host are in)."""
-    rows = await db_select("rooms", filters={"share_token": share_token}, limit=1, allow_unscoped=True)
-    if not rows:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail={"error": "invalid_share_token"})
-    room = rows[0]
+    room = await _room_for_share_token(share_token)
     return {
         "ok": True,
         "data": {
@@ -489,13 +511,33 @@ async def livekit_token(room_id: str, user: dict = Depends(get_current_user)) ->
 
 @router.post("/{room_id}/share")
 async def make_share_link(room_id: str, user: dict = Depends(get_current_user)) -> dict[str, Any]:
-    """Generate (or return) a share token so external guests can join the room."""
+    """Generate (or return) a share token so external guests can join the room.
+
+    Le même lien est rendu tant qu'il est valable ; expiré, il est remplacé par un nouveau
+    (l'ancien cesse alors de fonctionner). Durée : ROOM_SHARE_TTL_HOURS, 72 h par défaut.
+    """
     uid = _uid(user)
     room = await _owned_row(room_id, uid)
-    token = room.get("share_token") or lk.new_share_token()
-    if not room.get("share_token"):
-        await db_update("rooms", {"share_token": token}, filters={"id": room_id, "user_id": uid})
-    return {"ok": True, "data": {"share_token": token}}
+    if room.get("status") == "closed":
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail={"error": "meeting_closed"})
+    token, expires_at = await _ensure_share_token(room, uid)
+    return {"ok": True, "data": {"share_token": token, "expires_at": expires_at}}
+
+
+async def _ensure_share_token(room: dict[str, Any], uid: str) -> tuple[str, str]:
+    """Le lien valable de la salle, ou un nouveau avec son échéance. Un lien sans échéance
+    (créé avant la migration 024) est remplacé."""
+    from datetime import UTC, datetime, timedelta
+
+    now = datetime.now(UTC)
+    expires = room.get("share_expires_at")
+    if room.get("share_token") and expires and datetime.fromisoformat(str(expires).replace("Z", "+00:00")) > now:
+        return room["share_token"], str(expires)
+    token = lk.new_share_token()
+    expires_at = (now + timedelta(hours=_share_ttl_hours())).isoformat()
+    await db_update("rooms", {"share_token": token, "share_expires_at": expires_at},
+                    filters={"id": room["id"], "user_id": uid})
+    return token, expires_at
 
 
 class GuestJoinBody(BaseModel):
@@ -508,10 +550,7 @@ async def guest_join(share_token: str, body: GuestJoinBody) -> dict[str, Any]:
     link. No auth; the opaque share token is the capability."""
     if not lk.livekit_configured():
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail={"error": "livekit_not_configured"})
-    rows = await db_select("rooms", filters={"share_token": share_token}, limit=1, allow_unscoped=True)
-    if not rows:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail={"error": "invalid_share_token"})
-    room = rows[0]
+    room = await _room_for_share_token(share_token)
     guest_id = f"guest-{lk.new_share_token()[:10]}"
     # Smart onboarding (1/2): record who joined so the post-meeting summarize can
     # convert them into CRM contacts. Best-effort — never block the join.

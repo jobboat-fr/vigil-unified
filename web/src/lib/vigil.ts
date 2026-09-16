@@ -111,11 +111,16 @@ export interface GuestRoomJoin {
 
 /** External (non-account) guest joins the shared LiveKit room via a share token. */
 export async function joinGuestRoom(shareToken: string, name: string): Promise<GuestRoomJoin> {
-  const res = await fetch(`${WW_BASE}/v1/rooms/guest/${encodeURIComponent(shareToken)}/join`, {
-    method: "POST",
-    headers: { "content-type": "application/json", accept: "application/json" },
-    body: JSON.stringify({ name }),
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${WW_BASE}/v1/rooms/guest/${encodeURIComponent(shareToken)}/join`, {
+      method: "POST",
+      headers: { "content-type": "application/json", accept: "application/json" },
+      body: JSON.stringify({ name }),
+    });
+  } catch {
+    throw new GatewayError("Le service de réunion est injoignable. Vérifiez votre connexion et réessayez.", "UNREACHABLE");
+  }
   const payload = (await res.json().catch(() => ({}))) as GatewayPayload & { data?: GuestRoomJoin };
   if (!res.ok || payload.ok === false)
     throw new GatewayError(gatewayErrorMessage(res.status, payload), "HTTP_ERROR", res.status, payload.detail);
@@ -124,9 +129,14 @@ export async function joinGuestRoom(shareToken: string, name: string): Promise<G
 
 /** Resolve a share token → the live meeting (no auth — for external guests). */
 export async function resolvePublicMeeting(shareToken: string): Promise<PublicMeeting> {
-  const res = await fetch(`${WW_BASE}/v1/rooms/meeting/${encodeURIComponent(shareToken)}`, {
-    headers: { accept: "application/json" },
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${WW_BASE}/v1/rooms/meeting/${encodeURIComponent(shareToken)}`, {
+      headers: { accept: "application/json" },
+    });
+  } catch {
+    throw new GatewayError("Le service de réunion est injoignable. Vérifiez votre connexion et réessayez.", "UNREACHABLE");
+  }
   const payload = (await res.json().catch(() => ({}))) as GatewayPayload & { data?: PublicMeeting };
   if (!res.ok || payload.ok === false)
     throw new GatewayError(gatewayErrorMessage(res.status, payload), "HTTP_ERROR", res.status, payload.detail);

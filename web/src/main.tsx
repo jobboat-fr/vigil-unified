@@ -1,5 +1,5 @@
 import { createRoot } from "react-dom/client";
-import { BrowserRouter } from "react-router-dom";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
 import "./index.css";
 import App from "./App";
 import { SystemActionsProvider } from "./contexts/SystemActions";
@@ -10,6 +10,7 @@ import { HERMES_BASE_PATH } from "./lib/api";
 import { AuthProvider } from "./context/AuthContext";
 import { AuthGate } from "./components/AuthGate";
 import { initNativeShell } from "./lib/native";
+import GuestMeetingPage from "./pages/GuestMeetingPage";
 
 // Expose the plugin SDK before rendering so plugins loaded via <script>
 // can access React, components, etc. immediately.
@@ -34,9 +35,19 @@ createRoot(document.getElementById("root")!).render(
       <ThemeProvider>
         <AuthProvider>
           <SystemActionsProvider>
-            <AuthGate>
-              <App />
-            </AuthGate>
+            <Routes>
+              {/* Invitation à une réunion : la seule page ouverte sans compte. Le jeton de
+                  partage est la preuve ; il expire et meurt avec la réunion (passerelle). */}
+              <Route path="/join/:shareToken" element={<GuestMeetingPage />} />
+              <Route
+                path="*"
+                element={
+                  <AuthGate>
+                    <App />
+                  </AuthGate>
+                }
+              />
+            </Routes>
           </SystemActionsProvider>
         </AuthProvider>
       </ThemeProvider>

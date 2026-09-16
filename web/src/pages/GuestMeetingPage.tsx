@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { joinGuestRoom, type GuestRoomJoin } from "@/lib/vigil";
+import type { GatewayError } from "@/lib/ww";
 import { LiveRoom } from "@/components/LiveRoom";
 
 /**
@@ -22,13 +23,18 @@ export default function GuestMeetingPage() {
     try {
       setJoin(await joinGuestRoom(shareToken, name.trim()));
     } catch (e) {
-      const msg = (e as Error).message || "";
-      if (/livekit|not_configured|503/i.test(msg)) {
-        setError("The host hasn't started the live video yet. Ask them to click “Start live meeting”, then reopen this link.");
-      } else if (/invalid_share|404/i.test(msg)) {
-        setError("Ce lien d'invitation est invalide ou a expiré.");
+      const err = e as GatewayError;
+      const code = (err.detail as { error?: string } | undefined)?.error ?? "";
+      if (code === "expired_share_token") {
+        setError("Ce lien d'invitation a expiré. Demandez un nouveau lien à l'organisateur.");
+      } else if (code === "meeting_closed") {
+        setError("Cette réunion est terminée.");
+      } else if (code === "invalid_share_token" || err.status === 404) {
+        setError("Ce lien d'invitation n'est pas valide.");
+      } else if (code === "livekit_not_configured" || err.status === 503) {
+        setError("La vidéo n'est pas encore disponible. Réessayez dans un instant.");
       } else {
-        setError(msg || "Impossible de rejoindre la réunion.");
+        setError(err.message || "Impossible de rejoindre la réunion.");
       }
     } finally {
       setJoining(false);
@@ -66,7 +72,7 @@ export default function GuestMeetingPage() {
           className="w-full rounded-xl px-5 py-3 text-sm font-semibold text-[#07080d] disabled:opacity-50"
           style={{ background: `linear-gradient(90deg,${A},${B})` }}
         >
-          {joining ? "Joining…" : "Rejoindre la réunion"}
+          {joining ? "Connexion…" : "Rejoindre la réunion"}
         </button>
         {error && <p className="text-xs" style={{ color: "#c0392b" }}>{error}</p>}
       </div>
