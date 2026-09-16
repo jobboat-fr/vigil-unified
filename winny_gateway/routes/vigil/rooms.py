@@ -31,7 +31,7 @@ from winny.council.structurer import structure_meeting
 from winny_gateway import avatar as avatar_mod
 from winny_gateway import learn_link
 from winny_gateway import livekit as lk
-from winny_gateway.auth import get_current_user
+from winny_gateway.auth import get_current_user, scoped_user
 from winny_gateway.db import DatabaseError, db_delete, db_insert, db_select, db_update
 from winny_gateway.logging import get_logger
 from winny_gateway.routes.vigil.council import _run_council_sse
@@ -167,7 +167,9 @@ async def list_members(room_id: str, user: dict = Depends(get_current_user)) -> 
 
 
 @router.post("/{room_id}/messages")
-async def post_message(room_id: str, body: MessageBody, user: dict = Depends(get_current_user)) -> dict[str, Any]:
+async def post_message(room_id: str, body: MessageBody, user: dict = Depends(scoped_user)) -> dict[str, Any]:
+    # scoped_user : l'agent de salle (jeton de service) écrit au nom du propriétaire de la
+    # salle, désigné par X-WinnyWoo-User-Id ; un humain reste lui-même.
     uid = _uid(user)
     room = await _owned_row(room_id, uid)
     from datetime import UTC, datetime
@@ -179,7 +181,7 @@ async def post_message(room_id: str, body: MessageBody, user: dict = Depends(get
 
 
 @router.get("/{room_id}/transcript")
-async def get_transcript(room_id: str, user: dict = Depends(get_current_user)) -> dict[str, Any]:
+async def get_transcript(room_id: str, user: dict = Depends(scoped_user)) -> dict[str, Any]:
     room = await _owned_row(room_id, _uid(user))
     return {"ok": True, "data": {"transcript": room.get("transcript") or []}}
 
@@ -303,7 +305,7 @@ class InterventionBody(BaseModel):
 
 
 @router.post("/{room_id}/intervention-check")
-async def intervention_check(room_id: str, body: InterventionBody, user: dict = Depends(get_current_user)) -> dict[str, Any]:
+async def intervention_check(room_id: str, body: InterventionBody, user: dict = Depends(scoped_user)) -> dict[str, Any]:
     """Should the AI raise its hand right now? Runs the specialist fan-out → judge
     → behavioral-overlay pipeline over the room's recent transcript and logs the
     decision to ai_interventions. Poll this on a heartbeat while a meeting is live."""
@@ -464,7 +466,7 @@ async def public_meeting(share_token: str) -> dict[str, Any]:
 
 # ── Bring the AI model INTO the live room (dispatch the livekit-agents worker) ──
 class BringAgentBody(BaseModel):
-    persona: str = Field(default="advisor", description="CFO | CTO | COO | CRM | CRO | advisor")
+    persona: str = Field(default="AZZMIN", description="AZZMIN | CFO | CTO | COO | CRM | CRO | advisor")
     evidence: str | None = Field(default=None, description="Vault/source text to ground the agent in.")
 
 
@@ -484,7 +486,17 @@ async def bring_agent(room_id: str, body: BringAgentBody, user: dict = Depends(g
         raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail={"error": "livekit_api_missing"})
 
     evidence = body.evidence or _transcript_text(room.get("transcript") or [])
-    metadata = json.dumps({"persona": body.persona, "topic": room.get("title") or "", "evidence": evidence[:4000]})
+    metadata = json.dumps({
+        "persona": body.persona,
+        "topic": room.get("title") or "",
+        "evidence": evidence[:4000],
+        # Ce dont le worker a besoin pour passer par l'algorithme d'intervention :
+        # la salle, au nom de qui il écrit, et qui il écoute en premier.
+        "room_id": room_id,
+        "owner_id": room.get("user_id") or uid,
+        "host_identity": uid,
+        "kind": room.get("kind") or "meeting",
+    })
     client = lkapi.LiveKitAPI(url, key, secret)
     try:
         await client.agent_dispatch.create_dispatch(

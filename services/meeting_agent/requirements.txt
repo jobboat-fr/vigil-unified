@@ -1,5 +1,7 @@
-livekit-agents>=1.6,<2
-livekit-plugins-groq>=1.6,<2
-livekit-plugins-elevenlabs>=1.6,<2
-livekit-plugins-silero>=1.6,<2
-livekit-plugins-tavus>=1.6,<2
+livekit-agents>=1.8.2,<2
+livekit-plugins-groq>=1.8.2,<2
+livekit-plugins-silero>=1.8.2,<2
+livekit-plugins-bey>=1.8.2,<2
+livekit-plugins-tavus>=1.8.2,<2
+livekit-plugins-elevenlabs>=1.8.2,<2
+httpx>=0.27

@@ -301,17 +301,10 @@ export default function MeetingRoomPage() {
     setLiveErr("");
     try {
       const evidence = active.transcript.map((m) => `${m.speaker}: ${m.text}`).join("\n");
-      const session = await vigil.rooms.startAvatar(active.id, {
-        persona,
-        evidence: evidence || undefined,
-      });
-      if (!session.conversation_url && !session.livekit_url) {
-        throw new Error(
-          `Avatar started (${session.provider}) but returned no join URL. ` +
-            `Fallback chain: ${JSON.stringify(session.fallback_chain ?? [])}`,
-        );
-      }
-      setAvatarSession(session);
+      // La passerelle envoie le worker LiveKit dans CETTE salle (POST /v1/rooms/{id}/bring-agent).
+      // AZZMIN y apparaît comme participant, avec son avatar (Beyond Presence, Tavus en secours),
+      // et ne parle que quand l'algorithme d'intervention le décide.
+      await vigil.rooms.bringAgent(active.id, "AZZMIN", evidence || undefined);
       setAgentIn(true);
     } catch (e) {
       setLiveErr((e as Error).message);
@@ -340,15 +333,19 @@ export default function MeetingRoomPage() {
     return (
       <div role="dialog" aria-modal="true" aria-label={active?.title ? `Réunion en cours: ${active.title}` : "Réunion en cours"} className="fixed inset-0 z-50 flex flex-col" style={{ background: "#07080d" }}>
         <div className="flex items-center justify-between px-3 py-2" style={{ borderBottom: "1px solid #ffffff14", color: "#e7e9f3" }}>
-          <span className="text-sm font-semibold">{active?.title || "Réunion en cours"}</span>
+          <span className="text-sm font-semibold">
+            {active?.title || "Réunion en cours"}
+            {/* En pleine réunion, l'erreur doit se voir ici : le panneau du tableau de bord est masqué. */}
+            {liveErr && <span className="ml-3 text-xs font-normal" style={{ color: "#ff8a8a" }}>{liveErr}</span>}
+          </span>
           <div className="flex items-center gap-2">
             <button
               onClick={() => void bringAgentIn()}
-              disabled={agentBusy}
+              disabled={agentBusy || agentIn}
               className="rounded px-2 py-1 text-xs font-semibold"
               style={{ color: "#07080d", background: "linear-gradient(90deg,#7c5cff,#22d3ee)" }}
             >
-              {agentBusy ? "Bringing in…" : agentIn ? `AI ${persona} in call` : `🎭 Bring in AI ${persona}`}
+              {agentBusy ? "AZZMIN arrive…" : agentIn ? "AZZMIN est dans la réunion" : "Faire entrer AZZMIN"}
             </button>
             {inviteLink && (
               <button

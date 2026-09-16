@@ -45,7 +45,7 @@ SPECIALTIES: dict[str, dict[str, str]] = {
 }
 
 # Names that count as the AI's own turns in the transcript (for the cooldown).
-_AI_SPEAKERS = {"vigil", "ai", "council", "advisor", "assistant"}
+_AI_SPEAKERS = {"vigil", "ai", "council", "advisor", "assistant", "azzmin"}
 
 _JUDGE_SYSTEM = (
     "You are the single voice of the user's AI advisor, seated in a live meeting "
