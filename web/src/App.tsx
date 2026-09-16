@@ -80,6 +80,7 @@ import { AuthWidget } from "@/components/AuthWidget";
 import { OnboardingWizard } from "@/components/OnboardingWizard";
 import AssistantChatPage from "@/pages/AssistantChatPage";
 import AbonnementPage from "@/pages/AbonnementPage";
+import AgentDeLaPage from "@/components/AgentDeLaPage";
 import { PageHeaderProvider } from "@/contexts/PageHeaderProvider";
 import { ProfileProvider } from "@/contexts/ProfileProvider";
 import { useProfileScope } from "@/contexts/useProfileScope";
@@ -948,6 +949,9 @@ export default function App() {
                     "min-h-0 flex flex-1 flex-col",
                 )}
               >
+                {/* Sur une page métier, dire quel agent la couvre — et rien ailleurs. */}
+                <AgentDeLaPage />
+
                 <ProfileKeyedRoutes>
                   {/* key re-triggers the enter animation per navigation (delight.css) */}
                   <div key={pathname} className="vigil-page-enter min-h-0 min-w-0 flex-1 flex flex-col">
