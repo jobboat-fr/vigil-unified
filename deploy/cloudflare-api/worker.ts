@@ -109,7 +109,11 @@ export async function traiter(request: Request, env: Env): Promise<Response> {
     return refus(413, "corps_trop_gros", "Le fichier ou le contenu envoyé dépasse 30 Mo.", requeteId);
   }
 
-  const sensible = estSensible(url.pathname);
+  // Un appel serveur (site hbs-formation, agents) porte un jeton de service et relaie, depuis
+  // une seule IP, les formulaires de tous les visiteurs : le palier serré les bloquerait tous.
+  // Il passe au palier général ; un faux en-tête n'y gagne que la limite générale, et l'origine
+  // garde ses propres limites par adresse e-mail et par jeton.
+  const sensible = estSensible(url.pathname) && !(request.headers.get("authorization") || "").startsWith("Bearer ");
   const limite = sensible ? env.LIMITE_SENSIBLE : env.LIMITE_GENERALE;
   if (request.method !== "OPTIONS" && limite) {
     const { success } = await limite.limit({ key: `${sensible ? "s" : "g"}:${ip}` });
