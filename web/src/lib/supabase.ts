@@ -28,6 +28,38 @@ export const supabase: SupabaseClient | null =
       })
     : null;
 
+const CLE_SESSION_EXPIREE = "vtlvs:session-expiree";
+let fermetureEnCours = false;
+
+/**
+ * Le serveur a refusé une session que le navigateur croyait valide (révoquée, compte désactivé,
+ * mot de passe changé ailleurs). Plutôt que de laisser chaque page afficher « 401 », on ferme la
+ * session locale une fois : l'écran de connexion revient, avec la raison.
+ */
+export function signalerSessionExpiree(): void {
+  if (fermetureEnCours || !supabase) return;
+  fermetureEnCours = true;
+  try {
+    sessionStorage.setItem(CLE_SESSION_EXPIREE, "1");
+  } catch {
+    /* stockage indisponible : la déconnexion se fait quand même */
+  }
+  void supabase.auth.signOut({ scope: "local" }).finally(() => {
+    fermetureEnCours = false;
+  });
+}
+
+/** Lu une fois par l'écran de connexion : la session s'est-elle terminée côté serveur ? */
+export function lireSessionExpiree(): boolean {
+  try {
+    const v = sessionStorage.getItem(CLE_SESSION_EXPIREE) === "1";
+    sessionStorage.removeItem(CLE_SESSION_EXPIREE);
+    return v;
+  } catch {
+    return false;
+  }
+}
+
 export async function getAccessToken(): Promise<string | null> {
   if (!supabase) return null;
   try {

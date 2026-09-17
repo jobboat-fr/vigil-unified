@@ -1,3 +1,4 @@
+import { lireSessionExpiree } from "@/lib/supabase";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
@@ -26,7 +27,9 @@ export default function AuthPage({ initialMode = "signin" }: { initialMode?: Mod
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState<string>("");
+  // Revenu ici parce que le serveur a fermé la session : on le dit, une fois.
+  const [msg, setMsg] = useState<string>(() =>
+    lireSessionExpiree() ? "Votre session a pris fin. Reconnectez-vous pour reprendre là où vous en étiez." : "");
   const [err, setErr] = useState<string>("");
 
   async function submit(e: React.FormEvent) {

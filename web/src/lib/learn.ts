@@ -9,7 +9,7 @@
 // The other rule this file exists to enforce: **never infer what a user may do from their
 // role.** Every row arrives with `_can`, and components read that. A `role === "admin"`
 // check in TypeScript is a second copy of a rule the database already owns.
-import { getAccessToken } from "./supabase";
+import { getAccessToken, signalerSessionExpiree } from "./supabase";
 import { WW_BASE, GatewayError } from "./ww";
 
 /**
@@ -104,6 +104,7 @@ export async function call<T>(method: string, path: string, body?: unknown): Pro
     // "Karim est déjà pris le 13 au matin" instead of "something went wrong".
     const d = (payload as { detail?: unknown })?.detail;
     const code = typeof d === "object" && d !== null ? (d as { error?: string }).error : undefined;
+    if (res.status === 401 && (d === "invalid_session" || d === "unidentified_session")) signalerSessionExpiree();
     throw new LearnError(code ?? `HTTP ${res.status}`, res.status, code, d);
   }
   return payload as T;

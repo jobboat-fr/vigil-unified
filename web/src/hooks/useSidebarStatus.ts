@@ -12,14 +12,20 @@ export function useSidebarStatus() {
   const [status, setStatus] = useState<StatusResponse | null>(null);
 
   useEffect(() => {
+    let id: ReturnType<typeof setInterval> | undefined;
     const load = () => {
       api
         .getStatus()
-        .then(setStatus)
+        .then((s) => {
+          setStatus(s);
+          // Déploiement sans tableau de bord Hermes : la bordure répond une valeur fixe.
+          // Inutile de la redemander toutes les 10 s (batterie et données sur téléphone).
+          if ((s as { dashboard?: boolean } | null)?.dashboard === false && id) clearInterval(id);
+        })
         .catch(() => {});
     };
     load();
-    const id = setInterval(load, POLL_MS);
+    id = setInterval(load, POLL_MS);
     return () => clearInterval(id);
   }, []);
 

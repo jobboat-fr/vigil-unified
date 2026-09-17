@@ -5,7 +5,7 @@
 // shared Supabase JWT. SSE endpoints are consumed with fetch + a stream reader
 // because EventSource cannot attach an Authorization header.
 import { useEffect, useState } from "react";
-import { getAccessToken } from "./supabase";
+import { getAccessToken, signalerSessionExpiree } from "./supabase";
 import { WW_BASE, GatewayError, gatewayErrorMessage, type GatewayPayload } from "./ww";
 
 async function vigilCall<T = unknown>(method: string, path: string, body?: unknown): Promise<T> {
@@ -32,6 +32,7 @@ async function vigilCall<T = unknown>(method: string, path: string, body?: unkno
     payload = { ok: false, error: "BAD_JSON" };
   }
   if (!res.ok || payload.ok === false) {
+    if (res.status === 401) signalerSessionExpiree();
     throw new GatewayError(gatewayErrorMessage(res.status, payload), "HTTP_ERROR", res.status, payload.detail);
   }
   return payload.data as T;
