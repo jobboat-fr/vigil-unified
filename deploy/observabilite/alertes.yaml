@@ -1,0 +1,82 @@
+apiVersion: 1
+groups:
+  - orgId: 1
+    name: VTLVS — sécurité et disponibilité
+    folder: VTLVS
+    interval: 1m
+    rules:
+      - uid: vtlvs-5xx
+        title: Erreurs serveur répétées
+        condition: C
+        for: 2m
+        annotations:
+          summary: "Plus de 5 réponses 5xx en 5 minutes sur un service VTLVS."
+        labels: {gravite: haute}
+        data:
+          - refId: A
+            relativeTimeRange: {from: 300, to: 0}
+            datasourceUid: loki-vtlvs
+            model: {refId: A, expr: 'sum by (service) (count_over_time({evenement="http.requete"} | json | statut >= 500 [5m]))', queryType: range}
+          - refId: B
+            datasourceUid: __expr__
+            model: {refId: B, type: reduce, expression: A, reducer: last}
+          - refId: C
+            datasourceUid: __expr__
+            model: {refId: C, type: threshold, expression: B, conditions: [{evaluator: {type: gt, params: [5]}}]}
+
+      - uid: vtlvs-rafale-refus
+        title: Rafale de refus de sécurité
+        condition: C
+        for: 1m
+        annotations:
+          summary: "Plus de 50 événements de sécurité en 5 minutes : tentative de contournement ou d'abus probable."
+        labels: {gravite: haute}
+        data:
+          - refId: A
+            relativeTimeRange: {from: 300, to: 0}
+            datasourceUid: loki-vtlvs
+            model: {refId: A, expr: 'sum(count_over_time({evenement=~"securite\\..+"}[5m]))', queryType: range}
+          - refId: B
+            datasourceUid: __expr__
+            model: {refId: B, type: reduce, expression: A, reducer: last}
+          - refId: C
+            datasourceUid: __expr__
+            model: {refId: C, type: threshold, expression: B, conditions: [{evaluator: {type: gt, params: [50]}}]}
+
+      - uid: vtlvs-injection
+        title: Injection de consignes suspectée
+        condition: C
+        for: 0m
+        annotations:
+          summary: "Un texte transmis à un modèle contenait des motifs d'injection. À examiner dans le journal de sécurité."
+        labels: {gravite: moyenne}
+        data:
+          - refId: A
+            relativeTimeRange: {from: 600, to: 0}
+            datasourceUid: loki-vtlvs
+            model: {refId: A, expr: 'sum(count_over_time({evenement="securite.injection_suspectee"}[10m]))', queryType: range}
+          - refId: B
+            datasourceUid: __expr__
+            model: {refId: B, type: reduce, expression: A, reducer: last}
+          - refId: C
+            datasourceUid: __expr__
+            model: {refId: C, type: threshold, expression: B, conditions: [{evaluator: {type: gt, params: [0]}}]}
+
+      - uid: vtlvs-delegation
+        title: Agent refusé pour délégation
+        condition: C
+        for: 0m
+        annotations:
+          summary: "Un agent a tenté d'agir pour une personne sans délégation valable."
+        labels: {gravite: haute}
+        data:
+          - refId: A
+            relativeTimeRange: {from: 600, to: 0}
+            datasourceUid: loki-vtlvs
+            model: {refId: A, expr: 'sum(count_over_time({evenement=~"securite\\.delegation_(refusee|invalide|autre_agent)"}[10m]))', queryType: range}
+          - refId: B
+            datasourceUid: __expr__
+            model: {refId: B, type: reduce, expression: A, reducer: last}
+          - refId: C
+            datasourceUid: __expr__
+            model: {refId: C, type: threshold, expression: B, conditions: [{evaluator: {type: gt, params: [0]}}]}

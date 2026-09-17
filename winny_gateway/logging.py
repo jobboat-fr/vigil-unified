@@ -54,28 +54,34 @@ _LEVEL_TAGS: dict[int, str] = {
 # ── JSON Formatter ───────────────────────────────────────────────────────────
 
 class JsonFormatter(logging.Formatter):
-    """Emit one JSON object per log line — ready for Datadog / ELK / CloudWatch."""
+    """Une ligne JSON au schéma commun de l'écosystème VTLVS (identique à LEARN) :
+    ts, niveau, service, env, journal, message, evenement, puis les champs fournis par l'appelant.
+    L'adresse IP n'est jamais écrite en clair."""
+
+    _STANDARD = set(vars(logging.makeLogRecord({})).keys()) | {"message", "asctime"}
+    _RENOMMES = {"status_code": "statut", "duration_ms": "duree_ms", "path": "route", "method": "methode",
+                 "request_id": "requete_id", "user_id": "acteur", "action": "evenement"}
 
     def format(self, record: logging.LogRecord) -> str:
+        import hashlib
+
         payload: dict[str, Any] = {
-            "ts": datetime.fromtimestamp(record.created, tz=UTC).isoformat(),
-            "level": record.levelname.lower(),
-            "logger": record.name,
-            "msg": record.getMessage(),
+            "ts": datetime.fromtimestamp(record.created, tz=UTC).isoformat(timespec="milliseconds"),
+            "niveau": record.levelname.lower(),
+            "service": "passerelle",
+            "env": os.getenv("RAILWAY_ENVIRONMENT_NAME") or "production",
+            "journal": record.name,
+            "message": record.getMessage(),
         }
-
-        # Merge any extra fields the caller passed
-        for key in ("symbol", "broker", "user_id", "action", "duration_ms",
-                     "status_code", "method", "path", "request_id", "error",
-                     "wallet", "step", "component"):
-            val = getattr(record, key, None)
-            if val is not None:
-                payload[key] = val
-
+        for key, val in vars(record).items():
+            if key in self._STANDARD or key.startswith("_") or val is None:
+                continue
+            if key == "ip":
+                val = hashlib.sha256(f"{os.getenv('LOG_IP_SALT', 'vtlvs')}:{val}".encode()).hexdigest()[:12]
+            payload[self._RENOMMES.get(key, key)] = val
         if record.exc_info and record.exc_info[1]:
-            payload["exception"] = self.formatException(record.exc_info)
-
-        return json.dumps(payload, default=str)
+            payload["exception"] = self.formatException(record.exc_info)[-2000:]
+        return json.dumps(payload, default=str, ensure_ascii=False)
 
 
 # ── Pretty Formatter ─────────────────────────────────────────────────────────
@@ -138,6 +144,10 @@ def setup_logging() -> None:
 
     root.addHandler(handler)
 
+    # Puits central (Loki sur OVH), si configuré : même ligne JSON, envoyée par lots.
+    from winny_gateway.journal_loki import installer as installer_loki
+    installer_loki(root, "passerelle", JsonFormatter())
+
     # Quiet noisy libraries
     for noisy in ("uvicorn.access", "httpcore", "httpx", "urllib3", "asyncio"):
         logging.getLogger(noisy).setLevel(logging.WARNING)
@@ -156,22 +166,26 @@ _req_logger = logging.getLogger("gateway.http")
 
 
 async def log_request(request: Any, call_next: Any) -> Any:
-    """FastAPI middleware that logs every request with duration."""
+    """Une ligne par requête (événement http.requete) — niveau selon le statut."""
+    if request.url.path == "/health":
+        return await call_next(request)
     start = time.perf_counter()
     response = await call_next(request)
     duration_ms = round((time.perf_counter() - start) * 1000, 1)
-
-    _req_logger.info(
-        "%s %s → %d (%.1fms)",
-        request.method,
-        request.url.path,
-        response.status_code,
-        duration_ms,
+    statut = response.status_code
+    niveau = logging.ERROR if statut >= 500 else logging.WARNING if statut in (401, 403, 429) else logging.INFO
+    _req_logger.log(
+        niveau,
+        "%s %s → %d (%.1f ms)",
+        request.method, request.url.path, statut, duration_ms,
         extra={
+            "evenement": "http.requete",
             "method": request.method,
             "path": request.url.path,
-            "status_code": response.status_code,
+            "status_code": statut,
             "duration_ms": duration_ms,
+            "request_id": request.headers.get("x-request-id"),
+            "ip": request.headers.get("cf-connecting-ip") or (request.client.host if request.client else None),
         },
     )
     return response
