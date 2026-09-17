@@ -20,6 +20,9 @@ import {
   Activity,
   BarChart3,
   BookOpen,
+  LifeBuoy,
+  UserRound,
+  MessagesSquare,
   Clock,
   Code,
   Cpu,
@@ -125,6 +128,9 @@ import MailPage from "@/pages/MailPage";
 import AuditPage from "@/pages/AuditPage";
 import LearnCalendarPage from "@/pages/LearnCalendarPage";
 import NoyauPage from "@/pages/NoyauPage";
+import MonComptePage from "@/pages/MonComptePage";
+import AidePage from "@/pages/AidePage";
+import SupportBoitePage from "@/pages/SupportBoitePage";
 import LearnParcoursPage from "@/pages/LearnParcoursPage";
 import LearnAcquisPage from "@/pages/LearnAcquisPage";
 import LearnDashboardPage from "@/pages/LearnDashboardPage";
@@ -239,6 +245,9 @@ const BUILTIN_ROUTES_CORE: Record<string, ComponentType> = {
   "/mail": MailPage,
   // LEARN — training platform (AZZ&CO)
   "/noyau": NoyauPage,
+  "/compte": MonComptePage,
+  "/aide": AidePage,
+  "/support": SupportBoitePage,
   "/learn/parcours": LearnParcoursPage,
   "/learn/acquis": LearnAcquisPage,
   "/learn": LearnDashboardPage,
@@ -352,6 +361,9 @@ const BUILTIN_NAV_REST: NavItem[] = [
   { path: "/env", labelKey: "keys", label: "Keys", icon: KeyRound, group: "system" , roles: ["super_admin"] },
   { path: "/billing", label: "Facturation", icon: CreditCard, group: "system" , roles: ["super_admin"] },
   { path: "/system", label: "Système", icon: Wrench, group: "system" , roles: ["super_admin"] },
+  { path: "/aide", label: "Aide", icon: LifeBuoy, group: "workspace", roles: ["super_admin", "admin", "formateur", "entreprise", "auditeur", "apprenant"] },
+  { path: "/compte", label: "Mon compte", icon: UserRound, group: "workspace", roles: ["super_admin", "admin", "formateur", "entreprise", "auditeur", "apprenant"] },
+  { path: "/support", label: "Demandes d'aide", icon: MessagesSquare, group: "company", roles: ["super_admin", "admin"] },
   { path: "/noyau", label: "Le Noyau", icon: BookOpen, group: "workspace", roles: ["super_admin", "admin", "formateur", "entreprise", "auditeur", "apprenant"] },
 ];
 
