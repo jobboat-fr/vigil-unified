@@ -292,4 +292,6 @@ async def entrypoint(ctx: JobContext) -> None:
 
 
 if __name__ == "__main__":
-    cli.run_app(WorkerOptions(entrypoint_fnc=entrypoint, agent_name="vigil-advisor"))
+    # Le serveur de santé local n'écoute que la boucle locale : rien à exposer sur Internet.
+    cli.run_app(WorkerOptions(entrypoint_fnc=entrypoint, agent_name="vigil-advisor",
+                              host=os.getenv("VIGIL_AGENT_HEALTH_HOST", "127.0.0.1")))
