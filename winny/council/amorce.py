@@ -51,6 +51,11 @@ OUTILS: dict[str, list[str]] = {
         "pôles de l'équipe agentique et leurs tâches planifiées",
         "journal d'exécution et validations humaines (/approvals)",
     ],
+    "assistant": [
+        "guide de l'application par rôle (pages du menu et ce qu'on y fait)",
+        "agenda des 14 prochains jours et actions à faire de la personne, lus avec ses propres droits",
+        "mémoire courte de la conversation (8 échanges)",
+    ],
     "council": [
         "conseil multi-experts (finance, technique, opérations, revenus) avec synthèse",
         "données fournies dans le message, rien d'autre",

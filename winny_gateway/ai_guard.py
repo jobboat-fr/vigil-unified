@@ -23,7 +23,7 @@ from fastapi import APIRouter, Depends
 from winny.council import guard
 from winny_gateway.auth import get_current_user
 
-FEATURES = ("meeting", "mail", "ops", "studio", "vault", "council")
+FEATURES = ("meeting", "mail", "ops", "studio", "vault", "council", "assistant")
 
 
 def feature(name: str):

@@ -39,6 +39,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
+from winny_gateway import assistant_vtlvs as av
 from winny_gateway.auth import get_current_user
 from winny_gateway.logging import get_logger
 
@@ -65,10 +66,7 @@ async def assistant_chat(
     """Stream a VIGIL assistant turn through Hermes, translating SSE dialects."""
     cfg = request.app.state.config
     if not cfg.hermes_url:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Hermes not configured (set HERMES_URL).",
-        )
+        return await _assistant_vtlvs(body, request, user)
 
     target = cfg.hermes_url.rstrip("/") + "/chat/stream"
     # Scope sessions per VIGIL user; the widget's session_id keeps multiple
@@ -159,6 +157,53 @@ async def assistant_chat(
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
+
+
+def _jeton(request: Request) -> str:
+    auth = request.headers.get("authorization") or ""
+    return auth[7:].strip() if auth.lower().startswith("bearer ") else ""
+
+
+async def _assistant_vtlvs(body: AssistantChatIn, request: Request, user: dict[str, Any]) -> StreamingResponse:
+    """L'assistant de l'application, sans serveur intermédiaire (voir winny_gateway/assistant_vtlvs.py)."""
+    if user.get("service_token") or user.get("agent_credential"):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail={
+            "error": "assistant_humain", "detail": "L'assistant de l'application répond aux personnes connectées."})
+    uid = str(user.get("sub") or "")
+    try:
+        acces = await av.verifier_acces(uid)
+    except av.AccesRefuse as exc:
+        logger.info("Assistant refusé à %s : %s.", uid, exc.code,
+                    extra={"evenement": "assistant.acces_refuse", "acteur": uid, "raison": exc.code})
+        raise HTTPException(status_code=exc.statut,
+                            detail={"error": exc.code, "detail": exc.message, **exc.details}) from exc
+    message = (body.message or "").strip()[:2000]
+    if not message:
+        raise HTTPException(status_code=422, detail={"error": "message_vide", "detail": "Écrivez votre question."})
+    page = str((body.page_context or {}).get("page") or "")[:120] or None
+    reponse = await av.repondre(user_id=uid, jeton=_jeton(request), message=message,
+                                session_id=(body.session_id or "defaut")[:64], page=page, acces=acces)
+
+    async def flux() -> AsyncGenerator[bytes, None]:
+        texte = reponse["texte"]
+        for i in range(0, len(texte), 48):
+            yield _sse("text_delta", {"content": texte[i:i + 48]})
+        yield _sse("done", {"ok": True, "stub": reponse["stub"]})
+
+    return StreamingResponse(flux(), media_type="text/event-stream",
+                             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+
+
+@router.get("/acces")
+async def assistant_acces(user: dict[str, Any] = Depends(get_current_user)) -> dict[str, Any]:
+    """L'assistant est-il ouvert à cette personne, maintenant ? La page l'affiche avant la saisie."""
+    uid = str(user.get("sub") or "")
+    try:
+        acces = await av.verifier_acces(uid)
+    except av.AccesRefuse as exc:
+        return {"ok": True, "data": {"ouvert": False, "raison": exc.code, "message": exc.message, **exc.details}}
+    return {"ok": True, "data": {"ouvert": True, "motif": acces["motif"], "fin_creneau": acces.get("fin_creneau"),
+                                 "role": acces["profil"].get("role")}}
 
 
 @router.get("/history")

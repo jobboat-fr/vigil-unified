@@ -849,7 +849,9 @@ async function* sseStream(
     body: init.body != null ? JSON.stringify(init.body) : undefined,
   });
   if (!res.ok || !res.body) {
-    throw new GatewayError(`stream failed: HTTP ${res.status}`, "HTTP_ERROR", res.status);
+    // La passerelle explique ses refus (accès, limite, indisponibilité) : on garde sa phrase.
+    const payload = (await res.json().catch(() => ({}))) as GatewayPayload;
+    throw new GatewayError(gatewayErrorMessage(res.status, payload), "HTTP_ERROR", res.status, payload.detail);
   }
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
@@ -904,6 +906,18 @@ export function streamOrchestrate(task: string, transcript: string, question?: s
 
 /** Stream a turn with the VIGIL assistant (gateway → Hermes, HTTP SSE). Events:
  *  `text_delta` {content}, `tool_event` {...}, `done` {ok}, `error` {message}. */
+export type AccesAssistant = {
+  ouvert: boolean;
+  motif?: "role" | "creneau" | "abonnement";
+  fin_creneau?: string | null;
+  raison?: string;
+  message?: string;
+  prochain_creneau?: string | null;
+  role?: string;
+};
+
+export const accesAssistant = () => vigilCall<AccesAssistant>("GET", "/v1/assistant/acces");
+
 export function streamAssistantChat(
   message: string,
   sessionId?: string,

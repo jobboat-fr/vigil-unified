@@ -185,7 +185,7 @@ function UnknownRouteFallback({ pluginsLoading }: { pluginsLoading: boolean }) {
  * Remettre `false` quand l'assistant est rebranché sur le nouveau runtime — c'est le
  * seul changement à faire ici.
  */
-const ASSISTANT_EN_MAINTENANCE = true;
+const ASSISTANT_EN_MAINTENANCE = false;
 
 /** Ce que voit une personne qui ouvre /chat pendant la coupure. */
 function AssistantEnMaintenance() {
@@ -204,13 +204,13 @@ function AssistantEnMaintenance() {
 
 const CHAT_NAV_ITEM: NavItem = {
   path: "/chat",
-  label: "Vigil",
+  label: "Assistant",
   icon: Terminal,
   group: "workspace",
-  // Ni l'apprenant ni l'auditeur. Un stagiaire s'adresse à son formateur : une réponse
-  // automatique sur son parcours engagerait l'organisme. Un auditeur qui pourrait faire
-  // travailler l'assistant de l'organisme qu'il contrôle ne serait plus un auditeur.
-  roles: ["super_admin", "admin", "formateur"],
+  // Tous les rôles (décision d'Azer, 2026-09-17). L'accès fin est décidé par la passerelle
+  // (winny_gateway/assistant_vtlvs.py) : l'apprenant pendant ses créneaux de formation, et hors
+  // formation sous abonnement ; l'auditeur en lecture ; le prospect jamais.
+  roles: ["super_admin", "admin", "formateur", "entreprise", "auditeur", "apprenant"],
 };
 
 /**
