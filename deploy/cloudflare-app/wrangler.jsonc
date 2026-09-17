@@ -27,7 +27,10 @@
     "directory": "../../hermes_cli/web_dist",
     // A React router owns the paths. Without this, a reload on /learn/calendar returns the
     // edge's 404 instead of the app, because no file of that name exists.
-    "not_found_handling": "single-page-application"
+    "not_found_handling": "single-page-application",
+    // The Worker runs before any asset, so every response — pages and files included — gets
+    // the security headers. Without it the edge serves index.html directly, headers bare.
+    "run_worker_first": true
   },
   // A custom domain, not a route: Cloudflare then owns the hostname end to end — it
   // creates the DNS record, issues the certificate, and sends every path to this Worker.
