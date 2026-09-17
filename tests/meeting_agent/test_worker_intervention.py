@@ -119,3 +119,14 @@ def test_silence_si_oui_sans_message(worker):
 def test_l_ia_se_reconnait_dans_le_fil():
     from winny.council.intervention import _kind
     assert _kind("AZZMIN") == "ai"
+
+
+def test_entetes_agent_et_delegation(worker, monkeypatch):
+    w = worker
+    monkeypatch.setenv("VTLVS_AGENT_TOKEN", "vtlvs_ag_x")
+    monkeypatch.setenv("WW_SERVICE_TOKEN", "svc")
+    h = w.entetes_passerelle("owner", "deleg")
+    assert h["Authorization"] == "Bearer vtlvs_ag_x" and h["X-Vtlvs-Delegation"] == "deleg"
+    assert "X-WinnyWoo-User-Id" not in h
+    repli = w.entetes_passerelle("owner", None)
+    assert repli["Authorization"] == "Bearer svc" and repli["X-WinnyWoo-User-Id"] == "owner"

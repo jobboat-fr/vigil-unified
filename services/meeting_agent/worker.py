@@ -97,21 +97,29 @@ def build_instructions(persona: str, topic: str, evidence: str, kind: str) -> st
     return "\n".join(parts)
 
 
+def entetes_passerelle(owner_id: str, delegation: str | None) -> dict[str, str]:
+    """Identifiant d'agent AZZMIN + délégation signée du propriétaire de la salle.
+
+    La plateforme décide alors pour qui le worker écrit : il ne peut rien faire d'autre que ce
+    que la personne qui l'a invité peut faire, pendant la séance. Sans délégation (salle ouverte
+    avant ce changement), repli sur le jeton de service s'il est encore configuré.
+    """
+    agent = os.getenv("VTLVS_AGENT_TOKEN", "").strip()
+    if agent and delegation:
+        return {"Authorization": f"Bearer {agent}", "X-Vtlvs-Delegation": delegation,
+                "content-type": "application/json"}
+    return {"Authorization": f"Bearer {os.getenv('WW_SERVICE_TOKEN', '')}", "X-WinnyWoo-User-Id": owner_id,
+            "content-type": "application/json"}
+
+
 class Passerelle:
     """Les deux appels à la passerelle, au nom du propriétaire de la salle."""
 
-    def __init__(self, room_id: str, owner_id: str) -> None:
+    def __init__(self, room_id: str, owner_id: str, delegation: str | None = None) -> None:
         self.room_id = room_id
         base = (os.getenv("VTLVS_GATEWAY_URL") or "https://app.vtlvs.com").rstrip("/")
-        self._client = httpx.AsyncClient(
-            base_url=base,
-            timeout=GATEWAY_TIMEOUT_S,
-            headers={
-                "Authorization": f"Bearer {os.getenv('WW_SERVICE_TOKEN', '')}",
-                "X-WinnyWoo-User-Id": owner_id,
-                "content-type": "application/json",
-            },
-        )
+        self._client = httpx.AsyncClient(base_url=base, timeout=GATEWAY_TIMEOUT_S,
+                                         headers=entetes_passerelle(owner_id, delegation))
 
     async def ajouter(self, speaker: str, text: str) -> None:
         r = await self._client.post(f"/v1/rooms/{self.room_id}/messages", json={"speaker": speaker, "text": text})
@@ -232,7 +240,7 @@ async def entrypoint(ctx: JobContext) -> None:
     host = meta.get("host_identity") or ""
     logger.info("AZZMIN rejoint room=%s persona=%s kind=%s", ctx.room.name, persona, meta.get("kind"))
 
-    passerelle = Passerelle(room_id, owner_id)
+    passerelle = Passerelle(room_id, owner_id, meta.get("delegation"))
     ctx.add_shutdown_callback(passerelle.fermer)
     noms: dict[str, str] = {}
     agent = AgentDeSalle(

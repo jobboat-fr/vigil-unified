@@ -64,7 +64,7 @@ def signer_delegation(secret: str, *, sub: str, agent: str, role: str | None = N
         raise RefusIdentite(503, "delegation_non_configuree", "La signature des délégations n'est pas configurée.")
     t = int(maintenant if maintenant is not None else time.time())
     corps = {"v": 1, "sub": sub, "agent": agent, "role": role, "tenant_id": tenant_id,
-             "page": page, "iat": t, "exp": t + max(30, min(duree_s, 3600))}
+             "page": page, "iat": t, "exp": t + max(30, min(duree_s, 4 * 3600))}
     charge = _b64(json.dumps(corps, separators=(",", ":"), sort_keys=True).encode())
     sig = _b64(hmac.new(secret.encode(), charge.encode(), hashlib.sha256).digest())
     return f"{charge}.{sig}"

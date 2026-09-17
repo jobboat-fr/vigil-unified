@@ -475,6 +475,17 @@ class BringAgentBody(BaseModel):
 
 
 @router.post("/{room_id}/bring-agent")
+def _delegation_salle(owner_id: str) -> str | None:
+    import os
+
+    from winny_gateway import agent_identite as ai
+
+    secret = os.getenv("VTLVS_DELEGATION_SECRET", "")
+    if not secret:
+        return None
+    return ai.signer_delegation(secret, sub=str(owner_id), agent="azzmin", page="salle", duree_s=4 * 3600)
+
+
 async def bring_agent(room_id: str, body: BringAgentBody, user: dict = Depends(get_current_user)) -> dict[str, Any]:
     """Dispatch the VIGIL meeting agent (livekit-agents worker `vigil-advisor`)
     into the room's live call as the chosen persona, grounded in evidence. The
@@ -500,6 +511,9 @@ async def bring_agent(room_id: str, body: BringAgentBody, user: dict = Depends(g
         "owner_id": room.get("user_id") or uid,
         "host_identity": uid,
         "kind": room.get("kind") or "meeting",
+        # Délégation signée pour AZZMIN, au nom du propriétaire, le temps d'une séance : le worker
+        # n'a plus besoin du jeton de service complet (voir agent_identite).
+        "delegation": _delegation_salle(room.get("user_id") or uid),
     })
     client = lkapi.LiveKitAPI(url, key, secret)
     try:
