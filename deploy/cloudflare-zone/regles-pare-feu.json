@@ -1,0 +1,6 @@
+{"rules":[
+ {"description":"VTLVS — chemins de scanners (.env, .git, WordPress, phpMyAdmin) : bloqués","action":"block","enabled":true,
+  "expression":"(http.request.uri.path contains \"/.env\" or http.request.uri.path contains \"/.git\" or http.request.uri.path contains \"/.aws\" or http.request.uri.path contains \"/wp-admin\" or http.request.uri.path contains \"/wp-login\" or http.request.uri.path contains \"xmlrpc.php\" or http.request.uri.path contains \"/phpmyadmin\" or http.request.uri.path contains \"/server-status\" or http.request.uri.path contains \"/cgi-bin/\")"},
+ {"description":"VTLVS — méthodes HTTP inutiles (TRACE, CONNECT, WebDAV…) : bloquées","action":"block","enabled":true,
+  "expression":"not http.request.method in {\"GET\" \"HEAD\" \"POST\" \"PUT\" \"PATCH\" \"DELETE\" \"OPTIONS\"}"}
+]}

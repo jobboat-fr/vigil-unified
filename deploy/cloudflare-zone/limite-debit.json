@@ -1,0 +1,5 @@
+{"rules":[
+ {"description":"VTLVS — tableaux des agents (authentification) : 100 requêtes / 10 s par IP","action":"block","enabled":true,
+  "expression":"http.host in {\"agent.vtlvs.com\" \"azzcom.vtlvs.com\" \"azzco.vtlvs.com\" \"azzmin.vtlvs.com\"}",
+  "ratelimit":{"characteristics":["cf.colo.id","ip.src"],"period":10,"requests_per_period":100,"mitigation_timeout":10}}
+]}
