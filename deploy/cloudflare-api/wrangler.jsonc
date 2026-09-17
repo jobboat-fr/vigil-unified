@@ -1,0 +1,25 @@
+{
+  // api.vtlvs.com — bordure de LEARN (voir worker.ts).
+  //
+  // Déploiement : `npx wrangler deploy` depuis ce dossier, puis
+  //   `npx wrangler secret put EDGE_SECRET` (même valeur qu'ORIGIN_EDGE_SECRET du service Railway `web`).
+  //
+  // Le domaine personnalisé remplace l'enregistrement CNAME api.vtlvs.com → Railway (DNS seul) :
+  // Cloudflare détient alors le nom, émet le certificat et envoie chaque requête à ce Worker.
+  // L'ancien CNAME doit être supprimé juste avant — deux enregistrements ne peuvent coexister.
+  // Le Worker relaie vers l'adresse Railway du service, qui reste valide.
+  "name": "vtlvs-api-edge",
+  "compatibility_date": "2026-09-01",
+  "main": "worker.ts",
+  "vars": {
+    "LEARN_ORIGIN": "https://web-production-b7d72.up.railway.app"
+  },
+  "ratelimits": [
+    { "name": "LIMITE_SENSIBLE", "namespace_id": "4101", "simple": { "limit": 20, "period": 60 } },
+    { "name": "LIMITE_GENERALE", "namespace_id": "4102", "simple": { "limit": 600, "period": 60 } }
+  ],
+  "routes": [
+    { "pattern": "api.vtlvs.com", "custom_domain": true }
+  ],
+  "observability": { "enabled": true }
+}
