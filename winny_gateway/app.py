@@ -177,6 +177,10 @@ def create_app(config: GatewayConfig | None = None) -> FastAPI:
 
     # Security middleware (rate-limit, body-size cap, security headers)
     app.add_middleware(SecurityMiddleware)
+    # Verrou d'origine : refuse ce qui contourne la bordure Cloudflare (voir edge_lock.py).
+    # Ajouté après, donc exécuté avant : une requête directe ne consomme rien d'autre.
+    from winny_gateway.edge_lock import EdgeLockMiddleware
+    app.add_middleware(EdgeLockMiddleware)
 
     # Request logging middleware
     app.add_middleware(BaseHTTPMiddleware, dispatch=log_request)

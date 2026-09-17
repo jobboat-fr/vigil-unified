@@ -21,6 +21,51 @@ interface Env {
   ASSETS: { fetch: (req: Request) => Promise<Response> };
   LEARN_API_ORIGIN?: string;
   GATEWAY_ORIGIN?: string;
+  /** Secret partagé avec les origines : prouve qu'une requête est passée par ce Worker. */
+  EDGE_SECRET?: string;
+}
+
+// ── En-têtes de sécurité ──────────────────────────────────────────────────────────────
+//
+// Posés ici, à la bordure, pour toutes les réponses : la page, les fichiers, et les réponses
+// d'API relayées. La CSP est celle d'une application sans script tiers : scripts et styles
+// de l'origine, connexions vers Supabase (authentification) et LiveKit (visio), images et
+// médias de l'origine, de Supabase (logos) et en data:/blob: (aperçus, flux vidéo). Rien
+// d'autre ne peut se charger — un script injecté n'a nulle part où envoyer ce qu'il vole.
+const CSP = [
+  "default-src 'self'",
+  "script-src 'self'",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "font-src 'self' data: https://fonts.gstatic.com",
+  "img-src 'self' data: blob: https://*.supabase.co https://hbs-formation.fr",
+  "media-src 'self' blob: mediastream:",
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.livekit.cloud wss://*.livekit.cloud",
+  "frame-src 'self' blob:",
+  "worker-src 'self' blob:",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+  "upgrade-insecure-requests",
+].join("; ");
+
+const SECURITY_HEADERS: Record<string, string> = {
+  "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+  "x-content-type-options": "nosniff",
+  "x-frame-options": "DENY",
+  "referrer-policy": "strict-origin-when-cross-origin",
+  "permissions-policy": "camera=(self), microphone=(self), display-capture=(self), geolocation=(), payment=(), usb=()",
+  "cross-origin-opener-policy": "same-origin",
+};
+
+function secure(res: Response, requestId: string, isHtml: boolean): Response {
+  const out = new Response(res.body, res);
+  for (const [k, v] of Object.entries(SECURITY_HEADERS)) out.headers.set(k, v);
+  if (isHtml) out.headers.set("content-security-policy", CSP);
+  out.headers.set("x-request-id", requestId);
+  out.headers.delete("server");
+  out.headers.delete("x-powered-by");
+  return out;
 }
 
 const HOP_BY_HOP = new Set([
@@ -43,7 +88,7 @@ function unavailable(which: string): Response {
   );
 }
 
-async function proxy(request: Request, origin: string): Promise<Response> {
+async function proxy(request: Request, origin: string, env: Env, requestId: string): Promise<Response> {
   const incoming = new URL(request.url);
   const target = new URL(incoming.pathname + incoming.search, origin);
 
@@ -57,6 +102,13 @@ async function proxy(request: Request, origin: string): Promise<Response> {
   const ip = request.headers.get("cf-connecting-ip");
   if (ip) headers.set("x-forwarded-for", ip);
   headers.set("x-forwarded-host", incoming.host);
+  // Identifiant de requête propagé : un même identifiant relie la ligne du Worker, celle de
+  // l'origine et le message d'erreur montré à la personne.
+  headers.set("x-request-id", requestId);
+  // Preuve de passage par la bordure. Une origine verrouillée refuse toute requête sans elle ;
+  // un client ne peut pas la forger, il ne la connaît pas. On écrase toujours la valeur reçue.
+  headers.delete("x-vtlvs-edge");
+  if (env.EDGE_SECRET) headers.set("x-vtlvs-edge", env.EDGE_SECRET);
 
   try {
     const res = await fetch(
@@ -74,7 +126,7 @@ async function proxy(request: Request, origin: string): Promise<Response> {
     });
   } catch {
     return new Response(
-      JSON.stringify({ error: "upstream_unreachable", detail: "L'API est injoignable." }),
+      JSON.stringify({ error: "upstream_unreachable", detail: "L'API est injoignable.", request_id: requestId }),
       { status: 502, headers: { "content-type": "application/json; charset=utf-8" } },
     );
   }
@@ -106,6 +158,17 @@ const DASHBOARD_STUBS: Record<string, unknown> = {
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const { pathname } = new URL(request.url);
+    // Un identifiant reçu n'est gardé que s'il a la forme attendue : pas d'injection dans les journaux.
+    const recu = request.headers.get("x-request-id") || "";
+    const requestId = /^[A-Za-z0-9-]{8,64}$/.test(recu) ? recu : crypto.randomUUID();
+    const res = await route(request, env, pathname, requestId);
+    const isHtml = (res.headers.get("content-type") || "").includes("text/html");
+    return secure(res, requestId, isHtml);
+  },
+};
+
+async function route(request: Request, env: Env, pathname: string, requestId: string): Promise<Response> {
+  {
 
     // Not stubbed, deliberately: `AuthMeResponse` requires a real user, and the client
     // already passes `allowUnauthorized` for it. 401 is the true answer — there is no
@@ -133,14 +196,14 @@ export default {
 
     if (pathname.startsWith("/api/v1/learn/")) {
       const origin = env.LEARN_API_ORIGIN;
-      return origin ? proxy(request, origin) : unavailable("La plateforme de formation");
+      return origin ? proxy(request, origin, env, requestId) : unavailable("La plateforme de formation");
     }
 
     // The gateway exposes both prefixes — /api/v1/approvals alongside /v1/rooms — so both
     // have to be forwarded. Matching only /api/ sent half the product to the SPA fallback.
     if (pathname.startsWith("/api/") || pathname.startsWith("/v1/")) {
       const origin = env.GATEWAY_ORIGIN;
-      return origin ? proxy(request, origin) : unavailable("La passerelle VIGIL");
+      return origin ? proxy(request, origin, env, requestId) : unavailable("La passerelle VIGIL");
     }
 
     // Un fichier de `/assets/` porte son empreinte dans son nom : il existe, ou il
@@ -164,5 +227,5 @@ export default {
     }
 
     return env.ASSETS.fetch(request);
-  },
-};
+  }
+}
