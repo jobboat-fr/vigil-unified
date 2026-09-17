@@ -221,6 +221,9 @@ def create_app(config: GatewayConfig | None = None) -> FastAPI:
     app.include_router(auto_trade.router)
     app.include_router(market.router)
     app.include_router(billing.router)
+    # Mon compte (RGPD) et support — avant l'ancien routeur, dont DELETE /api/v1/account est retiré.
+    from winny_gateway.routes import compte_support
+    app.include_router(compte_support.router)
     app.include_router(account.router)
     app.include_router(ws.router)
     app.include_router(events.router)

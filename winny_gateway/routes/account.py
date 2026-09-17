@@ -117,10 +117,11 @@ async def request_data_export(
 async def delete_account(
     user: dict[str, Any] = Depends(get_current_user),
 ) -> dict[str, Any]:
-    """GDPR Art. 17 — Right to erasure.
-
-    Permanently deletes all user data. This action is irreversible.
-    """
+    """Retiré : supprimait le compte d'authentification sans rien faire des données de formation
+    (le profil LEARN gardait nom et e-mail). Remplacé par POST /api/v1/compte/suppression, qui
+    applique la règle RGPD de la plateforme (migration LEARN 0046)."""
+    raise HTTPException(status_code=status.HTTP_410_GONE, detail={
+        "error": "route_remplacee", "detail": "Utilisez POST /api/v1/compte/suppression avec la confirmation SUPPRIMER."})
     uid = user["sub"]
     logger.warning(
         "Account deletion requested",

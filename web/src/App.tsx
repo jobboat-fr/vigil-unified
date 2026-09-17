@@ -352,7 +352,7 @@ const BUILTIN_NAV_REST: NavItem[] = [
   { path: "/env", labelKey: "keys", label: "Keys", icon: KeyRound, group: "system" , roles: ["super_admin"] },
   { path: "/billing", label: "Facturation", icon: CreditCard, group: "system" , roles: ["super_admin"] },
   { path: "/system", label: "Système", icon: Wrench, group: "system" , roles: ["super_admin"] },
-  { path: "/noyau", label: "Le Noyau", icon: BookOpen, group: "system", roles: ["super_admin", "formateur"] },
+  { path: "/noyau", label: "Le Noyau", icon: BookOpen, group: "workspace", roles: ["super_admin", "admin", "formateur", "entreprise", "auditeur", "apprenant"] },
 ];
 
 // Sidebar section ordering + labels. Grouping the ~30 destinations into five
