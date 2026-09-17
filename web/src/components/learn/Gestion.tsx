@@ -22,12 +22,12 @@ const bouton = "rounded-md border border-current/30 px-4 py-2 text-sm font-mediu
 function useEnvoi() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ ok: boolean; texte: string } | null>(null);
-  async function run(fn: () => Promise<unknown>, ok: string) {
+  async function run<R>(fn: () => Promise<R>, ok: string | ((r: R) => string)) {
     setBusy(true);
     setMessage(null);
     try {
-      await fn();
-      setMessage({ ok: true, texte: ok });
+      const r = await fn();
+      setMessage({ ok: true, texte: typeof ok === "function" ? ok(r) : ok });
       return true;
     } catch (e) {
       setMessage({ ok: false, texte: e instanceof LearnError ? e.message : "Échec de l'enregistrement." });
@@ -76,7 +76,12 @@ export function FormulaireCompte({ roles, onCree }: { roles: string[]; onCree: (
               phone: f.phone.trim() || null,
               password: f.password || null,
             }),
-          "Compte créé. La personne reçoit son accès par courriel.",
+          (r) =>
+            r.password_set
+              ? "Compte créé et actif."
+              : r.invitation?.envoi === "envoye"
+                ? `Invitation envoyée à ${f.email.trim()} (lien valable 72 h).`
+                : `Compte créé, mais l'invitation n'est pas partie (${r.invitation?.erreur ?? "raison inconnue"}). Voir « Identité & e-mails ».`,
         );
         if (ok) {
           setF({ full_name: "", email: "", role: roles[0] ?? "", username: "", phone: "", password: "" });
@@ -93,7 +98,7 @@ export function FormulaireCompte({ roles, onCree }: { roles: string[]; onCree: (
       </select>
       <input className={champ} placeholder="Identifiant court (facultatif)" value={f.username} onChange={(e) => setF({ ...f, username: e.target.value })} />
       <input className={champ} placeholder="Téléphone +33… (facultatif)" value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} />
-      <input className={champ} type="password" minLength={12} autoComplete="new-password" placeholder="Mot de passe (facultatif, 12 caractères min.)" value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} />
+      <input className={champ} type="password" minLength={12} autoComplete="new-password" placeholder="Mot de passe (facultatif : sans mot de passe, la personne reçoit une invitation)" value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} />
       <div className="flex items-center gap-3 sm:col-span-2">
         <button className={bouton} disabled={busy}>{busy ? "Création…" : "Créer le compte"}</button>
         <Retour message={message} />

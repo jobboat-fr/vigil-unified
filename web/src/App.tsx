@@ -65,6 +65,10 @@ import {
   Contact,
   Mail,
   Network,
+  ListChecks,
+  MailCheck,
+  FileSignature,
+  Inbox,
 } from "lucide-react";
 import { Button } from "@nous-research/ui/ui/components/button";
 import { SelectionSwitcher } from "@nous-research/ui/ui/components/selection-switcher";
@@ -132,6 +136,12 @@ import LearnDemandesPage from "@/pages/LearnDemandesPage";
 import { useLearnRole } from "@/lib/supabase";
 import { usePagePermissions, type PagePermissions } from "@/lib/vigil";
 import { AssistantIndisponible } from "@/components/AssistantIndisponible";
+import AccueilPage from "@/pages/AccueilPage";
+import SignerDocumentPage from "@/pages/SignerDocumentPage";
+import IdentiteEmailsPage from "@/pages/IdentiteEmailsPage";
+import DocumentsASignerPage from "@/pages/DocumentsASignerPage";
+import ActionsRequisesPage from "@/pages/ActionsRequisesPage";
+import { getAccueil } from "@/lib/accueil";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { useI18n } from "@/i18n";
@@ -238,6 +248,12 @@ const BUILTIN_ROUTES_CORE: Record<string, ComponentType> = {
   "/learn/coffre": LearnVaultPage,
   "/learn/comptes": LearnPeoplePage,
   "/learn/demandes": LearnDemandesPage,
+  // Accueil des comptes (hbs-backend 0041) : à faire, signature, administration.
+  "/accueil": AccueilPage,
+  "/accueil/documents/:id": SignerDocumentPage,
+  "/learn/identite": IdentiteEmailsPage,
+  "/learn/documents-a-signer": DocumentsASignerPage,
+  "/learn/actions-requises": ActionsRequisesPage,
 
   // WinnyWoo workspace
   "/audit": AuditPage,
@@ -308,6 +324,10 @@ const BUILTIN_NAV_REST: NavItem[] = [
   { path: "/learn/coffre", label: "Coffre", icon: Archive, group: "learn" },
   { path: "/learn/comptes", label: "Comptes", icon: Users, group: "learn" },
   { path: "/learn/demandes", label: "Demandes", icon: ClipboardList, group: "learn", roles: ["super_admin", "admin", "auditeur"] },
+  { path: "/accueil", label: "À faire", icon: Inbox, group: "learn" },
+  { path: "/learn/actions-requises", label: "Actions requises", icon: ListChecks, group: "learn", roles: ["super_admin", "admin"] },
+  { path: "/learn/documents-a-signer", label: "Documents à signer", icon: FileSignature, group: "learn", roles: ["super_admin", "admin"] },
+  { path: "/learn/identite", label: "Identité & e-mails", icon: MailCheck, group: "learn", roles: ["super_admin", "admin"] },
 
   { path: "/finance", label: "Finance", icon: Receipt, group: "company", roles: ["super_admin", "admin"], capability: ["finance", "read"] },
   { path: "/crm", label: "CRM", icon: Contact, group: "company", roles: ["super_admin", "admin"], capability: ["crm", "read"] },
@@ -565,6 +585,22 @@ export default function App() {
   // failing closed rather than flashing a link that then disappears.
   const { role: learnRole, resolu: roleResolu } = useLearnRole();
   const pagePerms = usePagePermissions(learnRole);
+  // Tant qu'un document requis n'est pas signé, l'API refuse tout sauf l'accueil (0041) :
+  // l'application ne montre donc que l'accueil, au lieu d'écrans qui échoueraient un à un.
+  const [aSigner, setASigner] = useState(false);
+  useEffect(() => {
+    if (!learnRole || learnRole === "super_admin") {
+      setASigner(false);
+      return;
+    }
+    let vivant = true;
+    getAccueil()
+      .then((e) => vivant && setASigner(e.statut === "a_signer"))
+      .catch(() => vivant && setASigner(false));
+    return () => {
+      vivant = false;
+    };
+  }, [learnRole, pathname]);
 
   const chatOverriddenByPlugin = useMemo(
     () => manifests.some((m) => m.tab.override === "/chat"),
@@ -608,11 +644,13 @@ export default function App() {
     const base = ASSISTANT_EN_MAINTENANCE
       ? [...BUILTIN_NAV_REST]
       : [CHAT_NAV_ITEM, ...BUILTIN_NAV_REST];
-    const visible = base.filter((n) => navAllowed(n, learnRole, pagePerms));
+    const visible = aSigner
+      ? base.filter((n) => n.path === "/accueil")
+      : base.filter((n) => navAllowed(n, learnRole, pagePerms));
     return showTokenAnalytics
       ? visible
       : visible.filter((n) => n.path !== "/analytics");
-  }, [showTokenAnalytics, learnRole, pagePerms]);
+  }, [showTokenAnalytics, learnRole, pagePerms, aSigner]);
 
   const sidebarNav = useMemo(
     () => partitionSidebarNav(builtinNav, manifests),
@@ -962,6 +1000,7 @@ export default function App() {
                 <ProfileKeyedRoutes>
                   {/* key re-triggers the enter animation per navigation (delight.css) */}
                   <div key={pathname} className="vigil-page-enter min-h-0 min-w-0 flex-1 flex flex-col">
+                  {aSigner && !pathname.startsWith("/accueil") ? <Navigate to="/accueil" replace /> : null}
                   <Routes>
                     {routes.map(({ key, path, element }) => (
                       <Route key={key} path={path} element={element} />

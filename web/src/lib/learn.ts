@@ -27,7 +27,7 @@ const LEARN_ORIGIN = (
   (import.meta.env.VITE_LEARN_API_URL as string | undefined)?.trim() || WW_BASE
 ).replace(/\/$/, "");
 
-const BASE = `${LEARN_ORIGIN}/api/v1/learn`;
+export const BASE = `${LEARN_ORIGIN}/api/v1/learn`;
 
 /** What the caller may do to a row. Rendered from, never guessed at. */
 export interface Can {
@@ -61,7 +61,7 @@ export class LearnError extends Error {
   }
 }
 
-async function call<T>(method: string, path: string, body?: unknown): Promise<T> {
+export async function call<T>(method: string, path: string, body?: unknown): Promise<T> {
   const token = await getAccessToken();
   if (!token) throw new GatewayError("Session expirée — reconnectez-vous.", "NO_SESSION");
 
@@ -539,7 +539,8 @@ export const createProfile = (body: {
   phone?: string | null;
   company_id?: string | null;
   password?: string | null;
-}) => call<Person & { password_set: boolean }>("POST", "/profiles", body);
+}) =>
+  call<Person & { password_set: boolean; invitation: { envoi: string; erreur: string | null } | null }>("POST", "/profiles", body);
 
 export const createProgram = (body: {
   title: string;

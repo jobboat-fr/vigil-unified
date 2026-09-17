@@ -39,7 +39,7 @@ export default function AuthPage({ initialMode = "signin" }: { initialMode?: Mod
       } else {
         const { error } = await resetPassword(email.trim());
         if (error) setErr(traduire(error.message));
-        else setMsg("Lien de réinitialisation envoyé — consultez votre messagerie.");
+        else setMsg("Si un compte existe pour cette adresse, un lien vient de vous être envoyé.");
       }
     } catch (e2) {
       setErr(traduire((e2 as Error).message));

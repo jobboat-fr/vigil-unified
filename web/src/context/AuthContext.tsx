@@ -13,6 +13,7 @@ import {
 } from "react";
 import type { Provider, Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
+import { motDePasseOublie } from "@/lib/accueil";
 import { clearHermesSession } from "@/lib/api";
 
 interface AuthValue {
@@ -119,7 +120,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           await clearHermesSession();
           await supabase!.auth.signOut();
         },
-        resetPassword: (email) => supabase!.auth.resetPasswordForEmail(email, { redirectTo: redirect() }).then((r) => ({ error: r.error })),
+        // Jamais l'e-mail de Supabase : la demande passe par LEARN, qui envoie le lien avec le
+        // gabarit de l'organisme (famille « sécurité »). Réponse identique qu'un compte existe ou non.
+        resetPassword: (email) =>
+          motDePasseOublie(email).then(
+            () => ({ error: null }),
+            () => ({ error: { message: "Le service est momentanément indisponible. Réessayez dans un instant." } }),
+          ),
         signInWithGoogle: () => supabase!.auth.signInWithOAuth({ provider: "google", options: { redirectTo: redirect() } }).then(() => undefined),
         signInWithApple: () => supabase!.auth.signInWithOAuth({ provider: "apple", options: { redirectTo: redirect() } }).then(() => undefined),
         signInWithGithub: () => supabase!.auth.signInWithOAuth({ provider: "github", options: { redirectTo: redirect() } }).then(() => undefined),
