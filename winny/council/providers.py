@@ -128,6 +128,9 @@ async def ask(
     if refused:
         return _stub(model, family, refused, unavailable=True)
     timeout = guard.max_timeout(timeout)
+    # L'amorce agentique précède toute consigne : environnement, outils de la fonction, méthode.
+    from winny.council.amorce import systeme_amorce
+    system = systeme_amorce(system, guard.current_feature())
     result = await _dispatch(family, model, system, user_prompt, temperature, max_tokens, timeout)
     if not result.get("stub"):
         guard.record_success(family)

@@ -116,7 +116,7 @@ dependencies = [
   # libs required for the codecs we use, so it's safe to ship in the base
   # install rather than gating it behind an extra + a mid-session lazy install
   # (which deadlocked the CLI under prompt_toolkit — see #40490).
-  "Pillow==12.2.0",
+  "Pillow==12.3.0",
 ]
 
 [project.optional-dependencies]
@@ -257,6 +257,14 @@ product = [
   "pypdf>=4.0",
   "ccxt>=4.3",
   "livekit-api>=0.8",  # dispatch the meeting agent into a LiveKit room
+  # Planchers de sécurité (pip-audit, 2026-09-17) : ces paquets arrivent en dépendances
+  # transitives ; le plancher empêche une résolution vers une version vulnérable.
+  "starlette>=1.3.1",
+  "cryptography>=50.0.0",
+  "aiohttp>=3.14.3",
+  "pynacl>=1.6.2",
+  "h2>=4.4.1",
+  "pypdf>=6.16.1",
 ]
 # Heavy forecast stack — only on hosts that actually run mcp-timesfm.
 forecast = ["torch>=2.3", "transformers>=4.40", "timesfm>=1.0"]
