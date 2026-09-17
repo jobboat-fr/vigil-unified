@@ -230,7 +230,7 @@ def create_app(config: GatewayConfig | None = None) -> FastAPI:
     app.include_router(vigil_council.router, dependencies=[Depends(ai_guard.feature("council"))])
     app.include_router(vigil_rooms.router, dependencies=[Depends(permissions.guard("room")), Depends(ai_guard.feature("meeting"))])
     # Studio — artifact drafting behind the brainstorm-first gate.
-    app.include_router(vigil_studio.router, dependencies=[Depends(ai_guard.feature("studio"))])
+    app.include_router(vigil_studio.router, dependencies=[Depends(permissions.guard("studio")), Depends(ai_guard.feature("studio"))])
     # Finance — the books/ledger backend the cfo-* skills route into.
     app.include_router(vigil_finance.router, dependencies=[Depends(permissions.guard("finance"))])
     # Finance connector — bank (Plaid) / accounting platform sync into the ledger.
@@ -247,6 +247,9 @@ def create_app(config: GatewayConfig | None = None) -> FastAPI:
     app.include_router(vigil_ops.router, dependencies=[Depends(permissions.guard("ops")), Depends(ai_guard.feature("ops"))])
     # Droits des pages métier, lus dans learn_capabilities — le menu de l'app s'en sert.
     app.include_router(permissions.router)
+    # Délégations d'agent et contexte d'identité (qui, quel rôle, quels droits).
+    from winny_gateway.routes import agents_identite
+    app.include_router(agents_identite.router)
     # Coupe-circuit IA : état lu par l'app pour afficher « assistant indisponible ».
     app.include_router(ai_guard.router)
 

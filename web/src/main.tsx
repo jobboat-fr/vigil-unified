@@ -11,6 +11,7 @@ import { AuthProvider } from "./context/AuthContext";
 import { AuthGate } from "./components/AuthGate";
 import { initNativeShell } from "./lib/native";
 import GuestMeetingPage from "./pages/GuestMeetingPage";
+import PartageArtefactPage from "./pages/PartageArtefactPage";
 import ActiverComptePage from "./pages/ActiverComptePage";
 import DesinscriptionPage from "./pages/DesinscriptionPage";
 import NouveauMotDePassePage from "./pages/NouveauMotDePassePage";
@@ -42,6 +43,8 @@ createRoot(document.getElementById("root")!).render(
               {/* Invitation à une réunion : la seule page ouverte sans compte. Le jeton de
                   partage est la preuve ; il expire et meurt avec la réunion (passerelle). */}
               <Route path="/join/:shareToken" element={<GuestMeetingPage />} />
+              {/* Un document du studio partagé par lien : lecture seule, échéance, révocable. */}
+              <Route path="/partage/:token" element={<PartageArtefactPage />} />
               {/* Pages à jeton, ouvertes depuis un e-mail : activation, désinscription, mot de passe. */}
               <Route path="/activer" element={<ActiverComptePage />} />
               <Route path="/desinscription" element={<DesinscriptionPage />} />

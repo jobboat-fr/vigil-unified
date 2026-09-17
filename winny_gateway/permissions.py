@@ -68,6 +68,12 @@ OVERRIDES: dict[tuple[str, str], str] = {
     ("DELETE", "/v1/rooms/{room_id}/breakouts"): "host",
     ("POST", "/v1/rooms/{room_id}/breakouts/{gid}/join"): "join",
     ("POST", "/v1/rooms/guest/{share_token}/join"): PUBLIC,
+    # Studio : le lien public porte sa propre preuve ; partager et affiner modifient l'artefact.
+    ("GET", "/v1/artifacts/partage/{token}"): PUBLIC,
+    ("POST", "/v1/artifacts/{artifact_id}/shares"): "update",
+    ("DELETE", "/v1/artifacts/{artifact_id}/shares/{share_id}"): "update",
+    ("POST", "/v1/artifacts/{artifact_id}/link"): "update",
+    ("POST", "/v1/artifacts/{artifact_id}/refine"): "update",
     # Mail : synchroniser et trier modifient, ils ne créent rien de nouveau pour l'utilisateur.
     ("POST", "/v1/mail/sync"): "update",
     ("POST", "/v1/mail/messages/{message_id}/triage"): "update",
@@ -157,6 +163,13 @@ async def _role_of(user_id: str) -> str | None:
 
 async def actor_for(request: Request, user: dict[str, Any]) -> dict[str, Any]:
     """{user_id, role, principal} pour cette requête. Jamais tiré du corps de la requête."""
+    if user.get("agent_credential"):
+        from winny_gateway.agent_identite import role_plafonne
+
+        cred = user["agent_credential"]
+        role = await _role_of(str(user.get("sub")))
+        return {"user_id": user.get("sub"), "role": role_plafonne(role, cred.get("role_max")) if role else None,
+                "principal": "agent", "agent": cred.get("agent"), "lecture_seule": cred.get("lecture_seule")}
     if user.get("service_token"):
         delegant = (
             request.headers.get("X-Learn-On-Behalf-Of")
@@ -173,6 +186,8 @@ async def actor_for(request: Request, user: dict[str, Any]) -> dict[str, Any]:
 def can(actor: dict[str, Any], resource: str, action: str) -> bool:
     role = actor.get("role")
     if role not in ROLE_LEVEL:
+        return False
+    if actor.get("lecture_seule") and action != "read":
         return False
     if role in READ_ONLY_ROLES and action != "read":
         return False

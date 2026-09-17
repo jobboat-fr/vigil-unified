@@ -71,7 +71,14 @@ function seedFromCanvas(canvas: MeetingCanvas | null): CanvasData {
   return { nodes, edges };
 }
 
-export function ArtifactCanvas({ artifact }: { artifact: Artifact }) {
+export function ArtifactCanvas({
+  artifact,
+  lectureSeule = false,
+}: {
+  artifact: Pick<Artifact, "id" | "title" | "canvas" | "tldraw">;
+  /** Partagé en lecture ou ouvert par lien : on regarde, rien n'est enregistré ni demandé à l'assistant. */
+  lectureSeule?: boolean;
+}) {
   // Prefer the persisted, hand-edited React Flow graph; else seed from the
   // council's decision flow. Recomputed only when the artifact identity changes
   // (CanvasWorkspace is keyed on artifact.id so its internal state resets too).
@@ -126,9 +133,9 @@ export function ArtifactCanvas({ artifact }: { artifact: Artifact }) {
         key={artifact.id}
         initialNodes={initial.nodes}
         initialEdges={initial.edges}
-        onCanvasChange={save}
-        onBrainstorm={onBrainstorm}
-        onDiagram={onDiagram}
+        onCanvasChange={lectureSeule ? undefined : save}
+        onBrainstorm={lectureSeule ? undefined : onBrainstorm}
+        onDiagram={lectureSeule ? undefined : onDiagram}
       />
     </div>
   );

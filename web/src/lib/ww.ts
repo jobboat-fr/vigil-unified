@@ -51,7 +51,7 @@ export type GatewayPayload = { ok?: boolean; data?: unknown; error?: string; det
 
 const RESSOURCES: Record<string, string> = {
   room: "la salle de réunion", mail: "le mail", crm: "le CRM", finance: "la finance",
-  ops: "l'équipe agentique", legal: "le juridique",
+  ops: "l'équipe agentique", legal: "le juridique", studio: "le studio",
 };
 const ACTIONS: Record<string, string> = {
   read: "consulter", create: "créer dans", update: "modifier", delete: "supprimer dans",
@@ -77,6 +77,9 @@ export function gatewayErrorMessage(status: number, payload: GatewayPayload): st
   if (code === "permissions_unavailable") return "Les droits d'accès sont momentanément illisibles. Réessayez dans un instant.";
   if (code === "internal_scope_error") return "Requête refusée par sécurité : elle ne précisait pas à qui appartiennent les données.";
   if (typeof d === "string" && d) return d;
+  // La passerelle joint souvent une phrase prête à lire à son code d'erreur.
+  if (obj && typeof obj.detail === "string" && obj.detail) return obj.detail;
+  if (status === 429) return "Trop de requêtes en peu de temps. Réessayez dans une minute.";
   if (code) return code;
   return `Erreur ${status}`;
 }

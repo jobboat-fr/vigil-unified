@@ -133,6 +133,64 @@ def _get_jwks_client(jwks_url: str) -> PyJWKClient:
     return _jwks_client
 
 
+def _lire_identifiant_agent(jeton: str) -> dict[str, Any] | None:
+    from winny_gateway import agent_identite as ai
+    from winny_gateway.db import get_admin_client
+
+    rows = get_admin_client().rpc("learn_agent_credential", {"p_hash": ai.empreinte(jeton)}).execute().data
+    return rows[0] if rows else None
+
+
+async def _utilisateur_agent(request: Request, jeton: str) -> dict[str, Any]:
+    """Un agent : son identifiant, puis la personne pour qui il agit — décidée ici, jamais par lui.
+    Même règle que LEARN (`agent_identite`)."""
+    import asyncio
+
+    from winny_gateway import agent_identite as ai
+
+    deja = getattr(request.state, "vtlvs_agent_user", None)
+    if deja is not None:
+        # Résolu une fois par requête : le garde des droits et la route lisent la même identité.
+        return deja
+    route = f"{request.method} {request.url.path}"
+    ip = request.headers.get("cf-connecting-ip") or (request.client.host if request.client else "")
+    try:
+        ident = await asyncio.to_thread(_lire_identifiant_agent, jeton)
+    except Exception as exc:  # noqa: BLE001
+        logger.error("Lecture des identifiants d'agent impossible : %s", exc,
+                     extra={"evenement": "securite.identifiants_agents_illisibles", "route": route})
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                            detail={"error": "identite_agent_indisponible"}) from exc
+    if ident is None:
+        logger.warning("Identifiant d'agent refusé : inconnu ou révoqué (%s, %s).", route, ip,
+                       extra={"evenement": "securite.jeton_agent_invalide", "route": route, "ip": ip})
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail={
+            "error": "identifiant_agent_invalide", "detail": "Identifiant d'agent inconnu ou révoqué."})
+    entetes = [request.headers.get("X-Learn-On-Behalf-Of") or "", request.headers.get("X-WinnyWoo-User-Id") or ""]
+    try:
+        if entetes[0] and entetes[1] and entetes[0].strip() != entetes[1].strip():
+            raise ai.RefusIdentite(400, "delegation_ambigue", "La requête désigne deux personnes différentes.")
+        signee = request.headers.get("X-Vtlvs-Delegation") or ""
+        delegation = ai.lire_delegation(os.getenv("VTLVS_DELEGATION_SECRET", ""), signee) if signee else None
+        delegant = ai.delegant_autorise(ident, entete_delegant=(entetes[0] or entetes[1]), delegation=delegation)
+        if ident.get("lecture_seule") and request.method not in ai.METHODES_LECTURE:
+            raise ai.RefusIdentite(403, "agent_lecture_seule", "Cet agent est en lecture seule : il ne peut rien modifier.")
+    except ai.RefusIdentite as refus:
+        logger.warning("Agent %s refusé (%s) sur %s : %s", ident.get("agent"), refus.code, route, refus.message,
+                       extra={"evenement": f"securite.{refus.code}", "agent": ident.get("agent"), "route": route,
+                              "ip": ip, "delegant_demande": entetes[0] or entetes[1]})
+        raise HTTPException(status_code=refus.statut, detail={"error": refus.code, "detail": refus.message}) from refus
+    logger.info("Agent %s agit pour %s : %s%s.", ident.get("agent"), delegant, route,
+                " (délégation signée)" if delegation else "",
+                extra={"evenement": "agent.requete", "agent": ident.get("agent"), "acteur": delegant,
+                       "route": route, "delegation_signee": bool(delegation)})
+    resolu = {"sub": delegant, "role": "authenticated", "agent_credential": {
+        "id": str(ident.get("id")), "agent": ident.get("agent"), "lecture_seule": bool(ident.get("lecture_seule")),
+        "role_max": ident.get("role_max"), "delegation_signee": bool(delegation)}}
+    request.state.vtlvs_agent_user = resolu
+    return resolu
+
+
 async def get_current_user(
     request: Request,
     credentials: HTTPAuthorizationCredentials | None = Depends(_bearer),
@@ -145,6 +203,8 @@ async def get_current_user(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing authorization header")
 
     token = credentials.credentials
+    if token.startswith("vtlvs_ag_"):
+        return await _utilisateur_agent(request, token)
     config = request.app.state.config
 
     # ── 0. Service-token short-circuit ──────────────────────────────────
@@ -254,8 +314,15 @@ def effective_user(request: Request, user: dict[str, Any]) -> dict[str, Any]:
     always themselves.
     """
     if not isinstance(user, dict) or not user.get("service_token"):
+        # Un humain reste lui-même ; un agent a déjà été résolu à l'authentification.
         return user
-    uid = request.headers.get("X-WinnyWoo-User-Id")
+    uid = (request.headers.get("X-WinnyWoo-User-Id") or "").strip()
+    alt = (request.headers.get("X-Learn-On-Behalf-Of") or "").strip()
+    if uid and alt and uid != alt:
+        # Deux noms pour une requête : le garde des droits et la route liraient chacun le sien.
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail={
+            "error": "delegation_ambigue", "detail": "La requête désigne deux personnes différentes."})
+    uid = uid or alt
     if not uid:
         return user
     return {

@@ -244,6 +244,45 @@ export interface Artifact {
   revisions: number;
   created_at: string;
   updated_at: string;
+  /** owner : à moi · edit : partagé en modification · view : partagé en lecture. */
+  access: "owner" | "edit" | "view";
+  /** Pour un document partagé avec moi : qui l'a créé. */
+  owner_name?: string;
+}
+
+export interface ArtifactShare {
+  id: string;
+  access: "view" | "edit";
+  created_at: string;
+  expires_at: string | null;
+  last_opened_at: string | null;
+  person: { id: string; email: string; full_name: string | null } | null;
+}
+
+export interface SharedArtifactPublic {
+  title: string;
+  kind: string;
+  content: string;
+  canvas: MeetingCanvas | null;
+  tldraw: unknown | null;
+  updated_at: string;
+  expires_at: string | null;
+}
+
+/** Un artefact ouvert par son lien public (sans compte, lecture seule). */
+export async function openSharedArtifact(token: string): Promise<SharedArtifactPublic> {
+  let res: Response;
+  try {
+    res = await fetch(`${WW_BASE}/v1/artifacts/partage/${encodeURIComponent(token)}`, {
+      headers: { accept: "application/json" },
+    });
+  } catch {
+    throw new GatewayError("Le service est injoignable. Vérifiez votre connexion et réessayez.", "UNREACHABLE");
+  }
+  const payload = (await res.json().catch(() => ({}))) as GatewayPayload & { data?: SharedArtifactPublic };
+  if (!res.ok || payload.ok === false)
+    throw new GatewayError(gatewayErrorMessage(res.status, payload), "HTTP_ERROR", res.status, payload.detail);
+  return payload.data as SharedArtifactPublic;
 }
 
 export interface FinanceAccount {
@@ -578,7 +617,22 @@ export const vigil = {
       ),
     create: (input: { title: string; kind: string; brief: string; approach: string; grounding?: string }) =>
       vigilCall<Artifact>("POST", "/v1/artifacts", input),
-    list: () => vigilCall<{ artifacts: Artifact[] }>("GET", "/v1/artifacts"),
+    list: () => vigilCall<{ artifacts: Artifact[]; shared_with_me: Artifact[] }>("GET", "/v1/artifacts"),
+    shares: (id: string) =>
+      vigilCall<{ people: ArtifactShare[]; link: ArtifactShare | null }>("GET", `/v1/artifacts/${id}/shares`),
+    share: (id: string, email: string, access: "view" | "edit") =>
+      vigilCall<ArtifactShare>("POST", `/v1/artifacts/${id}/shares`, { email, access }),
+    revokeShare: (id: string, shareId: string) =>
+      vigilCall<{ revoked: string }>("DELETE", `/v1/artifacts/${id}/shares/${shareId}`),
+    listOrganisme: () => vigilCall<{ artifacts: Artifact[] }>("GET", "/v1/artifacts?portee=organisme"),
+    agent: (id: string, input: { instruction?: string; lens?: string }) =>
+      vigilCall<{ artifact: Artifact; mode: "tableau" | "document"; resume: string; ajouts: number; stub: boolean }>(
+        "POST",
+        `/v1/artifacts/${id}/agent`,
+        input,
+      ),
+    createLink: (id: string, days: number) =>
+      vigilCall<ArtifactShare & { token: string; path: string }>("POST", `/v1/artifacts/${id}/link`, { days }),
     get: (id: string) => vigilCall<Artifact>("GET", `/v1/artifacts/${id}`),
     remove: (id: string) => vigilCall("DELETE", `/v1/artifacts/${id}`),
     refine: (id: string, instruction: string) =>

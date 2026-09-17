@@ -12,6 +12,7 @@ from typing import Any
 from winny.council.providers import ask
 from winny.council.registry import worker_registry
 from winny.council.summarizer import _parse_json
+from winny.council.confiance import REGLE_DONNEES, donnees
 
 # lens -> (instruction, default kind/colour for the blocks it produces)
 _LENSES: dict[str, tuple[str, str]] = {
@@ -44,24 +45,26 @@ _SYSTEM = (
 
 
 async def brainstorm_board(
-    *, prompt: str = "", board_text: str = "", lens: str = "ideas", topic: str = ""
+    *, prompt: str = "", board_text: str = "", lens: str = "ideas", topic: str = "", contexte: str = ""
 ) -> dict[str, Any]:
     """Return {blocks:[{text,kind,color,lens}]} to place on the canvas."""
     instruction, default_kind = _LENSES.get(lens, _LENSES["ideas"])
     worker = worker_registry()["primary"]
     user = []
     if topic:
-        user.append(f"Topic: {topic}")
-    user.append("Current board:\n" + (board_text.strip()[:5000] or "(empty board)"))
+        user.append(donnees("titre du tableau", topic, surface="studio.tableau", longueur_max=200))
+    user.append("Current board:\n" + (donnees("contenu du tableau", board_text, surface="studio.tableau",
+                                               longueur_max=5000) if board_text.strip() else "(empty board)"))
     if prompt.strip():
-        user.append(f"User's prompt: {prompt.strip()}")
+        user.append("User's request:\n" + donnees("demande", prompt, surface="studio.tableau", longueur_max=2000))
     user.append("Produce the blocks. Respond ONLY with the JSON object.")
 
     try:
         result = await ask(
             worker,
             "\n\n".join(user),
-            system=_SYSTEM.format(instruction=instruction),
+            system=(contexte + "\n\n" if contexte else REGLE_DONNEES + "\n\n") + _SYSTEM.format(instruction=instruction)
+            + " Write the blocks in French.",
             temperature=0.7,
             max_tokens=700,
         )
