@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { SqueletteEcran } from "@/components/EmptyState";
 import { LiensLearn } from "@/components/LiensLearn";
 import { FormulaireCompte } from "@/components/learn/Gestion";
 import {
@@ -66,7 +67,7 @@ export default function LearnPeoplePage() {
     void load();
   }, [load]);
 
-  if (people === null) return <p className="p-6 text-sm opacity-60">Chargement…</p>;
+  if (people === null) return <SqueletteEcran lignes={8} />;
 
   // Un annuaire d'une seule personne, qui ne peut créer personne, n'est pas un annuaire :
   // c'est une fiche. L'apprenant y lisait « Comptes et accès · 1 compte · vous ne pouvez

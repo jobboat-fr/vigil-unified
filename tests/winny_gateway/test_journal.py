@@ -61,3 +61,66 @@ def test_sans_configuration_rien_n_est_installe(monkeypatch):
     for v in ("LOKI_URL", "LOKI_USER", "LOKI_PASSWORD"):
         monkeypatch.delenv(v, raising=False)
     assert journal_loki.installer(logging.getLogger("x"), "passerelle", JsonFormatter()) is False
+
+
+# ── La référence de requête (S6) ────────────────────────────────────────────
+#
+# Ce que l'écran d'erreur affiche doit être exactement ce qu'on cherche dans Loki. Deux
+# règles : la référence posée par le navigateur est reprise telle quelle, et elle repart
+# dans la réponse — sinon l'application affiche la sienne et le support cherche une
+# chaîne qui n'existe nulle part.
+
+import asyncio  # noqa: E402
+
+from winny_gateway.logging import log_request  # noqa: E402
+
+
+class _FausseRequete:
+    def __init__(self, entetes: dict[str, str], chemin: str = "/v1/rooms"):
+        self.headers = entetes
+        self.method = "GET"
+        self.url = type("U", (), {"path": chemin})()
+        self.client = type("C", (), {"host": "1.2.3.4"})()
+
+
+class _FausseReponse:
+    def __init__(self, statut: int = 200):
+        self.status_code = statut
+        self.headers: dict[str, str] = {}
+
+
+def _jouer(entetes: dict[str, str], statut: int = 200) -> _FausseReponse:
+    reponse = _FausseReponse(statut)
+
+    async def suite(_):
+        return reponse
+
+    return asyncio.run(log_request(_FausseRequete(entetes), suite))
+
+
+def test_reference_du_navigateur_reprise_et_renvoyee(caplog):
+    caplog.set_level(logging.INFO, logger="gateway.http")
+    reference = "a3f19c0d4b5e6f7a8b9c0d1e2f3a4b5c"
+    reponse = _jouer({"x-request-id": reference})
+    assert reponse.headers["x-request-id"] == reference
+    assert any(getattr(r, "request_id", None) == reference for r in caplog.records)
+
+
+def test_reference_absente_ou_douteuse_remplacee():
+    # Trop courte, et une tentative d'injection d'en-tête : on en fabrique une propre.
+    for valeur in ("", "x", "abc\r\nSet-Cookie: a=b"):
+        reponse = _jouer({"x-request-id": valeur} if valeur else {})
+        pose = reponse.headers["x-request-id"]
+        assert len(pose) == 32 and pose.isalnum()
+
+
+def test_health_ne_journalise_pas_et_ne_pose_rien():
+    reponse = _jouer({}, statut=200)
+    assert "x-request-id" in reponse.headers
+    sante = _FausseReponse()
+
+    async def suite(_):
+        return sante
+
+    assert asyncio.run(log_request(_FausseRequete({}, "/health"), suite)) is sante
+    assert "x-request-id" not in sante.headers

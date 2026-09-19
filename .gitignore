@@ -160,3 +160,7 @@ deploy/cloudflared/cert.pem
 # (URL du projet et clé anon, de toute façon intégrées au bundle) — mais un fichier
 # .env commité invite tôt ou tard à y mettre autre chose.
 web/.env.production
+
+# Sorties de `wrangler deploy --dry-run` (script avant-deploiement.sh)
+.wrangler/
+deploy/*/.wrangler/

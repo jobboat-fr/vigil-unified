@@ -89,6 +89,9 @@ import AssistantChatPage from "@/pages/AssistantChatPage";
 import AbonnementPage from "@/pages/AbonnementPage";
 import ProduitsPage from "@/pages/ProduitsPage";
 import AgentDeLaPage from "@/components/AgentDeLaPage";
+import { FrontiereErreur } from "@/components/ErreurEcran";
+import { BandeauReseau } from "@/components/BandeauReseau";
+import PageIntrouvable from "@/pages/PageIntrouvable";
 import { PageHeaderProvider } from "@/contexts/PageHeaderProvider";
 import { ProfileProvider } from "@/contexts/ProfileProvider";
 import { useProfileScope } from "@/contexts/useProfileScope";
@@ -148,6 +151,7 @@ import IdentiteEmailsPage from "@/pages/IdentiteEmailsPage";
 import DocumentsASignerPage from "@/pages/DocumentsASignerPage";
 import ActionsRequisesPage from "@/pages/ActionsRequisesPage";
 import { getAccueil } from "@/lib/accueil";
+import { poserOrganisme } from "@/lib/organisme";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { useI18n } from "@/i18n";
@@ -174,7 +178,9 @@ function UnknownRouteFallback({ pluginsLoading }: { pluginsLoading: boolean }) {
     // Render nothing during the plugin-load window — a spinner here would just flash.
     return null;
   }
-  return <Navigate to="/learn" replace />;
+  // Une adresse inconnue se dit. La redirection silencieuse vers /learn faisait croire à
+  // un mauvais clic alors que le lien était simplement périmé.
+  return <PageIntrouvable />;
 }
 
 // L'assistant garde le nom VIGIL : c'est l'agent, pas l'application. VTLVS est le
@@ -607,7 +613,12 @@ export default function App() {
     }
     let vivant = true;
     getAccueil()
-      .then((e) => vivant && setASigner(e.statut === "a_signer"))
+      .then((e) => {
+        if (!vivant) return;
+        setASigner(e.statut === "a_signer");
+        // Le même appel porte l'identité de l'organisme : titre d'onglet et favicon.
+        poserOrganisme(e.organisme);
+      })
       .catch(() => vivant && setASigner(false));
     return () => {
       vivant = false;
@@ -1002,6 +1013,7 @@ export default function App() {
                     "min-h-0 flex flex-1 flex-col",
                 )}
               >
+                <BandeauReseau />
                 {/* Sur une page métier, dire quel agent la couvre — et rien ailleurs. */}
                 <AgentDeLaPage />
                 <AssistantIndisponible />
@@ -1010,6 +1022,9 @@ export default function App() {
                   {/* key re-triggers the enter animation per navigation (delight.css) */}
                   <div key={pathname} className="vigil-page-enter min-h-0 min-w-0 flex-1 flex flex-col">
                   {aSigner && !pathname.startsWith("/accueil") ? <Navigate to="/accueil" replace /> : null}
+                  {/* Un écran qui casse ne doit pas emporter le menu : la frontière l'arrête
+                      ici, et `cle` la remet à zéro dès qu'on change de page. */}
+                  <FrontiereErreur cle={pathname}>
                   <Routes>
                     {routes.map(({ key, path, element }) => (
                       <Route key={key} path={path} element={element} />
@@ -1021,6 +1036,7 @@ export default function App() {
                       }
                     />
                   </Routes>
+                  </FrontiereErreur>
                   </div>
                 </ProfileKeyedRoutes>
 

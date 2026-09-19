@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { SqueletteEcran } from "@/components/EmptyState";
 import { LiensLearn } from "@/components/LiensLearn";
 import { FormulaireProgramme, FormulaireSession } from "@/components/learn/Gestion";
 import {
@@ -95,7 +96,7 @@ export default function LearnFormationsPage() {
   }
 
   if (programs === null) {
-    return <p className="p-6 text-sm opacity-60">Chargement…</p>;
+    return <SqueletteEcran lignes={6} />;
   }
 
   return (

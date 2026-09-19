@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { SqueletteEcran } from "@/components/EmptyState";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/components/card";
 import { getCalendar, getSessions, getReviewQueue, LearnError, type Slot, type Session } from "@/lib/learn";
@@ -45,7 +46,7 @@ export default function LearnDashboardFormateur() {
     void charger();
   }, [charger]);
 
-  if (creneaux === null) return <p className="p-6 text-sm opacity-60">Chargement…</p>;
+  if (creneaux === null) return <SqueletteEcran lignes={5} />;
 
   const aujourdhui = isoDay(new Date());
   const duJour = creneaux.filter((x) => x.on_date === aujourdhui);

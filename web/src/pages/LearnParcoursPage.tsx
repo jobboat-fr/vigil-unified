@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { SqueletteEcran } from "@/components/EmptyState";
 import { LiensLearn } from "@/components/LiensLearn";
 import { GestionSession } from "@/components/learn/Gestion";
 import { useLearnRole } from "@/lib/supabase";
@@ -147,7 +148,7 @@ export default function LearnParcoursPage() {
   }
 
   if (sessions === null) {
-    return <p className="p-6 text-sm opacity-60">Chargement…</p>;
+    return <SqueletteEcran lignes={6} />;
   }
 
   return (

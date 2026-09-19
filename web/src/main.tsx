@@ -9,6 +9,7 @@ import { ThemeProvider } from "./themes";
 import { HERMES_BASE_PATH } from "./lib/api";
 import { AuthProvider } from "./context/AuthContext";
 import { AuthGate } from "./components/AuthGate";
+import { FrontiereErreur } from "./components/ErreurEcran";
 import { initNativeShell } from "./lib/native";
 import GuestMeetingPage from "./pages/GuestMeetingPage";
 import PartageArtefactPage from "./pages/PartageArtefactPage";
@@ -39,6 +40,7 @@ createRoot(document.getElementById("root")!).render(
       <ThemeProvider>
         <AuthProvider>
           <SystemActionsProvider>
+            <FrontiereErreur titre="L'application n'a pas pu démarrer cet écran">
             <Routes>
               {/* Invitation à une réunion : la seule page ouverte sans compte. Le jeton de
                   partage est la preuve ; il expire et meurt avec la réunion (passerelle). */}
@@ -58,6 +60,7 @@ createRoot(document.getElementById("root")!).render(
                 }
               />
             </Routes>
+            </FrontiereErreur>
           </SystemActionsProvider>
         </AuthProvider>
       </ThemeProvider>

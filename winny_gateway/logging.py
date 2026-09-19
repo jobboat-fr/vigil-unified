@@ -21,6 +21,7 @@ import logging
 import os
 import sys
 import time
+import uuid
 from datetime import UTC, datetime
 from typing import Any
 
@@ -170,7 +171,13 @@ async def log_request(request: Any, call_next: Any) -> Any:
     if request.url.path == "/health":
         return await call_next(request)
     start = time.perf_counter()
+    # La référence voyage du navigateur au journal : si le client en a posé une, on la
+    # garde — sinon on en fabrique une. Elle repart dans la réponse pour que l'écran
+    # d'erreur puisse l'afficher, et c'est la même chaîne qu'on cherche dans Loki.
+    recue = request.headers.get("x-request-id") or ""
+    requete_id = recue if 8 <= len(recue) <= 64 and recue.replace("-", "").isalnum() else uuid.uuid4().hex
     response = await call_next(request)
+    response.headers["x-request-id"] = requete_id
     duration_ms = round((time.perf_counter() - start) * 1000, 1)
     statut = response.status_code
     niveau = logging.ERROR if statut >= 500 else logging.WARNING if statut in (401, 403, 429) else logging.INFO
@@ -184,7 +191,7 @@ async def log_request(request: Any, call_next: Any) -> Any:
             "path": request.url.path,
             "status_code": statut,
             "duration_ms": duration_ms,
-            "request_id": request.headers.get("x-request-id"),
+            "request_id": requete_id,
             "ip": request.headers.get("cf-connecting-ip") or (request.client.host if request.client else None),
         },
     )

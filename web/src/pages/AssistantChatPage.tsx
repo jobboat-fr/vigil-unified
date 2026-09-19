@@ -65,7 +65,6 @@ export default function AssistantChatPage() {
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    document.title = "Assistant — VTLVS";
     accesAssistant()
       .then(setAcces)
       .catch((e: Error) => setAcces({ ouvert: false, raison: "indisponible", message: e.message }));

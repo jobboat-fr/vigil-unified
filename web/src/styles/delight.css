@@ -45,15 +45,19 @@
   @keyframes vigil-shimmer { from { background-position: 130% 0; } to { background-position: -90% 0; } }
 }
 
-/* Keyboard focus is a first-class citizen: emerald ring, never suppressed. */
+/* Le focus clavier ne se supprime jamais — et il porte la couleur de VTLVS.
+   L'anneau émeraude venait de Hermes : sur la palette claire (nuage/marine) il lisait
+   comme une alerte. Le bleu de marque avec un halo doux se voit sur le blanc des cartes
+   comme sur les fonds sombres du chat, sans crier. */
 :focus-visible {
-  outline: 2px solid #34d399 !important;
+  outline: 2px solid #1d3fae !important;
   outline-offset: 2px;
   border-radius: 4px;
+  box-shadow: 0 0 0 4px rgba(29, 63, 174, 0.18);
 }
 
-/* Selection in brand gold — tiny, but everyone notices. */
-::selection { background: #ffbd38; color: #041c1c; }
+/* La sélection de texte, dans la même famille. L'ambre d'avant jurait avec le marine. */
+::selection { background: rgba(29, 63, 174, 0.22); color: inherit; }
 
 /* Smooth in-page anchor scrolling (docs TOC, landing sections). */
 @media (prefers-reduced-motion: no-preference) {

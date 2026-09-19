@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, lazy, Suspense } from "react";
+import { usePageHeader } from "@/contexts/usePageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/components/card";
 import { Button } from "@nous-research/ui/ui/components/button";
 import { useSearchParams } from "react-router-dom";
@@ -82,9 +83,10 @@ export default function StudioPage() {
     if (id) vigil.studio.get(id).then(setActive).catch((e) => setError((e as Error).message));
   }, [searchParams]);
 
+  const { setTitle } = usePageHeader();
   useEffect(() => {
-    document.title = active ? `${active.title} — Studio` : "Studio";
-  }, [active]);
+    setTitle(active ? `${active.title} — Studio` : null);
+  }, [active, setTitle]);
 
   const runBrainstorm = async () => {
     if (!brief.trim()) return;

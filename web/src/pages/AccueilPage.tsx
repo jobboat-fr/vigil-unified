@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
+import { SqueletteEcran } from "@/components/EmptyState";
+import { EcranErreur } from "@/components/ErreurEcran";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/components/card";
 import { declarerFait, getAccueil, messageAccueil, type EtatAccueil } from "@/lib/accueil";
@@ -21,8 +23,11 @@ export default function AccueilPage() {
   }, []);
   useEffect(() => charger(), [charger]);
 
-  if (erreur) return <p className="p-6 text-sm text-red-500">{erreur}</p>;
-  if (!etat) return <p className="p-6 text-sm opacity-70">Chargement…</p>;
+  // L'accueil est le premier écran après la connexion : s'il échoue, une ligne rouge ne
+  // suffit pas — il faut la raison, la référence, et un bouton pour réessayer.
+  if (erreur)
+    return <EcranErreur titre="Votre accueil n'a pas pu se charger" cause={erreur} onReessayer={() => { setErreur(""); charger(); }} />;
+  if (!etat) return <SqueletteEcran lignes={4} />;
 
   const prenom = etat.profil?.full_name?.split(" ")[0] ?? "";
   const autres = etat.actions.filter((a) => a.kind !== "signer_document");

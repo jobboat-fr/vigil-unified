@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { SqueletteEcran } from "@/components/EmptyState";
 import { LiensLearn } from "@/components/LiensLearn";
 import {
   Card,
@@ -75,7 +76,7 @@ export default function LearnEmargementPage() {
     }
   }
 
-  if (slots === null) return <p className="p-6 text-sm opacity-60">Chargement…</p>;
+  if (slots === null) return <SqueletteEcran lignes={5} />;
 
   return (
     <div className="space-y-6 p-6">

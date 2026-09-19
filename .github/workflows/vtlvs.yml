@@ -71,14 +71,21 @@ jobs:
         with:
           node-version: 20
       - name: Vulnérabilités Python (bloquant)
+        # Les trois exceptions sont l'outillage du poste et du runner (pip, setuptools),
+        # jamais l'image livrée : voir les commentaires de pyproject.toml.
         run: |
           pip install pip-audit
           pip install -e ".[product]"
-          pip-audit --ignore-vuln GHSA-4xh5-x5gv-qwph --skip-editable
-      - name: Vulnérabilités npm (bloquant à partir de « high »)
+          pip-audit --skip-editable             --ignore-vuln GHSA-4xh5-x5gv-qwph             --ignore-vuln PYSEC-2026-3721             --ignore-vuln PYSEC-2026-3447
+      - name: Vulnérabilités npm de l'application (bloquant à partir de « high »)
         run: |
           npm ci --ignore-scripts
-          npm audit --omit=dev --audit-level=high
+          npm audit --workspace web --omit=dev --audit-level=high
+      - name: Arbre racine hérité de Hermes (pour information)
+        # `agent-browser` et compagnie ne partent ni sur Cloudflare ni sur Railway :
+        # on regarde, on ne bloque pas.
+        continue-on-error: true
+        run: npm audit --workspaces=false --omit=dev
       - name: Secrets dans l'historique
         uses: gitleaks/gitleaks-action@dcedce43c6f43de0b836d1fe38946645c9c638dc # v2
         env:

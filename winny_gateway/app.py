@@ -173,6 +173,10 @@ def create_app(config: GatewayConfig | None = None) -> FastAPI:
         allow_credentials=not cors_wildcard,
         allow_methods=["*"],
         allow_headers=["*"],
+        # Le navigateur ne lit un en-tête de réponse que s'il est exposé. Sans cette
+        # ligne, l'application ne récupère pas la référence que la passerelle a
+        # journalisée et affiche la sienne : deux identifiants pour une seule requête.
+        expose_headers=["x-request-id"],
     )
 
     # Security middleware (rate-limit, body-size cap, security headers)

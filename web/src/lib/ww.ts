@@ -6,6 +6,7 @@
 // throws a GatewayError with `code` so pages render an offline / sign-in state
 // instead of crashing.
 import { getAccessToken } from "./supabase";
+import { memoriserReference, nouvelleReference } from "./reference";
 
 // Où vit la passerelle.
 //
@@ -37,11 +38,15 @@ export class GatewayError extends Error {
   code: string;
   status?: number;
   detail?: unknown;
-  constructor(message: string, code: string, status?: number, detail?: unknown) {
+  /** L'identifiant de la requête fautive, à donner au support : la même chaîne se
+   *  cherche telle quelle dans les journaux. */
+  reference?: string;
+  constructor(message: string, code: string, status?: number, detail?: unknown, reference?: string) {
     super(message);
     this.code = code;
     this.status = status;
     this.detail = detail;
+    this.reference = reference;
   }
 }
 
@@ -94,9 +99,11 @@ async function call<T = unknown>(
   if (!token && !opts?.public) {
     throw new GatewayError("not signed in to VIGIL", "NO_SESSION");
   }
+  const reference = nouvelleReference();
   const headers: Record<string, string> = {
     "content-type": "application/json",
     accept: "application/json",
+    "x-request-id": reference,
   };
   if (token) headers.authorization = `Bearer ${token}`;
   let res: Response;
@@ -107,8 +114,11 @@ async function call<T = unknown>(
       body: body != null ? JSON.stringify(body) : undefined,
     });
   } catch (e) {
-    throw new GatewayError(`gateway unreachable: ${(e as Error).message}`, "UNREACHABLE");
+    throw new GatewayError(`gateway unreachable: ${(e as Error).message}`, "UNREACHABLE", undefined, undefined, reference);
   }
+  // Le serveur renvoie la référence qu'il a journalisée — la sienne fait foi.
+  const tracee = res.headers.get("x-request-id") || reference;
+  memoriserReference(tracee);
   let payload: GatewayPayload;
   try {
     payload = await res.json();
@@ -116,7 +126,7 @@ async function call<T = unknown>(
     payload = { ok: false, error: "BAD_JSON" };
   }
   if (!res.ok || payload.ok === false) {
-    throw new GatewayError(gatewayErrorMessage(res.status, payload), "HTTP_ERROR", res.status, payload.detail);
+    throw new GatewayError(gatewayErrorMessage(res.status, payload), "HTTP_ERROR", res.status, payload.detail, tracee);
   }
   return payload.data as T;
 }

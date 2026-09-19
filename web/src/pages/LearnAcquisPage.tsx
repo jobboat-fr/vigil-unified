@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { SqueletteEcran } from "@/components/EmptyState";
 import { LiensLearn } from "@/components/LiensLearn";
 import {
   Card,
@@ -128,7 +129,7 @@ export default function LearnAcquisPage() {
   }, [grades]);
 
   if (grades === null) {
-    return <p className="p-6 text-sm opacity-60">Chargement…</p>;
+    return <SqueletteEcran lignes={6} />;
   }
 
   return (

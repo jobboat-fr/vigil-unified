@@ -6,11 +6,13 @@
 // because EventSource cannot attach an Authorization header.
 import { useEffect, useState } from "react";
 import { getAccessToken, signalerSessionExpiree } from "./supabase";
+import { memoriserReference, nouvelleReference } from "./reference";
 import { WW_BASE, GatewayError, gatewayErrorMessage, type GatewayPayload } from "./ww";
 
 async function vigilCall<T = unknown>(method: string, path: string, body?: unknown): Promise<T> {
   const token = await getAccessToken();
   if (!token) throw new GatewayError("Session expirée — reconnectez-vous.", "NO_SESSION");
+  const reference = nouvelleReference();
   let res: Response;
   try {
     res = await fetch(`${WW_BASE}${path}`, {
@@ -19,12 +21,15 @@ async function vigilCall<T = unknown>(method: string, path: string, body?: unkno
         "content-type": "application/json",
         accept: "application/json",
         authorization: `Bearer ${token}`,
+        "x-request-id": reference,
       },
       body: body != null ? JSON.stringify(body) : undefined,
     });
   } catch (e) {
-    throw new GatewayError(`gateway unreachable: ${(e as Error).message}`, "UNREACHABLE");
+    throw new GatewayError(`gateway unreachable: ${(e as Error).message}`, "UNREACHABLE", undefined, undefined, reference);
   }
+  const tracee = res.headers.get("x-request-id") || reference;
+  memoriserReference(tracee);
   let payload: GatewayPayload;
   try {
     payload = await res.json();
@@ -33,7 +38,7 @@ async function vigilCall<T = unknown>(method: string, path: string, body?: unkno
   }
   if (!res.ok || payload.ok === false) {
     if (res.status === 401) signalerSessionExpiree();
-    throw new GatewayError(gatewayErrorMessage(res.status, payload), "HTTP_ERROR", res.status, payload.detail);
+    throw new GatewayError(gatewayErrorMessage(res.status, payload), "HTTP_ERROR", res.status, payload.detail, tracee);
   }
   return payload.data as T;
 }
@@ -840,19 +845,23 @@ async function* sseStream(
 ): AsyncGenerator<SseEvent> {
   const token = await getAccessToken();
   if (!token) throw new GatewayError("Session expirée — reconnectez-vous.", "NO_SESSION");
+  const referenceFlux = nouvelleReference();
   const res = await fetch(`${WW_BASE}${path}`, {
     method: init.method,
     headers: {
       "content-type": "application/json",
       accept: "text/event-stream",
       authorization: `Bearer ${token}`,
+      "x-request-id": referenceFlux,
     },
     body: init.body != null ? JSON.stringify(init.body) : undefined,
   });
+  const traceeFlux = res.headers.get("x-request-id") || referenceFlux;
+  memoriserReference(traceeFlux);
   if (!res.ok || !res.body) {
     // La passerelle explique ses refus (accès, limite, indisponibilité) : on garde sa phrase.
     const payload = (await res.json().catch(() => ({}))) as GatewayPayload;
-    throw new GatewayError(gatewayErrorMessage(res.status, payload), "HTTP_ERROR", res.status, payload.detail);
+    throw new GatewayError(gatewayErrorMessage(res.status, payload), "HTTP_ERROR", res.status, payload.detail, traceeFlux);
   }
   const reader = res.body.getReader();
   const decoder = new TextDecoder();

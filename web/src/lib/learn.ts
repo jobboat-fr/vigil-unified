@@ -11,6 +11,7 @@
 // check in TypeScript is a second copy of a rule the database already owns.
 import { getAccessToken, signalerSessionExpiree } from "./supabase";
 import { WW_BASE, GatewayError } from "./ww";
+import { memoriserReference, nouvelleReference } from "./reference";
 
 /**
  * LEARN has its own origin, separate from the VIGIL gateway.
@@ -47,13 +48,16 @@ export class LearnError extends Error {
   readonly status: number;
   readonly code?: string;
   readonly detail?: unknown;
+  /** L'identifiant que LEARN a écrit dans son journal pour cette requête. */
+  readonly reference?: string;
 
-  constructor(message: string, status: number, code?: string, detail?: unknown) {
+  constructor(message: string, status: number, code?: string, detail?: unknown, reference?: string) {
     super(message);
     this.name = "LearnError";
     this.status = status;
     this.code = code;
     this.detail = detail;
+    this.reference = reference;
   }
   /** True when LEARN is deployed but has no database configured. */
   get unavailable() {
@@ -70,6 +74,7 @@ export async function call<T>(method: string, path: string, body?: unknown): Pro
   // une frontière absente, et le serveur lirait un corps qu'il ne sait pas découper.
   const estFormulaire = typeof FormData !== "undefined" && body instanceof FormData;
 
+  const reference = nouvelleReference();
   let res: Response;
   try {
     res = await fetch(`${BASE}${path}`, {
@@ -78,6 +83,7 @@ export async function call<T>(method: string, path: string, body?: unknown): Pro
         ...(estFormulaire ? {} : { "content-type": "application/json" }),
         accept: "application/json",
         authorization: `Bearer ${token}`,
+        "x-request-id": reference,
       },
       body: estFormulaire
         ? (body as FormData)
@@ -86,8 +92,12 @@ export async function call<T>(method: string, path: string, body?: unknown): Pro
           : undefined,
     });
   } catch (e) {
-    throw new GatewayError(`gateway unreachable: ${(e as Error).message}`, "UNREACHABLE");
+    throw new GatewayError(`gateway unreachable: ${(e as Error).message}`, "UNREACHABLE", undefined, undefined, reference);
   }
+
+  // LEARN renvoie la référence qu'il a journalisée (middleware `JournalHttpMiddleware`).
+  const tracee = res.headers.get("x-request-id") || reference;
+  memoriserReference(tracee);
 
   if (res.status === 204) return undefined as T;
 
@@ -96,7 +106,7 @@ export async function call<T>(method: string, path: string, body?: unknown): Pro
     payload = await res.json();
   } catch {
     if (res.ok) return undefined as T;
-    throw new LearnError(`HTTP ${res.status}`, res.status);
+    throw new LearnError(`HTTP ${res.status}`, res.status, undefined, undefined, tracee);
   }
 
   if (!res.ok) {
@@ -105,7 +115,7 @@ export async function call<T>(method: string, path: string, body?: unknown): Pro
     const d = (payload as { detail?: unknown })?.detail;
     const code = typeof d === "object" && d !== null ? (d as { error?: string }).error : undefined;
     if (res.status === 401 && (d === "invalid_session" || d === "unidentified_session")) signalerSessionExpiree();
-    throw new LearnError(code ?? `HTTP ${res.status}`, res.status, code, d);
+    throw new LearnError(code ?? `HTTP ${res.status}`, res.status, code, d, tracee);
   }
   return payload as T;
 }

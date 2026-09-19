@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { SqueletteEcran } from "@/components/EmptyState";
 import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/components/card";
 import {
   getLeads,
@@ -114,7 +115,7 @@ export default function LearnDemandesPage() {
     setBusy(false);
   }
 
-  if (items === null) return <p className="p-6 text-sm opacity-60">Chargement…</p>;
+  if (items === null) return <SqueletteEcran lignes={6} />;
 
   const peutDecider = Boolean(fiche?._can?.create) && fiche?.status !== "convertie" && fiche?.status !== "refusee";
   const sessionsDuProgramme = sessions.filter((s) => !fiche?.program_id || s.program_id === fiche.program_id);

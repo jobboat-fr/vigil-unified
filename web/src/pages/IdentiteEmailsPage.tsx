@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
+import { SqueletteEcran } from "@/components/EmptyState";
+import { EcranErreur } from "@/components/ErreurEcran";
 import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/components/card";
 import {
   ajouterDomaine,
@@ -87,7 +89,14 @@ export default function IdentiteEmailsPage() {
     }
   };
 
-  if (!marque || !domaines) return <p className="p-6 text-sm opacity-70">{msg?.texte ?? "Chargement…"}</p>;
+  // Un chargement raté laissait un squelette éternel : l'échec doit se dire, avec sa
+  // référence et un moyen de réessayer.
+  if (!marque || !domaines)
+    return msg && !msg.ok ? (
+      <EcranErreur titre="L'identité de l'organisme n'a pas pu se charger" cause={msg.texte} onReessayer={() => void charger()} />
+    ) : (
+      <SqueletteEcran lignes={4} />
+    );
   const verifie = domaines.items.find((d) => d.status === "verifie");
   const set = (k: keyof Marque) => (e: React.ChangeEvent<HTMLInputElement>) => setM({ ...marque, [k]: e.target.value });
 

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { SqueletteEcran } from "@/components/EmptyState";
 import { LiensLearn } from "@/components/LiensLearn";
 import {
   Card,
@@ -79,7 +80,7 @@ export default function LearnVaultPage() {
     void load();
   }, [load]);
 
-  if (items === null) return <p className="p-6 text-sm opacity-60">Chargement…</p>;
+  if (items === null) return <SqueletteEcran lignes={6} />;
 
   const held = items.filter((i) => i.legal_hold);
   const retained = items.filter((i) => !i.legal_hold && i.retention_until);

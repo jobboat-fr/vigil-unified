@@ -1,9 +1,10 @@
-import { useLayoutEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useMemo, useState, type ReactNode } from "react";
 import { useLocation } from "react-router-dom";
 import { PageHeaderContext } from "./page-header-context";
 import { resolvePageTitle } from "@/lib/resolve-page-title";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/i18n";
+import { poserFavicon, useOrganisme } from "@/lib/organisme";
 
 export function PageHeaderProvider({
   children,
@@ -33,6 +34,16 @@ export function PageHeaderProvider({
     [pathname, t, pluginTabs],
   );
   const displayTitle = titleOverride ?? defaultTitle;
+
+  // L'onglet dit où l'on est et chez qui. Huit onglets ouverts, c'est la seule façon de
+  // retrouver le bon — et la favicon de l'organisme finit le travail.
+  const organisme = useOrganisme();
+  useEffect(() => {
+    document.title = organisme?.name ? `${displayTitle} — ${organisme.name}` : `${displayTitle} — VTLVS`;
+  }, [displayTitle, organisme?.name]);
+  useEffect(() => {
+    poserFavicon(organisme?.logo_url ?? null);
+  }, [organisme?.logo_url]);
 
   const isChatRoute = pathname === "/chat" || pathname === "/chat/";
   /** Env jump-nav is wide — stack below title on small screens so KEYS stays readable. */
