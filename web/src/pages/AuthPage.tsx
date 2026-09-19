@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { BRAND } from "@/lib/brand";
+import { MarqueVtlvs, MOT } from "@/components/MarqueVtlvs";
 
 type Mode = "signin" | "reset";
 
@@ -82,8 +83,11 @@ export default function AuthPage({ initialMode = "signin" }: { initialMode?: Mod
       <div className="ap-in relative flex w-full max-w-sm flex-col gap-6">
         <div className="flex flex-col items-center gap-2 text-center">
           <Link to="/" className="flex flex-col items-center gap-3 hover:opacity-90">
-            <img src="/logo-lockup.png" alt="VTLVS" style={{ height: 72, width: "auto" }} />
-            <h1 className="text-3xl font-bold" style={{ fontFamily: BRAND.display, letterSpacing: ".02em" }}>VTLVS</h1>
+            {/* Le chevron seul : le mot est juste en dessous, en vrai texte. L'ancien
+                `logo-lockup.png` dessine le mot « ATLAS » — c'était la première chose
+                qu'un client voyait de la plateforme. */}
+            <MarqueVtlvs hauteur={72} titre="VTLVS" />
+            <h1 className="text-3xl" style={{ fontFamily: MOT, fontWeight: 700, letterSpacing: ".09em" }}>VTLVS</h1>
           </Link>
           <p style={{ ...label, fontSize: 11, letterSpacing: ".18em" }}>{heading}</p>
         </div>

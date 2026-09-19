@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { BlocMarqueVtlvs } from "@/components/MarqueVtlvs";
 
 /**
  * Cadre des pages publiques (activation, désinscription, nouveau mot de passe) : même identité
@@ -30,7 +31,7 @@ export function CadreOrganisme({
         <div className="px-6 py-6">{children}</div>
       </div>
       <a href="https://vtlvs.com" className="mt-5 flex flex-col items-center gap-1 text-[11px]" style={{ color: "#5B6B7F" }}>
-        <img src="/logo-lockup.png" alt="VTLVS" className="h-4" />
+        <BlocMarqueVtlvs hauteur={14} />
         Propulsé par VTLVS
       </a>
     </div>

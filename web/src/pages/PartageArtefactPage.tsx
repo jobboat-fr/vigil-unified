@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { openSharedArtifact, type SharedArtifactPublic } from "@/lib/vigil";
 import type { GatewayError } from "@/lib/ww";
 import { KIND_LABELS, dateLongue } from "@/lib/studio";
+import { BlocMarqueVtlvs } from "@/components/MarqueVtlvs";
 
 const ArtifactCanvas = lazy(() => import("@/components/ArtifactCanvas").then((m) => ({ default: m.ArtifactCanvas })));
 
@@ -72,7 +73,7 @@ export default function PartageArtefactPage() {
           )}
         </div>
         <a href="https://vtlvs.com" className="mt-6 flex flex-col items-center gap-1 text-[11px]" style={{ color: "#5B6B7F" }}>
-          <img src="/logo-lockup.png" alt="VTLVS" className="h-4" />
+          <BlocMarqueVtlvs hauteur={14} />
           Partagé via VTLVS
         </a>
       </div>

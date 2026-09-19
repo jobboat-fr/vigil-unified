@@ -7,8 +7,12 @@
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@500;600;700&display=swap"
     />
+    <!-- Le SVG d'abord (net à tout zoom, et le seul à jour) ; le PNG reste pour les
+         navigateurs qui ignorent les icônes vectorielles. `mask-icon` exige un SVG
+         monochrome : il pointait sur un PNG, donc Safari l'ignorait silencieusement. -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" type="image/png" href="/favicon.png" />
-    <link rel="mask-icon" href="/logo-mark.png" color="#0b2239" />
+    <link rel="mask-icon" href="/vtlvs-mark.svg" color="#0b2239" />
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1.0, viewport-fit=cover"

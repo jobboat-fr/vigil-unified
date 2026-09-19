@@ -1,13 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <defs>
-    <linearGradient id="g" x1="8" y1="8" x2="56" y2="56">
-      <stop offset="0" stop-color="#00e5ff"/>
-      <stop offset=".55" stop-color="#e8b544"/>
-      <stop offset="1" stop-color="#a855f7"/>
-    </linearGradient>
-  </defs>
-  <rect width="64" height="64" rx="16" fill="#050507"/>
-  <path d="M10 32c5.4-10.2 12.8-15 22-15s16.6 4.8 22 15c-5.4 10.2-12.8 15-22 15S15.4 42.2 10 32Z" fill="none" stroke="url(#g)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="32" cy="32" r="10" fill="#081018" stroke="#00e5ff" stroke-width="2"/>
-  <path d="M24 24l8 18 8-18h-5l-3 8-3-8h-5Z" fill="#fff"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="VTLVS">
+  <!-- L'icône d'onglet montrait encore l'œil VIGIL — le projet dont VTLVS est issu.
+       Même dessin et mêmes couleurs que `icon-512.png` : chevron marine sur le nuage de
+       la charte, pour que l'onglet, l'écran d'accueil du téléphone et l'en-tête de
+       l'application racontent la même marque. -->
+  <rect width="64" height="64" rx="14" fill="#f4f7fb"/>
+  <g transform="translate(20.2 17.1) scale(0.262)" fill="#0b2239">
+    <path d="M44.3 0 88.64 91.2 87.72 91.2 44.3 54.3 .88 91.2 0 91.2Z"/>
+    <path d="M44.3 63.5 87.78 91.2 86.24 91.2 44.3 71.5 1.36 91.2 .82 91.2Z"/>
+  </g>
 </svg>

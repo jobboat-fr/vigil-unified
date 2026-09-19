@@ -90,6 +90,7 @@ import AbonnementPage from "@/pages/AbonnementPage";
 import ProduitsPage from "@/pages/ProduitsPage";
 import AgentDeLaPage from "@/components/AgentDeLaPage";
 import { FrontiereErreur } from "@/components/ErreurEcran";
+import { MarqueVtlvs, MOT } from "@/components/MarqueVtlvs";
 import { BandeauReseau } from "@/components/BandeauReseau";
 import PageIntrouvable from "@/pages/PageIntrouvable";
 import { PageHeaderProvider } from "@/contexts/PageHeaderProvider";
@@ -822,14 +823,9 @@ export default function App() {
 
                 {/* La marque de l'application est VTLVS ; VIGIL est le nom de
                     l'assistant, et il le reste — ils ne désignent pas la même chose. */}
-                <img
-                  src="/logo-mark.png"
-                  alt="VTLVS"
-                  height={28}
-                  className="h-7 w-auto shrink-0"
-                />
+                <MarqueVtlvs hauteur={28} className="shrink-0" titre="VTLVS" />
                 <Typography className="font-bold text-[1.05rem] leading-[0.95] tracking-[0.045rem]">
-                  <span>VTLVS</span>
+                  <span style={{ fontFamily: MOT, fontWeight: 700, letterSpacing: ".09em" }}>VTLVS</span>
                   <br />
                   <span className="text-[0.72rem] font-medium uppercase tracking-[0.14em] opacity-60">
                     Plateforme de formation

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 88.64 91.2" role="img" aria-label="VTLVS">
+  <!-- La marque VTLVS : deux chevrons emboîtés, pointe en haut.
+
+       Tracé d'après `logo-mark.png` (174 × 106), les six arêtes ajustées aux moindres
+       carrés sur le contour du fichier d'origine puis vérifiées par recouvrement
+       (IoU 0,94 — le reste tient à l'anticrénelage du PNG). Ce fichier remplace le
+       raster partout où la marque dépasse quelques dizaines de pixels : en-tête, écran
+       de connexion, favicon, site public.
+
+       `currentColor` : la même forme sert en marine sur fond clair (application) et en
+       blanc sur fond sombre (vtlvs.com) sans dupliquer le fichier. -->
+  <path fill="currentColor" d="M44.3 0 88.64 91.2 87.72 91.2 44.3 54.3 .88 91.2 0 91.2Z" />
+  <path fill="currentColor" d="M44.3 63.5 87.78 91.2 86.24 91.2 44.3 71.5 1.36 91.2 .82 91.2Z" />
+</svg>
