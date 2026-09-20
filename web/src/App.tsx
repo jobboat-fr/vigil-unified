@@ -143,7 +143,8 @@ import LearnEmargementPage from "@/pages/LearnEmargementPage";
 import LearnVaultPage from "@/pages/LearnVaultPage";
 import LearnPeoplePage from "@/pages/LearnPeoplePage";
 import LearnDemandesPage from "@/pages/LearnDemandesPage";
-import { useLearnRole } from "@/lib/supabase";
+import { supabase, useLearnRole } from "@/lib/supabase";
+import CompteSansRole from "@/pages/CompteSansRole";
 import { usePagePermissions, type PagePermissions } from "@/lib/vigil";
 import { AssistantIndisponible } from "@/components/AssistantIndisponible";
 import AccueilPage from "@/pages/AccueilPage";
@@ -629,6 +630,10 @@ export default function App() {
   // loads and for signed-out users, so gated entries stay hidden until a role is known —
   // failing closed rather than flashing a link that then disappears.
   const { role: learnRole, resolu: roleResolu } = useLearnRole();
+  const [emailSession, setEmailSession] = useState<string | null>(null);
+  useEffect(() => {
+    void supabase?.auth.getSession().then(({ data }) => setEmailSession(data.session?.user?.email ?? null));
+  }, []);
   const pagePerms = usePagePermissions(learnRole);
   // Tant qu'un document requis n'est pas signé, l'API refuse tout sauf l'accueil (0041) :
   // l'application ne montre donc que l'accueil, au lieu d'écrans qui échoueraient un à un.
@@ -756,6 +761,11 @@ export default function App() {
     mql.addEventListener("change", onChange);
     return () => mql.removeEventListener("change", onChange);
   }, []);
+
+  // Un compte sans `learn_role` passe l'authentification mais se voit refuser chaque appel
+  // par LEARN (`no_learn_role`). Dessiner la coquille lui donnerait un menu presque vide et
+  // des écrans blancs, sans rien lui dire. On l'arrête ici, avec une explication.
+  if (roleResolu && !learnRole) return <CompteSansRole email={emailSession} />;
 
   return (
     <ProfileProvider>
