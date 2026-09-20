@@ -83,12 +83,23 @@ export default function LearnDashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [unavailable, setUnavailable] = useState(false);
 
+  // `/platform/readiness` est réservé à qui pilote ou contrôle l'organisme : LEARN
+  // refuse un formateur ou une entreprise en 403 (routes/platform.py). L'appel partait
+  // pourtant pour tous les rôles, et le `.catch()` rendait le refus invisible à l'écran.
+  // Invisible, mais pas gratuit : ce tableau se recharge toutes les 30 secondes, donc
+  // chaque formateur connecté produisait un 403 toutes les 30 secondes — journalisé en
+  // avertissement, expédié vers Loki, et compté par l'alerte Grafana sur les refus.
+  // On ne demande plus ce qu'on sait ne pas avoir le droit de lire.
+  const piloteOuControle = role === "super_admin" || role === "admin" || role === "auditeur";
+
   const load = useCallback(async () => {
     try {
       const [d, a, r] = await Promise.all([
         getDashboard(),
         getAuditOverview().catch(() => ({ items: [] })),
-        getReadiness().catch(() => ({ ready: true, blocking: [], items: [] })),
+        piloteOuControle
+          ? getReadiness().catch(() => ({ ready: true, blocking: [], items: [] }))
+          : Promise.resolve({ ready: true, blocking: [], items: [] }),
       ]);
       setData(d);
       setAudit(a.items.filter((s) => s.missing.length > 0).slice(0, 6));
@@ -98,7 +109,7 @@ export default function LearnDashboardPage() {
       if (e instanceof LearnError && e.unavailable) setUnavailable(true);
       else setError((e as Error).message);
     }
-  }, []);
+  }, [piloteOuControle]);
 
   // Tant que le rôle n'est pas résolu, on ne demande rien : un apprenant verrait sinon
   // l'écran de l'organisme le temps d'un aller-retour, et les requêtes partiraient pour

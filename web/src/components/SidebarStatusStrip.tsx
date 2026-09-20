@@ -1,4 +1,3 @@
-import { Link } from "react-router-dom";
 import type { StatusResponse } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/i18n";
@@ -19,8 +18,9 @@ export function SidebarStatusStrip({ status }: SidebarStatusStripProps) {
   const { activeSessionsLabel, gatewayStatusLabel } = t.app;
 
   return (
-    <Link
-      to="/sessions"
+    // Un état qu'on lit, pas un bouton : l'écran vers lequel il pointait (« Sessions
+    // Vigil ») était un héritage de Hermes dont l'API n'existe plus, et il a été retiré.
+    <div
       title={t.app.statusOverview}
       className={cn(
         "block text-left",
@@ -44,7 +44,7 @@ export function SidebarStatusStrip({ status }: SidebarStatusStripProps) {
           </span>
         </p>
       </div>
-    </Link>
+    </div>
   );
 }
 

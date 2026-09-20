@@ -235,6 +235,32 @@ const CHAT_NAV_ITEM: NavItem = {
  * Routing still owns the URL so /chat deep-links, browser back/forward,
  * and nav highlight keep working.
  */
+/**
+ * Les écrans hérités de Hermes dont le serveur n'existe plus.
+ *
+ * Relevé le 2026-09-20, en parcourant l'application connecté en super_admin : quatorze
+ * écrans de la navigation appelaient des routes que la passerelle n'implémente pas
+ * (`/api/sessions`, `/api/files`, `/api/logs`, `/api/cron`, `/api/skills`, `/api/mcp`,
+ * `/api/env`, `/api/config`…). Ils venaient du tableau de bord Hermes, dont le backend a
+ * été remplacé par la passerelle VTLVS.
+ *
+ * Ce qui rendait la chose vicieuse : aucun ne s'affichait en erreur. « Sessions Vigil »
+ * annonçait « Aucune session pour l'instant » alors que la route renvoyait 404 trois fois ;
+ * « Config » et « Keys » tournaient indéfiniment sur leur caractère de chargement. Un
+ * écran cassé qui dit « rien ici » est pire qu'un écran cassé qui le dit : on le croit.
+ *
+ * Ils sortent donc de la navigation et répondent « il n'y a rien à cette adresse ». Les
+ * composants restent dans le dépôt — comme `.github/workflows-hermes-desactives/` : rien
+ * n'est perdu, il suffit de retirer une entrée de cette liste pour en rendre un.
+ *
+ * Gardés parce qu'ils fonctionnent : /audit et /profiles (vides, mais leur API répond),
+ * /billing, /analytics, /system (partiel).
+ */
+const ECRANS_HERMES_RETIRES = new Set([
+  "/sessions", "/files", "/models", "/logs", "/cron", "/skills", "/plugins",
+  "/mcp", "/channels", "/webhooks", "/pairing", "/config", "/env",
+]);
+
 const BUILTIN_ROUTES_CORE: Record<string, ComponentType> = {
   "/": RootRedirect,
   "/sessions": SessionsPage,
@@ -633,7 +659,9 @@ export default function App() {
 
   const builtinRoutes = useMemo(
     () => ({
-      ...BUILTIN_ROUTES_CORE,
+      ...Object.fromEntries(
+        Object.entries(BUILTIN_ROUTES_CORE).filter(([chemin]) => !ECRANS_HERMES_RETIRES.has(chemin)),
+      ),
       // Embedded TUI (PTY over WS) when the dashboard serves it; otherwise the
       // gateway-backed VIGIL assistant (HTTP SSE) — the only chat that works
       // through the Vercel product.
@@ -668,9 +696,10 @@ export default function App() {
     const base = ASSISTANT_EN_MAINTENANCE
       ? [...BUILTIN_NAV_REST]
       : [CHAT_NAV_ITEM, ...BUILTIN_NAV_REST];
+    const vivants = base.filter((n) => !ECRANS_HERMES_RETIRES.has(n.path));
     const visible = aSigner
-      ? base.filter((n) => n.path === "/accueil")
-      : base.filter((n) => navAllowed(n, learnRole, pagePerms));
+      ? vivants.filter((n) => n.path === "/accueil")
+      : vivants.filter((n) => navAllowed(n, learnRole, pagePerms));
     return showTokenAnalytics
       ? visible
       : visible.filter((n) => n.path !== "/analytics");
@@ -777,7 +806,12 @@ export default function App() {
           onClick={closeMobile}
           className={cn(
             "lg:hidden fixed inset-0 z-40 p-0 block",
-            "bg-[color-mix(in_srgb,var(--midground-base)_45%,transparent)] backdrop-blur-sm",
+            // 45 % de marine + `backdrop-blur-sm` sur tout l'écran : le flou était le
+            // vrai coupable. Il ne met pas la page en retrait, il la barbouille — et
+            // comme le menu est lui aussi translucide, il ramassait la bouillie et
+            // devenait l'élément le moins lisible de l'écran. Un voile assombrit pour
+            // dire « ceci est en pause » ; il n'a pas à effacer ce qu'il couvre.
+            "bg-[color-mix(in_srgb,var(--midground-base)_32%,transparent)]",
           )}
         />
       )}
@@ -793,7 +827,11 @@ export default function App() {
             className={cn(
               "fixed top-0 left-0 z-50 flex h-dvh max-h-dvh w-64 min-h-0 flex-col",
               "border-r border-current/20",
-              "bg-background-base/95 backdrop-blur-sm",
+              // En tiroir (sous `lg`), le menu est ce qu'on lit : fond plein et ombre
+              // portée pour le détacher du voile. En colonne fixe, rien ne passe
+              // derrière lui, la translucidité redevient gratuite.
+              "bg-[var(--color-card)] shadow-[0_0_40px_-8px_color-mix(in_srgb,var(--midground-base)_45%,transparent)]",
+              "lg:bg-background-base/95 lg:backdrop-blur-sm lg:shadow-none",
               "transition-[transform] duration-200 ease-out",
               mobileOpen ? "translate-x-0" : "-translate-x-full",
               "lg:sticky lg:top-0 lg:translate-x-0 lg:shrink-0 lg:overflow-hidden",

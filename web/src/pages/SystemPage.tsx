@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
 import {
   Activity,
   Brain,
@@ -897,9 +896,8 @@ export default function SystemPage() {
                   {memory?.active || "built-in only"}
                 </span>
               </span>
-              <Link to="/plugins" className="underline">
-                Change in Plugins →
-              </Link>
+              {/* L'écran « Plugins » appelait une API de Hermes qui n'existe plus ; il a
+                  été retiré, et ce lien avec lui. */}
               <span className="ml-auto">
                 Nouveaux identifiants :{" "}
                 <span className="font-mono">hermes memory setup</span>
