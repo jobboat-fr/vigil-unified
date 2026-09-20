@@ -82,9 +82,24 @@ function refus(statut: number, erreur: string, detail: string, requeteId: string
   });
 }
 
-function securiser(res: Response, requeteId: string): Response {
+/**
+ * Le document « Noyau » : la seule réponse HTML que cette bordure relaie.
+ *
+ * `ENTETES_API` convient à une API qui ne rend que du JSON — `default-src 'none'` et
+ * `x-frame-options: DENY` y sont gratuits. Appliqués à ce document, ils lui retiraient sa
+ * propre politique et interdisaient à l'application de le cadrer : la page restait
+ * blanche. LEARN décide pour cette route ; la bordure pose tout le reste et se tait sur
+ * ces deux en-têtes.
+ */
+const VUE_NOYAU = /^\/api\/v1\/learn\/noyau\/[^/]+\/vue$/;
+
+function securiser(res: Response, requeteId: string, chemin = ""): Response {
   const out = new Response(res.body, res);
-  for (const [k, v] of Object.entries(ENTETES_API)) out.headers.set(k, v);
+  const propre = VUE_NOYAU.test(chemin);
+  for (const [k, v] of Object.entries(ENTETES_API)) {
+    if (propre && (k === "content-security-policy" || k === "x-frame-options")) continue;
+    out.headers.set(k, v);
+  }
   out.headers.set("x-request-id", requeteId);
   out.headers.delete("server");
   out.headers.delete("x-powered-by");
@@ -155,7 +170,7 @@ export async function traiter(request: Request, env: Env): Promise<Response> {
       journal("error", "bordure.origine_erreur", `L'origine a répondu ${res.status} pour ${request.method} ${url.pathname}.`,
         { ...contexte, statut: res.status, duree_ms: Date.now() - debut });
     }
-    return securiser(res, requeteId);
+    return securiser(res, requeteId, url.pathname);
   } catch (e) {
     journal("error", "bordure.origine_injoignable", `Origine Railway injoignable pour ${request.method} ${url.pathname}.`,
       { ...contexte, raison: String(e).slice(0, 200), duree_ms: Date.now() - debut });
