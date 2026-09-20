@@ -179,7 +179,10 @@ export default {
     const requestId = /^[A-Za-z0-9-]{8,64}$/.test(recu) ? recu : crypto.randomUUID();
     const res = await route(request, env, pathname, requestId);
     const isHtml = (res.headers.get("content-type") || "").includes("text/html");
-    return secure(res, requestId, isHtml, VUE_NOYAU.test(pathname));
+    // Idem : seule une réponse qui porte sa propre politique échappe à celle de
+    // l'application. Un refus sur cette route reste couvert.
+    const apporteSaPolitique = VUE_NOYAU.test(pathname) && res.headers.has("content-security-policy");
+    return secure(res, requestId, isHtml, apporteSaPolitique);
   },
 };
 

@@ -95,7 +95,10 @@ const VUE_NOYAU = /^\/api\/v1\/learn\/noyau\/[^/]+\/vue$/;
 
 function securiser(res: Response, requeteId: string, chemin = ""): Response {
   const out = new Response(res.body, res);
-  const propre = VUE_NOYAU.test(chemin);
+  // On ne s'efface que si la réponse apporte vraiment sa propre politique. Sur cette
+  // route, un refus (403 sans laissez-passer) revient en JSON sans en-tête : lui retirer
+  // la politique de l'API le laisserait sans aucune, ce qui est pire que strict.
+  const propre = VUE_NOYAU.test(chemin) && res.headers.has("content-security-policy");
   for (const [k, v] of Object.entries(ENTETES_API)) {
     if (propre && (k === "content-security-policy" || k === "x-frame-options")) continue;
     out.headers.set(k, v);
