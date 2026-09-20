@@ -58,10 +58,26 @@ const SECURITY_HEADERS: Record<string, string> = {
   "cross-origin-opener-policy": "same-origin",
 };
 
-function secure(res: Response, requestId: string, isHtml: boolean): Response {
+/** Le document « Noyau », servi par LEARN pour être chargé dans une iframe. */
+const VUE_NOYAU = /^\/api\/v1\/learn\/noyau\/[^/]+\/vue$/;
+
+function secure(res: Response, requestId: string, isHtml: boolean, propre = false): Response {
   const out = new Response(res.body, res);
   for (const [k, v] of Object.entries(SECURITY_HEADERS)) out.headers.set(k, v);
+  if (propre) {
+    // Ce document apporte sa propre politique (scripts en ligne, three.js depuis notre
+    // domaine) : l'écraser avec celle de l'application le rendrait inerte — c'est
+    // exactement ce qui se passait quand il était injecté par `srcDoc`.
+    // Et `x-frame-options: DENY`, posé sur tout le reste, empêcherait l'application de
+    // le cadrer : ici c'est `frame-ancestors`, dans la politique du document, qui décide.
+    out.headers.set("x-frame-options", "SAMEORIGIN");
+    return finir(out, requestId);
+  }
   if (isHtml) out.headers.set("content-security-policy", CSP);
+  return finir(out, requestId);
+}
+
+function finir(out: Response, requestId: string): Response {
   out.headers.set("x-request-id", requestId);
   out.headers.delete("server");
   out.headers.delete("x-powered-by");
@@ -163,7 +179,7 @@ export default {
     const requestId = /^[A-Za-z0-9-]{8,64}$/.test(recu) ? recu : crypto.randomUUID();
     const res = await route(request, env, pathname, requestId);
     const isHtml = (res.headers.get("content-type") || "").includes("text/html");
-    return secure(res, requestId, isHtml);
+    return secure(res, requestId, isHtml, VUE_NOYAU.test(pathname));
   },
 };
 

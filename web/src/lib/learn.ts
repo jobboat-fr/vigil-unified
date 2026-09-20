@@ -664,6 +664,10 @@ export const noyauHtmlUrl = (slug: string, token: string) =>
   `${BASE}/noyau/${encodeURIComponent(slug)}/html?access_token=${encodeURIComponent(token)}`;
 
 /** Le document, récupéré avec le jeton en en-tête puis posé en `srcdoc`. */
+/** Un lien de lecture court pour l'iframe du Noyau (voir routes/noyau.py). */
+export const lienNoyau = (slug = "noyau") =>
+  call<{ url: string; expire_dans_s: number }>("POST", `/noyau/${encodeURIComponent(slug)}/lien`);
+
 export async function getNoyauHtml(slug = "noyau"): Promise<string> {
   const token = await getAccessToken();
   if (!token) throw new GatewayError("Session expirée — reconnectez-vous.", "NO_SESSION");

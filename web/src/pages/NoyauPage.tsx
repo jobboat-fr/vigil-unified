@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  getNoyauHtml,
   getNoyauMeta,
+  lienNoyau,
   putNoyauModel,
   LearnError,
   type NoyauMeta,
@@ -23,8 +23,14 @@ import {
  *   * `sandbox` sans `allow-same-origin` le prive de la session : il ne peut ni lire le
  *     jeton, ni appeler l'API en votre nom. C'est le point important — c'est du contenu
  *     stocké, pas du code de l'application ;
- *   * `srcdoc` plutôt qu'un `src` : une iframe ne porte pas d'en-tête `Authorization`, si
- *     bien qu'un `src` obligerait à faire voyager le jeton dans l'URL.
+ *   * l'iframe charge une **URL**, et non un document injecté en `srcdoc`. C'est le point
+ *     qui a changé le 2026-09-20 : un document `srcdoc` hérite de la politique de sécurité
+ *     de l'application (`script-src 'self'`), et comme le bac à sable lui donne une origine
+ *     opaque, `'self'` ne désignait plus rien — **aucun** script ne s'exécutait. Le
+ *     document s'affichait, « Commencer la visite » ne faisait rien, et rien ne le
+ *     signalait. Chargé par son URL, il porte sa propre politique (routes/noyau.py).
+ *     Une iframe ne pouvant pas envoyer d'en-tête `Authorization`, l'accès passe par un
+ *     laissez-passer signé de cinq minutes, lié à la personne et au document.
  *
  * Ce bac à sable a un corollaire : le document ne peut rien enregistrer lui-même. Son
  * éditeur envoie donc le modèle ici, et c'est cette page qui écrit — en base, pour tout le
@@ -36,28 +42,18 @@ import {
  * réponse à donner à quelqu'un qui n'a pas à savoir qu'il existe.
  */
 
-/** Le marqueur que le document réserve pour le modèle enregistré en base. */
-const MARQUEUR = "/*MODEL_OVERRIDE*/null";
-
-function injecter(html: string, model: unknown): string {
-  if (!model) return html;
-  // `JSON.stringify` ne protège pas contre `</script>` dans une chaîne : le parseur HTML
-  // fermerait le bloc avant que le JS ne soit lu. On échappe la barre oblique, ce qui est
-  // sans effet en JSON et neutralise la fermeture prématurée.
-  const json = JSON.stringify(model).replace(/<\//g, "<\\/");
-  return html.replace(MARQUEUR, json);
-}
-
 export default function NoyauPage() {
-  const [html, setHtml] = useState<string | null>(null);
+  const [url, setUrl] = useState<string | null>(null);
   const [meta, setMeta] = useState<NoyauMeta | null>(null);
   const [error, setError] = useState<string | null>(null);
   const frame = useRef<HTMLIFrameElement>(null);
 
   const charger = useCallback(async () => {
-    const [m, h] = await Promise.all([getNoyauMeta().catch(() => null), getNoyauHtml()]);
+    const [m, lien] = await Promise.all([getNoyauMeta().catch(() => null), lienNoyau()]);
     setMeta(m);
-    setHtml(injecter(h, m?.model ?? null));
+    // Le modèle enregistré est posé par le serveur au moment de servir le document :
+    // la page n'a plus à le réinjecter dans une chaîne de 110 Ko.
+    setUrl(lien.url);
   }, []);
 
   useEffect(() => {
@@ -121,7 +117,7 @@ export default function NoyauPage() {
     );
   }
 
-  if (html === null) {
+  if (url === null) {
     return <p className="p-6 text-sm opacity-60">Chargement du document…</p>;
   }
 
@@ -133,7 +129,7 @@ export default function NoyauPage() {
       <iframe
         ref={frame}
         title="Le Noyau"
-        srcDoc={html}
+        src={url}
         // Ni `allow-same-origin` ni `allow-forms` : le document a besoin d'exécuter son
         // propre script — la scène et l'éditeur — et de rien d'autre.
         sandbox="allow-scripts"
