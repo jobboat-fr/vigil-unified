@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Skeleton } from "@/components/EmptyState";
 import {
   getNoyauMeta,
   lienNoyau,
@@ -118,7 +119,15 @@ export default function NoyauPage() {
   }
 
   if (url === null) {
-    return <p className="p-6 text-sm opacity-60">Chargement du document…</p>;
+    // Le document occupe toute la hauteur : une ligne de texte puis une iframe plein
+    // cadre, c'est un saut d'écran entier. On réserve la place.
+    return (
+      <div className="flex flex-col gap-3 p-4 sm:p-6" style={{ height: "calc(100dvh - 5.5rem)" }}
+           role="status" aria-busy="true" aria-label="Chargement du document">
+        <Skeleton className="h-5 w-48" />
+        <Skeleton className="w-full flex-1" />
+      </div>
+    );
   }
 
   // Le document se dimensionne en `100dvh` : dans une iframe, cela vaut la hauteur de

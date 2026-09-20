@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Skeleton } from "@/components/EmptyState";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/components/card";
 import { getDocumentALire, messageAccueil, signerDocument, type DocumentALire } from "@/lib/accueil";
@@ -54,7 +55,14 @@ export default function SignerDocumentPage() {
   };
 
   if (erreur && !doc) return <p className="p-6 text-sm text-red-500">{erreur}</p>;
-  if (!doc) return <p className="p-6 text-sm opacity-70">Chargement…</p>;
+  if (!doc)
+    return (
+      <div className="flex flex-col gap-3 p-6" role="status" aria-busy="true" aria-label="Chargement du document à signer">
+        <Skeleton className="h-6 w-56 max-w-full" />
+        <Skeleton className="h-4 w-72 max-w-full" />
+        <Skeleton className="h-64 w-full" />
+      </div>
+    );
 
   const srcDoc = `<!doctype html><html lang="fr"><head><meta charset="utf-8"><style>body{font-family:Georgia,serif;line-height:1.6;color:#0B2239;padding:24px 28px;max-width:760px;margin:0 auto}h1,h2,h3{font-family:Arial,sans-serif}</style></head><body>${doc.contenu_html}</body></html>`;
 

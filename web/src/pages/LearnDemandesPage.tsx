@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { SqueletteEcran } from "@/components/EmptyState";
+import { Skeleton, SqueletteEcran } from "@/components/EmptyState";
 import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/components/card";
 import {
   getLeads,
@@ -189,7 +189,11 @@ export default function LearnDemandesPage() {
               <CardContent className="p-8 text-center text-sm opacity-70">Sélectionnez une demande pour lire ses réponses.</CardContent>
             </Card>
           ) : !fiche ? (
-            <p className="text-sm opacity-60">Chargement de la fiche…</p>
+            <div className="flex flex-col gap-2" role="status" aria-busy="true" aria-label="Chargement de la fiche">
+              <Skeleton className="h-5 w-40" />
+              <Skeleton className="h-4 w-64 max-w-full" />
+              <Skeleton className="h-24 w-full" />
+            </div>
           ) : (
             <>
               <Card>

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { Skeleton } from "@/components/EmptyState";
 import { Link } from "react-router-dom";
 import {
   Card,
@@ -136,7 +137,12 @@ export default function LearnDashboardApprenant() {
         </CardHeader>
         <CardContent>
           {!charge ? (
-            <p className="text-text-secondary py-4 text-sm">Chargement…</p>
+            // La forme de ce qui arrive — une date, puis l'horaire et le lieu — plutôt
+            // qu'un mot : la carte ne change plus de hauteur quand la réponse tombe.
+            <div className="flex flex-col gap-2 py-1" role="status" aria-busy="true" aria-label="Chargement de votre prochaine journée">
+              <Skeleton className="h-7 w-52 max-w-full" />
+              <Skeleton className="h-4 w-72 max-w-full" />
+            </div>
           ) : !prochain ? (
             <div className="py-4">
               <p className="text-sm">Aucun créneau planifié dans les trois prochains mois.</p>

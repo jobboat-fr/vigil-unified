@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { SkeletonRows } from "@/components/EmptyState";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/components/card";
 import { Button } from "@nous-research/ui/ui/components/button";
@@ -193,7 +194,7 @@ export default function OpsTeamPage() {
           );
         })}
         {departments.length === 0 && !authError && (
-          <Card><CardContent className="py-6 text-center text-sm text-text-secondary">Chargement des pôles…</CardContent></Card>
+          <Card><CardContent className="py-6"><SkeletonRows rows={4} /></CardContent></Card>
         )}
       </div>
 
