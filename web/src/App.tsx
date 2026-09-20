@@ -827,11 +827,13 @@ export default function App() {
             className={cn(
               "fixed top-0 left-0 z-50 flex h-dvh max-h-dvh w-64 min-h-0 flex-col",
               "border-r border-current/20",
-              // En tiroir (sous `lg`), le menu est ce qu'on lit : fond plein et ombre
-              // portée pour le détacher du voile. En colonne fixe, rien ne passe
-              // derrière lui, la translucidité redevient gratuite.
-              "bg-[var(--color-card)] shadow-[0_0_40px_-8px_color-mix(in_srgb,var(--midground-base)_45%,transparent)]",
-              "lg:bg-background-base/95 lg:backdrop-blur-sm lg:shadow-none",
+              // Le fond est posé en style en ligne, plus bas, et non par une classe.
+              // `bg-[var(--color-card)]` était bien dans le balisage mais Tailwind n'a
+              // jamais produit la règle correspondante : le tiroir se retrouvait en
+              // `rgba(0,0,0,0)`, donc transparent, et la page se lisait à travers le
+              // menu. Une valeur arbitraire qui dépend d'une variable n'est pas fiable
+              // ici ; une chaîne de repli CSS l'est.
+              "shadow-xl lg:shadow-none",
               "transition-[transform] duration-200 ease-out",
               mobileOpen ? "translate-x-0" : "-translate-x-full",
               "lg:sticky lg:top-0 lg:translate-x-0 lg:shrink-0 lg:overflow-hidden",
@@ -839,7 +841,11 @@ export default function App() {
               collapsed && "lg:w-14",
             )}
             style={{
-              background: "var(--component-sidebar-background)",
+              // Le thème d'abord, la couleur des cartes ensuite, le blanc en dernier
+              // recours : le tiroir doit être opaque quoi qu'il arrive. Il couvre la
+              // page, et une page qu'on lit à travers son propre menu est illisible.
+              background:
+                "var(--component-sidebar-background, var(--color-card, #ffffff))",
               clipPath: "var(--component-sidebar-clip-path)",
               borderImage: "var(--component-sidebar-border-image)",
             }}

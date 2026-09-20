@@ -542,6 +542,10 @@ export const getProfiles = (role?: string) =>
 
 // ---------------------------------------------------------------- Gestion (admin)
 
+/** Les sociétés clientes de l'organisme, pour rattacher un compte « entreprise ». */
+export const listCompanies = () =>
+  call<{ items: { id: string; name: string; siret: string | null }[] }>("GET", "/companies");
+
 export const createProfile = (body: {
   full_name: string;
   email: string;
@@ -549,6 +553,8 @@ export const createProfile = (body: {
   username?: string | null;
   phone?: string | null;
   company_id?: string | null;
+  /** Le nom de la société : retrouvée si elle existe, créée sinon. */
+  company_name?: string | null;
   password?: string | null;
 }) =>
   call<Person & { password_set: boolean; invitation: { envoi: string; erreur: string | null } | null }>("POST", "/profiles", body);

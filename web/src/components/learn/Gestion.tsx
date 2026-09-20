@@ -6,6 +6,7 @@ import {
   enrollLearner,
   generateSlots,
   getProfiles,
+  listCompanies,
   LearnError,
   type Person,
 } from "@/lib/learn";
@@ -55,7 +56,15 @@ const ROLE_LABEL: Record<string, string> = {
 // ── Comptes ──────────────────────────────────────────────────────────────────────────
 
 export function FormulaireCompte({ roles, onCree }: { roles: string[]; onCree: () => void }) {
-  const [f, setF] = useState({ full_name: "", email: "", role: roles[0] ?? "", username: "", phone: "", password: "" });
+  const [f, setF] = useState({ full_name: "", email: "", role: roles[0] ?? "", username: "", phone: "", password: "", company_name: "" });
+  // `learn_profiles_company_required` impose une société à tout profil « entreprise ».
+  // Le formulaire proposait le rôle sans jamais demander la société : la création
+  // échouait à tous les coups, sur un « invalid_value » que personne ne pouvait lire.
+  const [societes, setSocietes] = useState<{ id: string; name: string }[]>([]);
+  useEffect(() => {
+    if (f.role !== "entreprise" || societes.length) return;
+    void listCompanies().then((r) => setSocietes(r.items)).catch(() => undefined);
+  }, [f.role, societes.length]);
   const { busy, message, run } = useEnvoi();
   useEffect(() => {
     if (!f.role && roles[0]) setF((x) => ({ ...x, role: roles[0] }));
@@ -74,6 +83,7 @@ export function FormulaireCompte({ roles, onCree }: { roles: string[]; onCree: (
               role: f.role,
               username: f.username.trim() || null,
               phone: f.phone.trim() || null,
+              company_name: f.role === "entreprise" ? f.company_name.trim() || null : null,
               password: f.password || null,
             }),
           (r) =>
@@ -84,7 +94,7 @@ export function FormulaireCompte({ roles, onCree }: { roles: string[]; onCree: (
                 : `Compte créé, mais l'invitation n'est pas partie (${r.invitation?.erreur ?? "raison inconnue"}). Voir « Identité & e-mails ».`,
         );
         if (ok) {
-          setF({ full_name: "", email: "", role: roles[0] ?? "", username: "", phone: "", password: "" });
+          setF({ full_name: "", email: "", role: roles[0] ?? "", username: "", phone: "", password: "", company_name: "" });
           onCree();
         }
       }}
@@ -96,6 +106,24 @@ export function FormulaireCompte({ roles, onCree }: { roles: string[]; onCree: (
           <option key={r} value={r}>{ROLE_LABEL[r] ?? r}</option>
         ))}
       </select>
+      {f.role === "entreprise" && (
+        <>
+          <input
+            className={champ}
+            required
+            list="societes-clientes"
+            placeholder="Société cliente"
+            value={f.company_name}
+            onChange={(e) => setF({ ...f, company_name: e.target.value })}
+          />
+          {/* Choisir une société existante ou en nommer une nouvelle : le serveur
+              rattache à celle qui porte ce nom, et ne la crée que si elle manque —
+              sans quoi deux collègues finiraient dans deux sociétés homonymes. */}
+          <datalist id="societes-clientes">
+            {societes.map((s) => <option key={s.id} value={s.name} />)}
+          </datalist>
+        </>
+      )}
       <input className={champ} placeholder="Identifiant court (facultatif)" value={f.username} onChange={(e) => setF({ ...f, username: e.target.value })} />
       <input className={champ} placeholder="Téléphone +33… (facultatif)" value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} />
       <input className={champ} type="password" minLength={12} autoComplete="new-password" placeholder="Mot de passe (facultatif : sans mot de passe, la personne reçoit une invitation)" value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} />
