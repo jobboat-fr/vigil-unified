@@ -43,6 +43,10 @@ install -m 644 "$ICI/grafana-datasource.yaml" /etc/grafana/provisioning/datasour
 install -m 644 "$ICI/grafana-dashboards.yaml" /etc/grafana/provisioning/dashboards/vtlvs.yaml
 install -m 644 "$ICI/tableau-vtlvs.json" /var/lib/grafana/dashboards/vtlvs.json
 install -m 644 "$ICI/alertes.yaml" /etc/grafana/provisioning/alerting/vtlvs.yaml
+# Le point de contact et la politique de notification. Sans ce fichier, les quatre règles
+# se declenchent et ne previennent personne — ce qui a ete le cas jusqu'au 21/09.
+envsubst < "$ICI/contacts.yaml" > /etc/grafana/provisioning/alerting/contacts.yaml
+chmod 644 /etc/grafana/provisioning/alerting/contacts.yaml
 chown -R grafana:grafana /var/lib/grafana/dashboards
 # Le mot de passe admin n'est écrit que par variable d'environnement de l'unité, jamais dans grafana.ini.
 install -d /etc/systemd/system/grafana-server.service.d

@@ -228,6 +228,11 @@ def create_app(config: GatewayConfig | None = None) -> FastAPI:
     # Mon compte (RGPD) et support — avant l'ancien routeur, dont DELETE /api/v1/account est retiré.
     from winny_gateway.routes import compte_support
     app.include_router(compte_support.router)
+    # Les alertes Grafana : reçues ici, remises par l'entonnoir de LEARN. Grafana tourne
+    # sur l'hôte OVH, d'où le SMTP sortant est bloqué — un point de contact « email » y
+    # resterait muet, et muet de la même façon silencieuse qu'aujourd'hui.
+    from winny_gateway.routes import alertes
+    app.include_router(alertes.router)
     app.include_router(account.router)
     app.include_router(ws.router)
     app.include_router(events.router)

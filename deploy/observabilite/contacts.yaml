@@ -1,0 +1,60 @@
+# Où vont les alertes — le fichier qui manquait.
+#
+# Quatre règles existaient dans `alertes.yaml` et se déclenchaient. Aucune ne prévenait
+# personne : ni point de contact, ni politique de notification. Une alerte qui ne sort pas
+# de Grafana est un tableau de bord que quelqu'un doit penser à regarder, c'est-à-dire, en
+# pratique, une alerte qui n'existe pas.
+#
+# **Pourquoi un webhook et non le point de contact « email » de Grafana.** Grafana tourne
+# sur l'hôte OVH, d'où les ports SMTP sortants sont bloqués : un contact e-mail y resterait
+# muet, et muet exactement de la même façon silencieuse qu'aujourd'hui. Il faudrait en plus
+# poser un mot de passe de boîte sur la machine qui héberge l'agent — ce qu'on vient de lui
+# retirer.
+#
+# La passerelle reçoit donc l'alerte et la fait partir par l'entonnoir de LEARN : aucune
+# clé sur l'hôte, et une ligne dans `learn_notifications` pour chaque alerte remise.
+
+apiVersion: 1
+
+contactPoints:
+  - orgId: 1
+    name: passerelle-vtlvs
+    receivers:
+      - uid: passerelle-webhook
+        type: webhook
+        settings:
+          url: ${GRAFANA_WEBHOOK_URL}
+          httpMethod: POST
+          # Le secret partagé, comparé en temps constant côté passerelle. Sans lui, la
+          # route est fermée : un webhook non authentifié laisserait n'importe qui faire
+          # partir des courriels depuis le domaine de l'organisme.
+          authorization_scheme: ""
+          extraHeaders:
+            x-alerte-secret: ${GRAFANA_WEBHOOK_SECRET}
+        # Une alerte qui se résout est une information utile : elle dit que la panne est
+        # finie, et évite qu'on parte enquêter sur un incident déjà clos.
+        disableResolveMessage: false
+
+policies:
+  - orgId: 1
+    receiver: passerelle-vtlvs
+    # On groupe par nom d'alerte et par gravité : dix instances de la même règle font un
+    # message, pas dix. Le contraire produit un bruit qu'on finit par filtrer, et filtrer
+    # une alerte revient à la supprimer.
+    group_by: [alertname, gravite]
+    group_wait: 30s
+    group_interval: 5m
+    # Quatre heures avant de répéter une alerte toujours active. Assez pour ne pas oublier
+    # un incident en cours, assez peu pour ne pas dresser à ignorer.
+    repeat_interval: 4h
+    routes:
+      # Les alertes de gravité haute ne patientent pas : elles concernent une preuve légale
+      # ou un service à l'arrêt.
+      - receiver: passerelle-vtlvs
+        object_matchers:
+          # Le signe égal est quoté : nu, YAML le lit comme une étiquette réservée et
+          # le fichier ne se charge pas — Grafana démarre alors sans politique, donc sans
+          # notification, ce qui est précisément la panne qu'on corrige.
+          - [gravite, "=", haute]
+        group_wait: 10s
+        repeat_interval: 1h
