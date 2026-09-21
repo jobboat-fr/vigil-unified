@@ -17,6 +17,7 @@ import {
   type Session,
 } from "@/lib/learn";
 import { expliquerCourt } from "@/lib/refus";
+import { useLearnRole } from "@/lib/supabase";
 
 /**
  * Les acquis — ce que chaque apprenant a obtenu, et ce qui reste à corriger.
@@ -106,15 +107,25 @@ export default function LearnAcquisPage() {
   // Vrai quand tout le périmètre visible tient en une personne. C'est le cas de
   // l'apprenant, qui ne voit que lui — mais la condition porte sur les données, pas sur
   // le rôle : la page continue de ne jamais tester un profil, conformément à son en-tête.
+  const { role } = useLearnRole();
+
   const solo = useMemo(() => {
     const ids = new Set((grades ?? []).map((g) => g.profile_id));
-    // `<= 1` et non `=== 1` : à zéro ligne l'ensemble est vide, et c'est précisément le cas
-    // d'un apprenant qui n'a encore rien passé. Avec `=== 1`, il retombait sur le cadrage
-    // de l'organisme — « Résultats par apprenant », « Apprenants évalués », « indicateur 1 »
-    // — exactement là où l'écran est le plus nu et le moins explicable. Constaté en parcourant
-    // l'application avec un vrai compte apprenant.
-    return ids.size <= 1;
-  }, [grades]);
+    // Au moins deux personnes dans le périmètre : c'est un suivi d'organisme, sans
+    // ambiguïté possible.
+    if (ids.size > 1) return false;
+    // Une seule : c'est la personne elle-même.
+    if (ids.size === 1) return true;
+    // Zéro ligne, et là les données ne disent rien — ni « c'est vous », ni « c'est votre
+    // groupe ». `<= 1` tranchait pour l'apprenant, ce qui est juste pour lui et faux pour
+    // un formateur : le menu lui promet « Suivi des acquis » et la page lui répondait
+    // « Mes résultats ». Constaté en parcourant l'application avec un vrai compte
+    // formateur, sur un compte sans session attribuée.
+    //
+    // Le rôle sert donc uniquement d'arbitre à zéro ligne. La page continue de ne jamais
+    // tester un profil, et dès qu'une donnée existe c'est elle qui décide.
+    return role !== "formateur" && role !== "admin" && role !== "super_admin" && role !== "auditeur";
+  }, [grades, role]);
 
   const parApprenant = useMemo(() => {
     const m = new Map<string, GradeRow[]>();
