@@ -21,7 +21,8 @@ import {
   type Can,
 } from "@/lib/learn";
 import { expliquerCourt } from "@/lib/refus";
-import { statutSession, typeEvaluation } from "@/lib/mots";
+import { modalite, typeEvaluation } from "@/lib/mots";
+import { Pastilles } from "@/components/PastilleTheme";
 
 /**
  * L'offre de formation, et tout ce qui s'y rattache.
@@ -162,10 +163,13 @@ export default function LearnFormationsPage() {
                   ) : null}
                 </CardTitle>
                 <p className="text-xs opacity-70">
-                  {p.duration_hours} h · {p.modality}
-                  {p.certifiante ? ` · certifiante${p.rncp_code ? ` (${p.rncp_code})` : ""}` : ""}
+                  {p.duration_hours} h · {modalite(p.modality)}
                   {p.version > 1 ? ` · v${p.version}` : ""}
                 </p>
+                {/* Les pastilles remplacent la mention « certifiante » recopiée à la main :
+                    le serveur la déduit déjà de la colonne, et deux endroits pour un même
+                    fait finissent toujours par se contredire. */}
+                <Pastilles themes={p.themes} className="mt-2" />
               </CardHeader>
 
               <CardContent className="flex-1 space-y-4 text-sm">
@@ -208,8 +212,9 @@ export default function LearnFormationsPage() {
                         ) : (
                           <span className="min-w-0 truncate">{nom}</span>
                         )}
-                        <span className="shrink-0 text-xs opacity-60">
-                          {frDate(s.starts_on)} · {statutSession(s.status)}
+                        <span className="flex shrink-0 items-center gap-2 text-xs opacity-60">
+                          <Pastilles themes={s.themes} />
+                          {frDate(s.starts_on)}
                         </span>
                       </li>
                     );

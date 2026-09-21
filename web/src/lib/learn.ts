@@ -11,6 +11,7 @@
 // check in TypeScript is a second copy of a rule the database already owns.
 import { getAccessToken, signalerSessionExpiree } from "./supabase";
 import { WW_BASE, GatewayError } from "./ww";
+import type { ThemeFormation } from "./mots";
 import { memoriserReference, nouvelleReference } from "./reference";
 
 /**
@@ -298,6 +299,7 @@ export interface Program {
    *  quand aucune fiche publique n'existe — auquel cas on n'affiche pas de lien
    *  plutôt que d'en afficher un qui tombe en 404. */
   vitrine_slug: string | null;
+  themes?: ThemeFormation[] | null;
   _can?: Can;
 }
 
@@ -317,6 +319,9 @@ export interface Session {
   status: string;
   program_title?: string | null;
   enrolled?: number | null;
+  /** Calculés par le serveur (`app/learn/themes.py`) et jamais recalculés ici :
+   *  une pastille de rareté doit dire ce que la base sait, pas ce que l'écran croit. */
+  themes?: ThemeFormation[] | null;
   _can?: Can;
 }
 

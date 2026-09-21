@@ -159,3 +159,54 @@ const ROLE: Record<string, string> = {
   prospect: "Visiteur",
 };
 export const nomRole = (v?: string | null) => traduire(ROLE, v);
+
+// ----------------------------------------------------------------- thèmes de formation
+
+/** Un thème tel que le serveur le rend : un code, et sa valeur quand il y en a une. */
+export interface ThemeFormation {
+  code: string;
+  valeur?: string | number | null;
+}
+
+/**
+ * Le libellé d'un thème.
+ *
+ * Les règles vivent côté serveur (`app/learn/themes.py`) — le serveur dit ce qui est vrai,
+ * l'écran dit comment ça se dit. Le nombre de places n'est donc jamais recalculé ici : il
+ * arrive déjà compté, et une pastille de rareté qui se recalculerait à l'écran pourrait
+ * diverger de ce que la base sait.
+ */
+export function libelleTheme(t: ThemeFormation): string {
+  switch (t.code) {
+    case "complet":
+      return "Complet";
+    case "annulee":
+      return "Annulée";
+    case "dernieres_places": {
+      const n = Number(t.valeur ?? 0);
+      return n === 1 ? "Dernière place" : `Plus que ${n} places`;
+    }
+    case "session_confirmee":
+      return "Session confirmée";
+    case "nouvelle_session":
+      return "Nouvelle session";
+    case "derniere_session":
+      return "Dernière session programmée";
+    case "nouveau":
+      return "Nouveau";
+    case "plus_suivi":
+      return "Le plus suivi";
+    case "certifiante":
+      return t.valeur ? `Certifiante · ${t.valeur}` : "Certifiante";
+    case "opco":
+      return "Éligible OPCO";
+    case "entree_permanente":
+      return "Entrée permanente";
+    case "nouveau_format":
+      return "Nouveau format";
+    case "prix_ferme":
+      return "Prix ferme";
+    default:
+      return humaniser(t.code);
+  }
+}
