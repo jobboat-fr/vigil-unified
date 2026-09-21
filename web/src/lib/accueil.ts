@@ -299,3 +299,34 @@ export function messageAccueil(e: unknown): string {
   const code = e instanceof LearnError ? (e.code ?? e.message) : "";
   return MESSAGES[code] ?? (e instanceof Error ? e.message : "Une erreur est survenue.");
 }
+
+// ----------------------------------------------------------------- composer un message
+
+/** Les trois natures. Ce qui les distingue n'est pas la mise en page mais le régime :
+ *  `direct` s'adresse à une relation établie et n'est pas désinscriptible ; `annonces`
+ *  l'est ; `newsletter` exige en plus un consentement explicite. */
+export type NatureMessage = "direct" | "annonces" | "newsletter";
+
+export type MessageAdmin = {
+  id: string;
+  nature: NatureMessage;
+  sujet: string;
+  corps: string;
+  auteur_nom: string | null;
+  cibles: number;
+  envoyes: number;
+  refuses: number;
+  attente: number;
+  created_at: string;
+};
+
+export const composerMessage = (body: {
+  nature: NatureMessage;
+  sujet: string;
+  corps: string;
+  destinataires: string[];
+  bouton_texte?: string | null;
+  bouton_url?: string | null;
+}) => call<{ id: string; cibles: number; differes: number }>("POST", "/messages", body);
+
+export const getMessagesAdmin = () => call<{ items: MessageAdmin[] }>("GET", "/messages");

@@ -70,6 +70,7 @@ import {
   Network,
   ListChecks,
   MailCheck,
+  Send,
   FileSignature,
   Inbox,
 } from "lucide-react";
@@ -151,6 +152,7 @@ import { AssistantIndisponible } from "@/components/AssistantIndisponible";
 import AccueilPage from "@/pages/AccueilPage";
 import SignerDocumentPage from "@/pages/SignerDocumentPage";
 import IdentiteEmailsPage from "@/pages/IdentiteEmailsPage";
+import ComposerPage from "@/pages/ComposerPage";
 import DocumentsASignerPage from "@/pages/DocumentsASignerPage";
 import ActionsRequisesPage from "@/pages/ActionsRequisesPage";
 import { getAccueilRecent } from "@/lib/accueil";
@@ -296,6 +298,7 @@ const BUILTIN_ROUTES_CORE: Record<string, ComponentType> = {
   "/accueil": AccueilPage,
   "/accueil/documents/:id": SignerDocumentPage,
   "/learn/identite": IdentiteEmailsPage,
+  "/learn/messages": ComposerPage,
   "/learn/documents-a-signer": DocumentsASignerPage,
   "/learn/actions-requises": ActionsRequisesPage,
 
@@ -372,6 +375,7 @@ const BUILTIN_NAV_REST: NavItem[] = [
   { path: "/learn/actions-requises", label: "Actions requises", icon: ListChecks, group: "learn", roles: ["super_admin", "admin"] },
   { path: "/learn/documents-a-signer", label: "Documents à signer", icon: FileSignature, group: "learn", roles: ["super_admin", "admin"] },
   { path: "/learn/identite", label: "Identité & e-mails", icon: MailCheck, group: "learn", roles: ["super_admin", "admin"] },
+  { path: "/learn/messages", label: "Écrire aux personnes", icon: Send, group: "learn", roles: ["super_admin", "admin", "auditeur"] },
 
   { path: "/finance", label: "Finance", icon: Receipt, group: "company", roles: ["super_admin", "admin"], capability: ["finance", "read"] },
   { path: "/crm", label: "CRM", icon: Contact, group: "company", roles: ["super_admin", "admin"], capability: ["crm", "read"] },
