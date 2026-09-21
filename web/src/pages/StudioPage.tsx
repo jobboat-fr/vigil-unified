@@ -9,6 +9,7 @@ import { useLearnRole } from "@/lib/supabase";
 import { ACCESS_LABELS, KINDS, KIND_LABELS, dateRelative } from "@/lib/studio";
 import { PartagerArtefact } from "@/components/studio/PartagerArtefact";
 import { AssistantArtefact } from "@/components/studio/AssistantArtefact";
+import { expliquerCourt } from "@/lib/refus";
 
 const ArtifactCanvas = lazy(() =>
   import("@/components/ArtifactCanvas").then((m) => ({ default: m.ArtifactCanvas })),
@@ -60,7 +61,7 @@ export default function StudioPage() {
       setErreurListe(null);
     } catch (e) {
       setMiens([]);
-      setErreurListe(e instanceof GatewayError && e.code === "NO_SESSION" ? "Connectez-vous pour ouvrir le studio." : (e as Error).message);
+      setErreurListe(e instanceof GatewayError && e.code === "NO_SESSION" ? "Connectez-vous pour ouvrir le studio." : expliquerCourt(e));
     }
   }, []);
 
@@ -73,14 +74,14 @@ export default function StudioPage() {
     if (onglet !== "organisme" || !estAdmin) return;
     vigil.studio.listOrganisme().then((r) => setOrganisme(r.artifacts)).catch((e) => {
       setOrganisme([]);
-      setErreurListe((e as Error).message);
+      setErreurListe(expliquerCourt(e));
     });
   }, [onglet, estAdmin]);
 
   const [searchParams] = useSearchParams();
   useEffect(() => {
     const id = searchParams.get("artifact");
-    if (id) vigil.studio.get(id).then(setActive).catch((e) => setError((e as Error).message));
+    if (id) vigil.studio.get(id).then(setActive).catch((e) => setError(expliquerCourt(e)));
   }, [searchParams]);
 
   const { setTitle } = usePageHeader();
@@ -98,7 +99,7 @@ export default function StudioPage() {
       setPlan(res.plan);
       setPlanStub(res.stub);
     } catch (e) {
-      setError(`${(e as Error).message} Votre consigne est gardée : réessayez quand vous voulez.`);
+      setError(`${expliquerCourt(e)} Votre consigne est gardée : réessayez quand vous voulez.`);
     } finally {
       setThinking(false);
     }
@@ -122,7 +123,7 @@ export default function StudioPage() {
       setOnglet("miens");
       await refresh();
     } catch (e) {
-      setError(`${(e as Error).message} Les approches restent affichées : vous pouvez relancer la rédaction.`);
+      setError(`${expliquerCourt(e)} Les approches restent affichées : vous pouvez relancer la rédaction.`);
     } finally {
       setDrafting(false);
     }
@@ -133,7 +134,7 @@ export default function StudioPage() {
     try {
       setActive(await vigil.studio.get(id));
     } catch (e) {
-      setError((e as Error).message);
+      setError(expliquerCourt(e));
     }
   };
 
@@ -144,7 +145,7 @@ export default function StudioPage() {
       setConfirmerSuppression(null);
       await refresh();
     } catch (e) {
-      setError((e as Error).message);
+      setError(expliquerCourt(e));
     }
   };
 
@@ -155,7 +156,7 @@ export default function StudioPage() {
       setOnglet("miens");
       await refresh();
     } catch (e) {
-      setError((e as Error).message);
+      setError(expliquerCourt(e));
     }
   };
 

@@ -14,13 +14,13 @@ import {
   getCourses,
   getAssessments,
   getCourseOutline,
-  LearnError,
   type Program,
   type Session,
   type Course,
   type Assessment,
   type Can,
 } from "@/lib/learn";
+import { expliquerCourt } from "@/lib/refus";
 
 /**
  * L'offre de formation, et tout ce qui s'y rattache.
@@ -60,7 +60,7 @@ export default function LearnFormationsPage() {
     }
     else {
       setPrograms([]);
-      setError(p.reason instanceof LearnError ? p.reason.message : "Chargement impossible.");
+      setError(expliquerCourt(p.reason, "les formations"));
     }
     if (s.status === "fulfilled") {
       setSessions(s.value.items);

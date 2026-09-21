@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@nous-research/ui/ui/components/button";
 import { support, type Demande } from "@/lib/compte";
+import { expliquerCourt } from "@/lib/refus";
 
 const STATUTS: Record<Demande["status"], string> = { open: "À traiter", answered: "Répondu", closed: "Clos" };
 
@@ -18,7 +19,7 @@ export default function SupportBoitePage() {
       setErreur("");
     } catch (e) {
       setDemandes([]);
-      setErreur((e as Error).message);
+      setErreur(expliquerCourt(e));
     }
   }, [filtre]);
 
@@ -30,7 +31,7 @@ export default function SupportBoitePage() {
       setReponse("");
       await charger();
     } catch (e) {
-      setErreur((e as Error).message);
+      setErreur(expliquerCourt(e));
     }
   };
 

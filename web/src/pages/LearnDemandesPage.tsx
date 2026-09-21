@@ -7,10 +7,10 @@ import {
   getSessions,
   convertLead,
   refuseLead,
-  LearnError,
   type LeadDetail,
   type Session,
 } from "@/lib/learn";
+import { expliquerCourt } from "@/lib/refus";
 
 const STATUT: Record<string, string> = {
   recue: "Reçue",
@@ -51,7 +51,7 @@ export default function LearnDemandesPage() {
       setItems(r.items);
     } catch (e) {
       setItems([]);
-      setErreur(e instanceof LearnError ? e.message : "Chargement impossible.");
+      setErreur(expliquerCourt(e, "les demandes"));
     }
   }, [filtre]);
 
@@ -70,7 +70,7 @@ export default function LearnDemandesPage() {
         setFiche(f);
         setSessionChoisie(f.session_id ?? "");
       })
-      .catch((e) => setErreur(e instanceof LearnError ? e.message : "Fiche introuvable."));
+      .catch((e) => setErreur(expliquerCourt(e, "cette fiche")));
   }, [selection]);
 
   useEffect(() => {
@@ -95,7 +95,7 @@ export default function LearnDemandesPage() {
       setSelection(null);
       await charger();
     } catch (e) {
-      setErreur(e instanceof LearnError ? e.message : "Inscription impossible.");
+      setErreur(expliquerCourt(e, "cette inscription"));
     }
     setBusy(false);
   }
@@ -110,7 +110,7 @@ export default function LearnDemandesPage() {
       setSelection(null);
       await charger();
     } catch (e) {
-      setErreur(e instanceof LearnError ? e.message : "Refus impossible.");
+      setErreur(expliquerCourt(e, "ce refus"));
     }
     setBusy(false);
   }

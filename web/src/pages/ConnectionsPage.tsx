@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/c
 import { Button } from "@nous-research/ui/ui/components/button";
 import { vigil, type ConnectStatus, type Connection } from "@/lib/vigil";
 import { GatewayError } from "@/lib/ww";
+import { expliquerCourt } from "@/lib/refus";
 
 // Connections — tenants link their systems of record (GitHub, HubSpot, Stripe, …)
 // with a per-provider token. Tokens are stored encrypted and never returned; the
@@ -31,7 +32,7 @@ export default function ConnectionsPage() {
       setAuthError(null);
     } catch (e) {
       if (e instanceof GatewayError && e.code === "NO_SESSION") setAuthError("Connectez-vous pour relier vos outils.");
-      else setAuthError((e as Error).message);
+      else setAuthError(expliquerCourt(e));
     }
   }, []);
 
@@ -56,7 +57,7 @@ export default function ConnectionsPage() {
       note(provider, `Connected ${connection.external_account || provider}.`);
       await refresh();
     } catch (e) {
-      note(provider, "", (e as Error).message);
+      note(provider, "", expliquerCourt(e));
     } finally {
       setBusy("");
     }
@@ -70,7 +71,7 @@ export default function ConnectionsPage() {
       note(c.provider, `Synced: ${counts || "ok"}.`);
       await refresh();
     } catch (e) {
-      note(c.provider, "", (e as Error).message);
+      note(c.provider, "", expliquerCourt(e));
     } finally {
       setBusy("");
     }

@@ -10,6 +10,7 @@ import { Link } from "react-router-dom";
 import { getCalendar, issueCalendarToken, LearnError, type Slot } from "@/lib/learn";
 import { isoDay } from "@/lib/day";
 import { RejoindreSalle } from "@/components/RejoindreSalle";
+import { expliquerCourt } from "@/lib/refus";
 
 /**
  * The calendar — one component for every profile.
@@ -63,7 +64,7 @@ export default function LearnCalendarPage() {
       setError(null);
     } catch (e) {
       if (e instanceof LearnError && e.unavailable) setUnavailable(true);
-      else setError((e as Error).message);
+      else setError(expliquerCourt(e));
     }
   }, [days]);
 
@@ -230,7 +231,7 @@ export default function LearnCalendarPage() {
               setIcsErreur(null);
               void issueCalendarToken()
                 .then((r) => setIcs(r.url))
-                .catch((e) => setIcsErreur((e as Error).message));
+                .catch((e) => setIcsErreur(expliquerCourt(e)));
             }}
             className="border-current/25 rounded border px-3 py-1.5 hover:bg-current/5"
           >

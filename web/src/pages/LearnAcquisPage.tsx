@@ -12,11 +12,11 @@ import {
   getBlocs,
   getReviewQueue,
   getSessions,
-  LearnError,
   type GradeRow,
   type BlocRow,
   type Session,
 } from "@/lib/learn";
+import { expliquerCourt } from "@/lib/refus";
 
 /**
  * Les acquis — ce que chaque apprenant a obtenu, et ce qui reste à corriger.
@@ -74,7 +74,7 @@ export default function LearnAcquisPage() {
       setQueue(q.items);
     } catch (e) {
       setGrades([]);
-      setError(e instanceof LearnError ? e.message : "Chargement impossible.");
+      setError(expliquerCourt(e, "vos acquis"));
     }
   }, [sessionId]);
 

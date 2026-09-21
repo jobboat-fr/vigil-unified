@@ -11,10 +11,10 @@ import {
 import {
   getProfiles,
   getAssignableRoles,
-  LearnError,
   type Person,
   type Can,
 } from "@/lib/learn";
+import { expliquerCourt } from "@/lib/refus";
 
 const ROLE_LABEL: Record<string, string> = {
   super_admin: "Super administrateur",
@@ -53,7 +53,7 @@ export default function LearnPeoplePage() {
       setCan(r._can ?? null);
     } catch (e) {
       setPeople([]);
-      setError(e instanceof LearnError ? e.message : "Chargement impossible.");
+      setError(expliquerCourt(e, "les comptes"));
     }
     try {
       const r = await getAssignableRoles();

@@ -4,6 +4,7 @@ import { Button } from "@nous-research/ui/ui/components/button";
 import { useAuth } from "@/context/AuthContext";
 import { useLearnRole } from "@/lib/supabase";
 import { compte, LIENS_LEGAUX } from "@/lib/compte";
+import { expliquerCourt } from "@/lib/refus";
 
 const ROLES: Record<string, string> = {
   super_admin: "Éditeur de la plateforme", admin: "Direction de l'organisme", formateur: "Formateur",
@@ -38,7 +39,7 @@ export default function MonComptePage() {
       setExportEtat("pret");
     } catch (e) {
       setExportEtat("erreur");
-      setExportMsg((e as Error).message);
+      setExportMsg(expliquerCourt(e));
     }
   };
 
@@ -51,7 +52,7 @@ export default function MonComptePage() {
       setTimeout(() => void signOut(), 4000);
     } catch (e) {
       setEtape("confirmer");
-      setErreur((e as Error).message);
+      setErreur(expliquerCourt(e));
     }
   };
 

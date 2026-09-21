@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Button } from "@nous-research/ui/ui/components/button";
 import { vigil, type ArtifactShare } from "@/lib/vigil";
 import { dateLongue, dateRelative } from "@/lib/studio";
+import { expliquerCourt } from "@/lib/refus";
 
 const champ = "rounded-md border border-current/20 bg-transparent px-3 py-2 text-sm outline-none focus:border-current/50";
 
@@ -27,7 +28,7 @@ export function PartagerArtefact({ artifactId, onClose }: { artifactId: string; 
       setPeople(r.people);
       setLink(r.link);
     } catch (e) {
-      setMessage({ ton: "erreur", texte: (e as Error).message });
+      setMessage({ ton: "erreur", texte: expliquerCourt(e) });
     }
   }, [artifactId]);
 
@@ -45,7 +46,7 @@ export function PartagerArtefact({ artifactId, onClose }: { artifactId: string; 
       setMessage({ ton: "ok", texte: `${s.person?.full_name || s.person?.email} ${access === "edit" ? "peut maintenant modifier" : "peut maintenant lire"} ce document.` });
       await charger();
     } catch (e) {
-      setMessage({ ton: "erreur", texte: (e as Error).message });
+      setMessage({ ton: "erreur", texte: expliquerCourt(e) });
     } finally {
       setBusy(false);
     }
@@ -53,12 +54,12 @@ export function PartagerArtefact({ artifactId, onClose }: { artifactId: string; 
 
   const changerAcces = async (s: ArtifactShare, a: "view" | "edit") => {
     if (!s.person) return;
-    await vigil.studio.share(artifactId, s.person.email, a).catch((e) => setMessage({ ton: "erreur", texte: (e as Error).message }));
+    await vigil.studio.share(artifactId, s.person.email, a).catch((e) => setMessage({ ton: "erreur", texte: expliquerCourt(e) }));
     await charger();
   };
 
   const retirer = async (s: ArtifactShare) => {
-    await vigil.studio.revokeShare(artifactId, s.id).catch((e) => setMessage({ ton: "erreur", texte: (e as Error).message }));
+    await vigil.studio.revokeShare(artifactId, s.id).catch((e) => setMessage({ ton: "erreur", texte: expliquerCourt(e) }));
     if (!s.person) setNouveauLien(null);
     await charger();
   };
@@ -72,7 +73,7 @@ export function PartagerArtefact({ artifactId, onClose }: { artifactId: string; 
       setCopie(false);
       await charger();
     } catch (e) {
-      setMessage({ ton: "erreur", texte: (e as Error).message });
+      setMessage({ ton: "erreur", texte: expliquerCourt(e) });
     } finally {
       setBusy(false);
     }

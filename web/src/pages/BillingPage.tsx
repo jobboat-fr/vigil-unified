@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/c
 import { Button } from "@nous-research/ui/ui/components/button";
 import { billing, type BillingInfo, type BillingTier } from "@/lib/vigil";
 import { GatewayError } from "@/lib/ww";
+import { expliquerCourt } from "@/lib/refus";
 
 // Billing — plan, usage, and self-serve upgrades. Checkout runs on Stripe
 // (gateway /v1/billing/checkout → redirect); the webhook provisions the org's
@@ -95,7 +96,7 @@ export default function BillingPage() {
       setErr(null);
     } catch (e) {
       if (e instanceof GatewayError && e.code === "NO_SESSION") setErr("Connectez-vous pour gérer la facturation.");
-      else setErr((e as Error).message);
+      else setErr(expliquerCourt(e));
     }
   }, []);
 
@@ -111,7 +112,7 @@ export default function BillingPage() {
       const { url } = await billing.checkout(tierId);
       window.location.assign(url);
     } catch (e) {
-      setErr((e as Error).message);
+      setErr(expliquerCourt(e));
       setBusyTier("");
     }
   };
@@ -123,7 +124,7 @@ export default function BillingPage() {
       const { url } = await billing.portal();
       window.location.assign(url);
     } catch (e) {
-      setErr((e as Error).message);
+      setErr(expliquerCourt(e));
       setPortalBusy(false);
     }
   };

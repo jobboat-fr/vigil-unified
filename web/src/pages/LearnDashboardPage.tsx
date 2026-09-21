@@ -15,6 +15,7 @@ import {
   LearnError,
   type Dashboard,
 } from "@/lib/learn";
+import { expliquerCourt } from "@/lib/refus";
 
 /**
  * The organisme at a glance.
@@ -107,7 +108,7 @@ export default function LearnDashboardPage() {
       setError(null);
     } catch (e) {
       if (e instanceof LearnError && e.unavailable) setUnavailable(true);
-      else setError((e as Error).message);
+      else setError(expliquerCourt(e));
     }
   }, [piloteOuControle]);
 

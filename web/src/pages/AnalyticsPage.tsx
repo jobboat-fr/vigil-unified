@@ -515,7 +515,9 @@ export default function AnalyticsPage() {
                 <span className="font-mono">
                   dashboard.show_token_analytics: true
                 </span>{" "}
-                in <a href="/config" className="underline">Config</a>.
+                {/* L'ecran /config fait partie des ecrans Hermes retires : ce lien
+                    tombait sur le repli et ne menait nulle part. */}
+                in the gateway configuration.
               </p>
             </div>
           </CardContent>

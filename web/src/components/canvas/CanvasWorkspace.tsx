@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { VigilNode, type VigilNodeData, type BlockShape } from './VigilNode';
 import { PALETTE } from './constants';
+import { expliquerCourt } from "@/lib/refus";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -243,7 +244,7 @@ function CanvasInner({ initialNodes = [], initialEdges = [], onCanvasChange, col
       }
       setPrompt('');
     } catch (e) {
-      setAiErr((e as Error).message);
+      setAiErr(expliquerCourt(e));
     } finally {
       setBusy(false);
     }
@@ -290,7 +291,7 @@ function CanvasInner({ initialNodes = [], initialEdges = [], onCanvasChange, col
       }
       setPrompt('');
     } catch (e) {
-      setAiErr((e as Error).message);
+      setAiErr(expliquerCourt(e));
     } finally {
       setBusy(false);
     }

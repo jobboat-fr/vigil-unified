@@ -18,6 +18,7 @@ import {
 } from "@/lib/learn";
 import { RejoindreSalle } from "@/components/RejoindreSalle";
 import { isoDay } from "@/lib/day";
+import { expliquerCourt } from "@/lib/refus";
 
 /**
  * Le tableau de bord de l'apprenant.
@@ -102,7 +103,7 @@ export default function LearnDashboardApprenant() {
       setErreur(null);
     } catch (e) {
       if (e instanceof LearnError && e.unavailable) setIndisponible(true);
-      else setErreur((e as Error).message);
+      else setErreur(expliquerCourt(e));
     } finally {
       setCharge(true);
     }

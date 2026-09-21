@@ -1,22 +1,30 @@
 import type { ReactNode } from "react";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@nous-research/ui/ui/components/card";
+import { Card, CardContent } from "@nous-research/ui/ui/components/card";
 import { Spinner } from "@nous-research/ui/ui/components/spinner";
+import { Refus } from "@/components/Refus";
 import type { WwState } from "@/lib/useWw";
 
 /**
- * Wrap live gateway-backed content with consistent loading / sign-in / offline
- * states. Keeps showing data across transient refresh failures.
+ * L'attente, le besoin de session et l'échec, rendus pareil partout.
+ *
+ * Le contenu déjà chargé reste à l'écran quand un rafraîchissement échoue : perdre une
+ * liste qu'on était en train de lire parce qu'un appel de fond a raté est une punition
+ * sans raison.
+ *
+ * L'échec passe désormais par `Refus`, qui traduit le statut en phrase. Ce bloc affichait
+ * `state.error.message` — or ce message *est* le code technique, `LearnError` étant
+ * construite avec `code ?? "HTTP 404"`. La personne lisait donc `organisme_hors_perimetre`.
  */
 export function WwGate({
   state,
+  quoi,
+  onReessayer,
   children,
 }: {
   state: WwState<unknown>;
+  /** Ce que l'écran tentait d'obtenir, au groupe nominal : « la liste des sessions ». */
+  quoi?: string;
+  onReessayer?: () => void;
   children: ReactNode;
 }) {
   if (state.data == null && state.loading) {
@@ -26,65 +34,25 @@ export function WwGate({
       </div>
     );
   }
+
   if (state.data == null && state.needsAuth) {
-    return (
-      <Card>
-        <CardContent className="py-10 text-center text-sm text-text-secondary">
-          Connectez-vous pour charger les données.
-        </CardContent>
-      </Card>
-    );
+    return <Refus erreur={{ status: 401 }} quoi={quoi} />;
   }
+
   if (state.data == null && state.error) {
-    // Le vrai motif, pas un « hors ligne » générique : un refus de droit, une base absente et
-    // une passerelle injoignable ne se règlent pas de la même façon.
-    const refus = state.error.status === 403;
-    return (
-      <Card>
-        <CardContent className="py-10 text-center text-sm text-text-secondary">
-          <p className="font-medium">{state.error.message}</p>
-          {refus ? null : <p className="mt-1 text-xs opacity-70">Nouvel essai automatique…</p>}
-        </CardContent>
-      </Card>
-    );
+    return <Refus erreur={state.error} quoi={quoi} onReessayer={onReessayer} />;
   }
+
   return <>{children}</>;
 }
 
-/**
- * Shared shell for the VIGIL × WinnyWoo product pages added on top of the
- * agent runtime. These render as branded, navigable scaffolds; the live data
- * + logic are wired in a later pass (see docs/VIGIL_HERMES_MIGRATION.md).
- */
-export function ScaffoldPage({
-  title,
-  tagline,
-  points,
-  source,
-}: {
-  title: string;
-  tagline: string;
-  points: string[];
-  source: string;
-}) {
+/** Une carte sobre pour un contenu vide qui n'est pas une erreur. */
+export function CarteVide({ children }: { children: ReactNode }) {
   return (
-    <div className="flex flex-col gap-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>{title}</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-3">
-          <p className="text-sm text-text-secondary">{tagline}</p>
-          <ul className="list-disc pl-5 text-sm text-text-secondary space-y-1">
-            {points.map((p, i) => (
-              <li key={i}>{p}</li>
-            ))}
-          </ul>
-          <p className="text-xs opacity-60 font-mono">
-            data source: {source} · UI scaffolded — logic wiring next
-          </p>
-        </CardContent>
-      </Card>
-    </div>
+    <Card>
+      <CardContent className="py-10 text-center text-sm text-text-secondary">
+        {children}
+      </CardContent>
+    </Card>
   );
 }

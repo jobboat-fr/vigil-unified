@@ -4,6 +4,7 @@ import { Button } from "@nous-research/ui/ui/components/button";
 import { vigil, MAIL_CATEGORIES, type MailMessage, type MailTriageSummary } from "@/lib/vigil";
 import { GatewayError } from "@/lib/ww";
 import { EmptyState } from "@/components/EmptyState";
+import { expliquerCourt } from "@/lib/refus";
 
 const CAT_COLOR: Record<string, string> = {
   urgent: "#ef4444", respond: "#f59e0b", fyi: "#3b82f6",
@@ -32,7 +33,7 @@ export default function MailPage() {
       setAuthError(null);
     } catch (e) {
       if (e instanceof GatewayError && e.code === "NO_SESSION") setAuthError("Connectez-vous pour ouvrir la messagerie.");
-      else setErr((e as Error).message);
+      else setErr(expliquerCourt(e));
     }
   }, []);
 
@@ -48,7 +49,7 @@ export default function MailPage() {
       setSyncNote(r.available ? `Synced ${r.synced}/${r.fetched} from himalaya.` : `Mailbox transport unavailable (${r.reason}). Use manual ingest below.`);
       await refresh();
     } catch (e) {
-      setSyncNote((e as Error).message);
+      setSyncNote(expliquerCourt(e));
     } finally {
       setSyncing(false);
     }
@@ -59,7 +60,7 @@ export default function MailPage() {
     try {
       await vigil.mail.triage(id);
       await refresh();
-    } catch (e) { setErr((e as Error).message); }
+    } catch (e) { setErr(expliquerCourt(e)); }
     finally { setTriaging(null); }
   };
 
@@ -82,7 +83,7 @@ export default function MailPage() {
       });
       setFrom(""); setSubject(""); setSnippet("");
       await refresh();
-    } catch (e) { setErr((e as Error).message); }
+    } catch (e) { setErr(expliquerCourt(e)); }
   };
 
   const inputCls = "w-full rounded-md border border-current/20 bg-transparent px-3 py-2 text-sm outline-none focus:border-current/50";

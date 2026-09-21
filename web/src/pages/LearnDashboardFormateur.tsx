@@ -2,9 +2,10 @@ import { useCallback, useEffect, useState } from "react";
 import { SqueletteEcran } from "@/components/EmptyState";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/components/card";
-import { getCalendar, getSessions, getReviewQueue, LearnError, type Slot, type Session } from "@/lib/learn";
+import { getCalendar, getSessions, getReviewQueue, type Slot, type Session } from "@/lib/learn";
 import { RejoindreSalle } from "@/components/RejoindreSalle";
 import { isoDay } from "@/lib/day";
+import { expliquerCourt } from "@/lib/refus";
 
 /**
  * Le tableau de bord du formateur.
@@ -36,7 +37,7 @@ export default function LearnDashboardFormateur() {
     if (c.status === "fulfilled") setCreneaux(c.value.items.filter((x) => x.status !== "cancelled"));
     else {
       setCreneaux([]);
-      setErreur(c.reason instanceof LearnError ? c.reason.message : "Chargement impossible.");
+      setErreur(expliquerCourt(c.reason, "votre tableau de bord"));
     }
     if (s.status === "fulfilled") setSessions(s.value.items.filter((x) => x.status === "planned" || x.status === "running"));
     if (q.status === "fulfilled") setCopies(q.value.items.length);

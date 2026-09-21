@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/c
 import { Button } from "@nous-research/ui/ui/components/button";
 import { vigil, type FinanceTxn, type FinanceSummary, type FinanceConnectStatus } from "@/lib/vigil";
 import { GatewayError } from "@/lib/ww";
+import { expliquerCourt } from "@/lib/refus";
 
 const money = (n: number, ccy = "USD") =>
   new Intl.NumberFormat(undefined, { style: "currency", currency: ccy, maximumFractionDigits: 2 }).format(n);
@@ -28,7 +29,7 @@ export default function FinancePage() {
       setAuthError(null);
     } catch (e) {
       if (e instanceof GatewayError && e.code === "NO_SESSION") setAuthError("Connectez-vous pour ouvrir la finance.");
-      else setErr((e as Error).message);
+      else setErr(expliquerCourt(e));
     }
   }, []);
 
@@ -51,7 +52,7 @@ export default function FinancePage() {
       setAmount(""); setDesc(""); setCategory("");
       await refresh();
     } catch (e) {
-      setErr((e as Error).message);
+      setErr(expliquerCourt(e));
     } finally {
       setBusy(false);
     }
@@ -159,7 +160,7 @@ function ConnectPanel({ onSynced }: { onSynced: () => void }) {
     try {
       setStatus(await vigil.finance.connect.status());
     } catch (e) {
-      if (!(e instanceof GatewayError && e.code === "NO_SESSION")) setErr((e as Error).message);
+      if (!(e instanceof GatewayError && e.code === "NO_SESSION")) setErr(expliquerCourt(e));
     }
   }, []);
   useEffect(() => {
@@ -173,7 +174,7 @@ function ConnectPanel({ onSynced }: { onSynced: () => void }) {
   const wrap = async (key: string, fn: () => Promise<string>) => {
     setBusy(key); setErr(null); setMsg(null);
     try { setMsg(await fn()); await load(); onSynced(); }
-    catch (e) { setErr((e as Error).message); }
+    catch (e) { setErr(expliquerCourt(e)); }
     finally { setBusy(""); }
   };
 

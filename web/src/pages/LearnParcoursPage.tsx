@@ -16,7 +16,6 @@ import {
   getCourses,
   getCourseOutline,
   getAssessments,
-  LearnError,
   type Session,
   type SessionDetail,
   type Program,
@@ -24,6 +23,7 @@ import {
   type Assessment,
   type CourseModule,
 } from "@/lib/learn";
+import { expliquerCourt } from "@/lib/refus";
 
 /**
  * Le tableau des parcours — les sessions par état, et tout ce qui s'y rattache.
@@ -100,7 +100,7 @@ export default function LearnParcoursPage() {
       setError(null);
     } catch (e) {
       setSessions([]);
-      setError(e instanceof LearnError ? e.message : "Chargement impossible.");
+      setError(expliquerCourt(e, "votre parcours"));
     }
   }, []);
 

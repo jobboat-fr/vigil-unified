@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button } from "@nous-research/ui/ui/components/button";
 import { vigil, type Artifact } from "@/lib/vigil";
+import { expliquerCourt } from "@/lib/refus";
 
 const LENSES: { id: string; label: string }[] = [
   { id: "ideas", label: "Des idées" },
@@ -39,7 +40,7 @@ export function AssistantArtefact({
       setConsigne("");
       setRetour({ ton: "ok", texte: r.stub ? `${r.resume} (mode démonstration : aucun modèle configuré)` : r.resume });
     } catch (e) {
-      setRetour({ ton: "erreur", texte: `${(e as Error).message} Votre ${estTableau ? "tableau" : "document"} n'a pas été modifié.` });
+      setRetour({ ton: "erreur", texte: `${expliquerCourt(e)} Votre ${estTableau ? "tableau" : "document"} n'a pas été modifié.` });
     } finally {
       setBusy(null);
     }

@@ -8,6 +8,7 @@ import {
   CardTitle,
 } from "@nous-research/ui/ui/components/card";
 import { getVault, getVaultUrl, uploadVault, LearnError, type VaultObject } from "@/lib/learn";
+import { expliquerCourt } from "@/lib/refus";
 
 /**
  * Documents et coffre.
@@ -34,7 +35,7 @@ export default function LearnVaultPage() {
       setCan(r._can ?? null);
     } catch (e) {
       setItems([]);
-      setError(e instanceof LearnError ? e.message : "Chargement impossible.");
+      setError(expliquerCourt(e, "le coffre"));
     }
   }, []);
 
@@ -67,7 +68,7 @@ export default function LearnVaultPage() {
         await load();
       } catch (e) {
         setEnvoiErreur(
-          e instanceof LearnError ? e.message : "Le dépôt a échoué.",
+          expliquerCourt(e, "ce dépôt"),
         );
       } finally {
         setEnvoi(false);

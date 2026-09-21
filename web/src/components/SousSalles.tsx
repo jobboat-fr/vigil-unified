@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { vigil, type Breakout, type LiveKitJoin } from "@/lib/vigil";
+import { expliquerCourt } from "@/lib/refus";
 
 type Props = {
   roomId: string;
@@ -30,7 +31,7 @@ export function SousSalles({ roomId, role, groupeActuel, onEntrer, onPleniere }:
       setGroupes((await vigil.rooms.breakouts(roomId)).breakouts);
       setErreur(null);
     } catch (e) {
-      setErreur((e as Error).message);
+      setErreur(expliquerCourt(e));
     }
   }, [roomId]);
 
@@ -51,7 +52,7 @@ export function SousSalles({ roomId, role, groupeActuel, onEntrer, onPleniere }:
     try {
       await f();
     } catch (e) {
-      setErreur((e as Error).message);
+      setErreur(expliquerCourt(e));
     } finally {
       setAttente(false);
     }

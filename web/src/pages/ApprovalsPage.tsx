@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/c
 import { Button } from "@nous-research/ui/ui/components/button";
 import { vigil, type OutboundAction } from "@/lib/vigil";
 import { GatewayError } from "@/lib/ww";
+import { expliquerCourt } from "@/lib/refus";
 
 // Approvals — the human-in-the-loop gate for outbound write-actions. Departments
 // (and the UI) only ever PROPOSE; nothing leaves the system until it's approved here.
@@ -30,7 +31,7 @@ export default function ApprovalsPage() {
       setAuthError(null);
     } catch (e) {
       if (e instanceof GatewayError && e.code === "NO_SESSION") setAuthError("Connectez-vous pour traiter les validations.");
-      else setAuthError((e as Error).message);
+      else setAuthError(expliquerCourt(e));
     }
   }, []);
 
@@ -47,7 +48,7 @@ export default function ApprovalsPage() {
       else await vigil.connect.reject(a.id);
       await refresh();
     } catch (e) {
-      setErr((e as Error).message);
+      setErr(expliquerCourt(e));
     } finally {
       setBusy("");
     }

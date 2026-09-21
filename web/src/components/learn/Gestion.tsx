@@ -7,9 +7,9 @@ import {
   generateSlots,
   getProfiles,
   listCompanies,
-  LearnError,
   type Person,
 } from "@/lib/learn";
+import { expliquerCourt } from "@/lib/refus";
 
 /**
  * Les formulaires de gestion de l'organisme : comptes, programmes, sessions, créneaux,
@@ -31,7 +31,7 @@ function useEnvoi() {
       setMessage({ ok: true, texte: typeof ok === "function" ? ok(r) : ok });
       return true;
     } catch (e) {
-      setMessage({ ok: false, texte: e instanceof LearnError ? e.message : "Échec de l'enregistrement." });
+      setMessage({ ok: false, texte: expliquerCourt(e, "cet enregistrement") });
       return false;
     } finally {
       setBusy(false);

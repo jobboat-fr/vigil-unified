@@ -12,11 +12,11 @@ import {
   getSlotSheet,
   sign,
   countersign,
-  LearnError,
   type Slot,
   type SheetRow,
 } from "@/lib/learn";
 import { isoDay } from "@/lib/day";
+import { expliquerCourt } from "@/lib/refus";
 
 /**
  * Émargement — signer avant et après chaque demi-journée.
@@ -46,7 +46,7 @@ export default function LearnEmargementPage() {
       setSlots(r.items);
     } catch (e) {
       setSlots([]);
-      setError(e instanceof LearnError ? e.message : "Chargement impossible.");
+      setError(expliquerCourt(e, "l'émargement"));
     }
   }, []);
 
@@ -70,7 +70,7 @@ export default function LearnEmargementPage() {
       await fn();
       await refreshSheet(slotId);
     } catch (e) {
-      setError(e instanceof LearnError ? e.message : "Signature impossible.");
+      setError(expliquerCourt(e, "votre signature"));
     } finally {
       setBusy(null);
     }

@@ -4,6 +4,7 @@ import { Button } from "@nous-research/ui/ui/components/button";
 import { vigil, DEAL_STAGES, type CrmContact, type CrmDeal, type CrmPipeline } from "@/lib/vigil";
 import { GatewayError } from "@/lib/ww";
 import { EmptyState } from "@/components/EmptyState";
+import { expliquerCourt } from "@/lib/refus";
 
 const money = (n: number, ccy = "USD") =>
   new Intl.NumberFormat(undefined, { style: "currency", currency: ccy, maximumFractionDigits: 0 }).format(n);
@@ -31,7 +32,7 @@ export default function CrmPage() {
       setAuthError(null);
     } catch (e) {
       if (e instanceof GatewayError && e.code === "NO_SESSION") setAuthError("Connectez-vous pour ouvrir le CRM.");
-      else setErr((e as Error).message);
+      else setErr(expliquerCourt(e));
     }
   }, []);
 
@@ -46,7 +47,7 @@ export default function CrmPage() {
       await vigil.crm.addDeal({ title: dealTitle.trim(), value: parseFloat(dealValue) || 0, stage: "lead", probability: 10 });
       setDealTitle(""); setDealValue("");
       await refresh();
-    } catch (e) { setErr((e as Error).message); }
+    } catch (e) { setErr(expliquerCourt(e)); }
   };
 
   const moveStage = async (d: CrmDeal, stage: string) => {
@@ -63,7 +64,7 @@ export default function CrmPage() {
       await vigil.crm.addContact({ name: cName.trim(), company: cCompany.trim() || undefined });
       setCName(""); setCCompany("");
       await refresh();
-    } catch (e) { setErr((e as Error).message); }
+    } catch (e) { setErr(expliquerCourt(e)); }
   };
 
   const removeContact = async (id: string) => { await vigil.crm.removeContact(id); await refresh(); };

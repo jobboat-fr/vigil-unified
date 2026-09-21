@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { Button } from "@nous-research/ui/ui/components/button";
 import { useLearnRole } from "@/lib/supabase";
 import { LIENS_LEGAUX, support } from "@/lib/compte";
+import { expliquerCourt } from "@/lib/refus";
 
 type QR = { q: string; r: string; roles?: string[] };
 
@@ -49,7 +50,7 @@ export default function AidePage() {
       setSujet("");
       setMessage("");
     } catch (e) {
-      setEnvoi({ etat: "erreur", texte: `${(e as Error).message} Votre message est gardé.` });
+      setEnvoi({ etat: "erreur", texte: `${expliquerCourt(e)} Votre message est gardé.` });
     }
   };
 

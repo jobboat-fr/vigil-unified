@@ -4,9 +4,9 @@ import {
   getNoyauMeta,
   lienNoyau,
   putNoyauModel,
-  LearnError,
   type NoyauMeta,
 } from "@/lib/learn";
+import { expliquerCourt } from "@/lib/refus";
 
 /**
  * Le Noyau — la description de l'installation, servie depuis la base.
@@ -65,7 +65,7 @@ export default function NoyauPage() {
       } catch (e) {
         if (!vivant) return;
         setError(
-          e instanceof LearnError ? e.message : "Le document n'a pas pu être chargé.",
+          expliquerCourt(e, "le document"),
         );
       }
     })();
@@ -95,7 +95,7 @@ export default function NoyauPage() {
           repondre(true);
           await charger();
         } catch (e) {
-          repondre(false, e instanceof LearnError ? e.message : "écriture refusée");
+          repondre(false, expliquerCourt(e, "cette écriture"));
         }
       })();
     }

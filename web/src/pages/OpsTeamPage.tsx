@@ -7,6 +7,7 @@ import { vigil, type Department, type OpsEvent, type OpsTask, type OpsUsage } fr
 import { GatewayError } from "@/lib/ww";
 import AgentsMarques from "@/components/AgentsMarques";
 import { useLearnRole } from "@/lib/supabase";
+import { expliquerCourt } from "@/lib/refus";
 
 // Ops Team — the agentic company. Departments are on-demand agent units; each
 // only counts as "working" once its effectiveness selftest passes. P0 ships the
@@ -47,7 +48,7 @@ export default function OpsTeamPage() {
       setAuthError(null);
     } catch (e) {
       if (e instanceof GatewayError && e.code === "NO_SESSION") setAuthError("Connectez-vous pour ouvrir l'équipe agentique.");
-      else setAuthError((e as Error).message);
+      else setAuthError(expliquerCourt(e));
     }
   }, []);
 
@@ -63,7 +64,7 @@ export default function OpsTeamPage() {
       setResult((r) => ({ ...r, [d.id]: task }));
       await refresh();
     } catch (e) {
-      setAuthError((e as Error).message);
+      setAuthError(expliquerCourt(e));
     } finally {
       setBusy((b) => ({ ...b, [d.id]: "" }));
     }

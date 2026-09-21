@@ -5,6 +5,7 @@ import { Button } from "@nous-research/ui/ui/components/button";
 import { vigil, googleMeet, streamRoomCouncil, type Room, type CouncilRecord, type SseEvent, type LiveIntervention, type MeetingSummary, type MeetBotStatus, type AvatarSession } from "@/lib/vigil";
 import { LiveRoom } from "@/components/LiveRoom";
 import { EcartsEmargement } from "@/components/EcartsEmargement";
+import { expliquerCourt } from "@/lib/refus";
 
 const PERSONAS = ["CFO", "CTO", "COO", "CRM", "CRO", "advisor"] as const;
 import { GatewayError } from "@/lib/ww";
@@ -75,7 +76,7 @@ export default function MeetingRoomPage() {
       setMeetStatus(res);
       if (res.success === false || res.error) setMeetErr(res.error || "join failed");
     } catch (e) {
-      setMeetErr((e as Error).message);
+      setMeetErr(expliquerCourt(e));
     } finally {
       setMeetBusy(false);
     }
@@ -84,7 +85,7 @@ export default function MeetingRoomPage() {
     try {
       setMeetStatus(await googleMeet.status());
     } catch (e) {
-      setMeetErr((e as Error).message);
+      setMeetErr(expliquerCourt(e));
     }
   };
   const sayInMeet = async () => {
@@ -95,7 +96,7 @@ export default function MeetingRoomPage() {
       await googleMeet.say(t);
       setSayText("");
     } catch (e) {
-      setMeetErr((e as Error).message);
+      setMeetErr(expliquerCourt(e));
     } finally {
       setMeetBusy(false);
     }
@@ -122,7 +123,7 @@ export default function MeetingRoomPage() {
       setMeetImported(n);
       await reloadActive(active.id);
     } catch (e) {
-      setMeetErr((e as Error).message);
+      setMeetErr(expliquerCourt(e));
     } finally {
       setMeetBusy(false);
     }
@@ -140,7 +141,7 @@ export default function MeetingRoomPage() {
       await googleMeet.leave();
       setMeetStatus(null);
     } catch (e) {
-      setMeetErr((e as Error).message);
+      setMeetErr(expliquerCourt(e));
     } finally {
       setMeetBusy(false);
     }
@@ -153,7 +154,7 @@ export default function MeetingRoomPage() {
       setAuthError(null);
     } catch (e) {
       if (e instanceof GatewayError && e.code === "NO_SESSION") setAuthError("Sign in to VIGIL to use the Salle de réunion.");
-      else setAuthError((e as Error).message);
+      else setAuthError(expliquerCourt(e));
     }
   }, []);
 
@@ -201,7 +202,7 @@ export default function MeetingRoomPage() {
         }
       }
     } catch (e) {
-      setEvents((prev) => [...prev, { event: "error", data: { error: (e as Error).message } }]);
+      setEvents((prev) => [...prev, { event: "error", data: { error: expliquerCourt(e) } }]);
     } finally {
       setConvening(false);
     }
@@ -262,7 +263,7 @@ export default function MeetingRoomPage() {
         await convene(active.lens || "cfo_review", "summary");
       }
     } catch (e) {
-      setLiveErr((e as Error).message);
+      setLiveErr(expliquerCourt(e));
       setSummarizing(false);
     }
   };
@@ -287,7 +288,7 @@ export default function MeetingRoomPage() {
       setLiveJoin({ token: t.token, url: t.url });
       setInviteLink(`${window.location.origin}/join/${s.share_token}`);
     } catch (e) {
-      setLiveErr((e as Error).message);
+      setLiveErr(expliquerCourt(e));
     } finally {
       setLiveBusy(false);
     }
@@ -308,7 +309,7 @@ export default function MeetingRoomPage() {
       await vigil.rooms.bringAgent(active.id, "AZZMIN", evidence || undefined);
       setAgentIn(true);
     } catch (e) {
-      setLiveErr((e as Error).message);
+      setLiveErr(expliquerCourt(e));
     } finally {
       setAgentBusy(false);
     }
