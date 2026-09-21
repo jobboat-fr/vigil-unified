@@ -48,6 +48,10 @@ const SENSIBLES = [
   /^\/api\/v1\/learn\/public\/positionnement\//,
   /^\/api\/v1\/learn\/public\/identifier$/,
   /^\/api\/v1\/learn\/public\/webhooks\//,
+  // Le double opt-in : un formulaire qui **fait partir un courriel** à une adresse fournie
+  // par l'appelant. C'est exactement ce qu'un robot a intérêt à marteler, et ce qui abîme
+  // le plus vite la réputation d'un domaine d'envoi.
+  /^\/api\/v1\/learn\/public\/inscription(\/|$)/,
 ];
 
 export const estSensible = (chemin: string) => SENSIBLES.some((r) => r.test(chemin));
@@ -133,6 +137,20 @@ export async function traiter(request: Request, env: Env): Promise<Response> {
   // garde ses propres limites par adresse e-mail et par jeton.
   const sensible = estSensible(url.pathname) && !(request.headers.get("authorization") || "").startsWith("Bearer ");
   const limite = sensible ? env.LIMITE_SENSIBLE : env.LIMITE_GENERALE;
+
+  // Un palier absent désactivait la limitation **sans rien dire** : le `&& limite` sautait
+  // le bloc, la requête passait, et tout avait l'air normal. C'est ainsi qu'une route
+  // sensible plafonnée à 20/min a encaissé 30 requêtes d'affilée sans un seul refus — le
+  // contrôle n'existait pas, et rien ne le signalait.
+  //
+  // Une protection qui s'éteint en silence est pire qu'une protection absente : on croit
+  // l'avoir. On journalise donc à chaque requête concernée, pour que Loki le voie.
+  if (request.method !== "OPTIONS" && !limite) {
+    journal("error", "bordure.limite_debit_absente",
+      `Palier ${sensible ? "sensible" : "général"} non lié : la limitation de débit ne s'applique pas sur ${url.pathname}.`,
+      { ...contexte, palier: sensible ? "sensible" : "generale" });
+  }
+
   if (request.method !== "OPTIONS" && limite) {
     const { success } = await limite.limit({ key: `${sensible ? "s" : "g"}:${ip}` });
     if (!success) {
