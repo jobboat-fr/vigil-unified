@@ -24,6 +24,7 @@ import {
   type CourseModule,
 } from "@/lib/learn";
 import { expliquerCourt } from "@/lib/refus";
+import { statutInscription } from "@/lib/mots";
 
 /**
  * Le tableau des parcours — les sessions par état, et tout ce qui s'y rattache.
@@ -265,7 +266,7 @@ export default function LearnParcoursPage() {
                                   {d.learners.map((l) => (
                                     <li key={l.enrollment_id}>
                                       {l.full_name ?? l.email}
-                                      <span className="opacity-50"> · {l.status}</span>
+                                      <span className="opacity-50"> · {statutInscription(l.status)}</span>
                                       {l.company && <span className="opacity-50"> · {l.company}</span>}
                                     </li>
                                   ))}

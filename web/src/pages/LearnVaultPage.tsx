@@ -9,6 +9,7 @@ import {
 } from "@nous-research/ui/ui/components/card";
 import { getVault, getVaultUrl, uploadVault, LearnError, type VaultObject } from "@/lib/learn";
 import { expliquerCourt } from "@/lib/refus";
+import { humaniser } from "@/lib/mots";
 
 /**
  * Documents et coffre.
@@ -170,7 +171,7 @@ export default function LearnVaultPage() {
                           </span>
                         ) : null}
                       </td>
-                      <td className="px-4 py-2.5 opacity-70">{o.kind}</td>
+                      <td className="px-4 py-2.5 opacity-70">{humaniser(o.kind)}</td>
                       <td className="px-4 py-2.5 opacity-70">
                         {o.legal_hold
                           ? "suspension légale — suppression bloquée"

@@ -294,6 +294,10 @@ export interface Program {
   rncp_code: string | null;
   version: number;
   published: boolean;
+  /** Segment de `/formations/<slug>` sur le site de l'organisme, ou `null`
+   *  quand aucune fiche publique n'existe — auquel cas on n'affiche pas de lien
+   *  plutôt que d'en afficher un qui tombe en 404. */
+  vitrine_slug: string | null;
   _can?: Can;
 }
 

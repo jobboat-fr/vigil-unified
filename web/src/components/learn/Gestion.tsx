@@ -10,6 +10,7 @@ import {
   type Person,
 } from "@/lib/learn";
 import { expliquerCourt } from "@/lib/refus";
+import { nomRole } from "@/lib/mots";
 
 /**
  * Les formulaires de gestion de l'organisme : comptes, programmes, sessions, créneaux,
@@ -101,7 +102,7 @@ export function FormulaireCompte({ roles, onCree }: { roles: string[]; onCree: (
     >
       <input className={champ} required minLength={2} placeholder="Nom complet" value={f.full_name} onChange={(e) => setF({ ...f, full_name: e.target.value })} />
       <input className={champ} required type="email" placeholder="Adresse e-mail" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} />
-      <select className={champ} value={f.role} onChange={(e) => setF({ ...f, role: e.target.value })} aria-label="Rôle">
+      <select className={champ} value={nomRole(f.role)} onChange={(e) => setF({ ...f, role: e.target.value })} aria-label="Rôle">
         {roles.map((r) => (
           <option key={r} value={r}>{ROLE_LABEL[r] ?? r}</option>
         ))}

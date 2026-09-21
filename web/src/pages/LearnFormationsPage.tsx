@@ -21,6 +21,7 @@ import {
   type Can,
 } from "@/lib/learn";
 import { expliquerCourt } from "@/lib/refus";
+import { statutSession, typeEvaluation } from "@/lib/mots";
 
 /**
  * L'offre de formation, et tout ce qui s'y rattache.
@@ -184,14 +185,35 @@ export default function LearnFormationsPage() {
                 ) : null}
 
                 <Group title="Sessions" count={ps.length}>
-                  {ps.slice(0, 4).map((s) => (
-                    <li key={s.id} className="flex justify-between gap-3 py-1">
-                      <span className="min-w-0 truncate">{s.code || s.title || "Session"}</span>
-                      <span className="shrink-0 text-xs opacity-60">
-                        {frDate(s.starts_on)} · {s.status}
-                      </span>
-                    </li>
-                  ))}
+                  {ps.slice(0, 4).map((s) => {
+                    const nom = s.code || s.title || "Session";
+                    // Un lien seulement si la fiche existe vraiment : `vitrine_slug` n'est
+                    // renseigné que pour les programmes dont l'adresse publique a été
+                    // constatée vivante. Sept des dix programmes n'en ont pas.
+                    const fiche = p.vitrine_slug
+                      ? `https://hbs-formation.fr/formations/${p.vitrine_slug}`
+                      : null;
+                    return (
+                      <li key={s.id} className="flex justify-between gap-3 py-1">
+                        {fiche ? (
+                          <a
+                            href={fiche}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="min-w-0 truncate underline decoration-current/30 underline-offset-2 hover:decoration-current"
+                            title={`Fiche de la formation « ${p.title} » sur le site`}
+                          >
+                            {nom}
+                          </a>
+                        ) : (
+                          <span className="min-w-0 truncate">{nom}</span>
+                        )}
+                        <span className="shrink-0 text-xs opacity-60">
+                          {frDate(s.starts_on)} · {statutSession(s.status)}
+                        </span>
+                      </li>
+                    );
+                  })}
                 </Group>
 
                 <Group title="Cours" count={pc.length}>
@@ -222,7 +244,7 @@ export default function LearnFormationsPage() {
                   {pe.map((e) => (
                     <li key={e.id} className="flex justify-between gap-3 py-1">
                       <span className="min-w-0 truncate">{e.title}</span>
-                      <span className="shrink-0 text-xs opacity-60">{e.kind}</span>
+                      <span className="shrink-0 text-xs opacity-60">{typeEvaluation(e.kind)}</span>
                     </li>
                   ))}
                 </Group>
