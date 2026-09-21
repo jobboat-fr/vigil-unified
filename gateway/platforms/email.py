@@ -25,6 +25,8 @@ import smtplib
 import socket
 import ssl
 import uuid
+
+from gateway.platforms import email_sortie
 from email.header import decode_header
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -615,16 +617,41 @@ class EmailAdapter(BasePlatformAdapter):
         reply_to: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None,
     ) -> SendResult:
-        """Send an email reply to the given address."""
+        """Réponse par courriel, expédiée par LEARN.
+
+        Le SMTP direct est abandonné pour deux raisons. La première est matérielle : les
+        ports sortants sont bloqués depuis l'hôte OVH, donc aucune réponse ne partait. La
+        seconde compte davantage — le mot de passe d'une boîte sur une machine où tourne un
+        modèle avec un terminal, c'est la capacité d'écrire à n'importe qui depuis l'adresse
+        de l'organisme, sans plafond et sans trace. Rétablir SMTP aurait réparé le symptôme
+        en installant le problème.
+        """
+        ctx = self._thread_context.get(chat_id, {})
+        sujet = ctx.get("subject") or "Votre message"
+        if not sujet.lower().startswith("re:"):
+            sujet = f"Re: {sujet}"
+        fil_id = reply_to or ctx.get("message_id")
+
         try:
-            loop = asyncio.get_running_loop()
-            message_id = await loop.run_in_executor(
-                None, self._send_email, chat_id, content, reply_to
+            rep = await email_sortie.expedier(
+                to_addr=chat_id,
+                sujet=sujet,
+                corps=content,
+                fils=self._thread_context,
+                in_reply_to=fil_id,
+                references=ctx.get("references") or fil_id,
             )
-            return SendResult(success=True, message_id=message_id)
+        except email_sortie.EnvoiRefuse as e:
+            # Un verrou, pas une panne : on le journalise tel quel et on ne réessaie pas.
+            logger.warning("[Email] Envoi refusé vers %s : %s", chat_id, e)
+            return SendResult(success=False, error=str(e))
         except Exception as e:
             logger.error("[Email] Send failed to %s: %s", chat_id, e)
             return SendResult(success=False, error=str(e))
+
+        if rep.get("statut") != "sent":
+            return SendResult(success=False, error=rep.get("erreur") or "non_expedie")
+        return SendResult(success=True, message_id=rep.get("journal_id"))
 
     def _send_email(
         self,
@@ -691,104 +718,20 @@ class EmailAdapter(BasePlatformAdapter):
         metadata: Optional[Dict[str, Any]] = None,
         human_delay: float = 0.0,
     ) -> None:
-        """Send a batch of images as a single email with multiple MIME attachments.
+        """Refusé, pour la même raison que `send_document`.
 
-        Local files are attached directly. URL images have their URL
-        appended to the body (email adapter does not download remote
-        images). No hard cap — email clients handle dozens of
-        attachments fine, subject to SMTP message size limits.
+        Ce chemin attachait les fichiers locaux directement, sans plafond de nombre. Les
+        images distantes, elles, n'étaient que des URL dans le corps : cela passe encore
+        par `send()`, donc par les verrous.
         """
-        if not images:
-            return
-
-        from urllib.parse import unquote as _unquote
-
-        body_parts: List[str] = []
-        local_paths: List[str] = []
-        for image_url, alt_text in images:
-            if alt_text:
-                body_parts.append(alt_text)
-            if image_url.startswith("file://"):
-                local_path = _unquote(image_url[7:])
-                if Path(local_path).exists():
-                    local_paths.append(local_path)
-                else:
-                    logger.warning("[Email] Skipping missing image: %s", local_path)
-            else:
-                # Remote URLs just get linked in the body (parity with send_image)
-                body_parts.append(f"Image: {image_url}")
-
-        if not local_paths and not body_parts:
-            return
-
-        body = "\n\n".join(body_parts)
-
-        try:
-            loop = asyncio.get_running_loop()
-            await loop.run_in_executor(
-                None,
-                self._send_email_with_attachments,
-                chat_id,
-                body,
-                local_paths,
-            )
-        except Exception as e:
-            logger.error("[Email] Multi-image send failed, falling back: %s", e, exc_info=True)
-            await super().send_multiple_images(chat_id, images, metadata, human_delay)
-
-    def _send_email_with_attachments(
-        self,
-        to_addr: str,
-        body: str,
-        file_paths: List[str],
-    ) -> str:
-        """Send an email with multiple file attachments via SMTP."""
-        msg = MIMEMultipart()
-        msg["From"] = self._address
-        msg["To"] = to_addr
-
-        ctx = self._thread_context.get(to_addr, {})
-        subject = ctx.get("subject", "Hermes Agent")
-        if not subject.startswith("Re:"):
-            subject = f"Re: {subject}"
-        msg["Subject"] = subject
-
-        original_msg_id = ctx.get("message_id")
-        if original_msg_id:
-            msg["In-Reply-To"] = original_msg_id
-            msg["References"] = original_msg_id
-
-        msg["Date"] = formatdate(localtime=True)
-        msg_id = f"<hermes-{uuid.uuid4().hex[:12]}@{self._address.split('@')[1]}>"
-        msg["Message-ID"] = msg_id
-
-        if body:
-            msg.attach(MIMEText(body, "plain", "utf-8"))
-
-        for file_path in file_paths:
-            p = Path(file_path)
-            try:
-                with open(p, "rb") as f:
-                    part = MIMEBase("application", "octet-stream")
-                    part.set_payload(f.read())
-                    encoders.encode_base64(part)
-                    part.add_header("Content-Disposition", f"attachment; filename={p.name}")
-                    msg.attach(part)
-            except Exception as e:
-                logger.warning("[Email] Failed to attach %s: %s", file_path, e)
-
-        smtp = self._connect_smtp()
-        try:
-            smtp.login(self._address, self._password)
-            smtp.send_message(msg)
-        finally:
-            try:
-                smtp.quit()
-            except Exception:
-                smtp.close()
-
-        logger.info("[Email] Sent multi-attachment email to %s (%d files)", to_addr, len(file_paths))
-        return msg_id
+        logger.warning(
+            "[Email] %d pièce(s) jointe(s) refusée(s) vers %s : l'agent n'expédie pas de fichier.",
+            len(images or []), chat_id)
+        liens = [u for u, _ in (images or []) if str(u).startswith(("http://", "https://"))]
+        if liens:
+            # Ce qui est déjà une URL peut voyager dans le corps : c'est du texte, et il
+            # traverse le masquage comme le reste.
+            await self.send(chat_id, "\n".join(liens))
 
     async def send_document(
         self,
@@ -799,21 +742,24 @@ class EmailAdapter(BasePlatformAdapter):
         reply_to: Optional[str] = None,
         **kwargs,
     ) -> SendResult:
-        """Send a file as an email attachment."""
-        try:
-            loop = asyncio.get_running_loop()
-            message_id = await loop.run_in_executor(
-                None,
-                self._send_email_with_attachment,
-                chat_id,
-                caption or "",
-                file_path,
-                file_name,
-            )
-            return SendResult(success=True, message_id=message_id)
-        except Exception as e:
-            logger.error("[Email] Send document failed: %s", e)
-            return SendResult(success=False, error=str(e))
+        """Refusé : l'agent n'expédie pas de pièce jointe.
+
+        C'est le quatrième verrou, et le plus simple à contourner s'il vivait dans une
+        consigne. Une pièce jointe sortante est le chemin d'exfiltration le plus direct
+        qu'un agent puisse emprunter : il lui suffit d'écrire un fichier, puis de
+        l'envoyer. Le corps du message, lui, est plafonné et passe par le masquage — un
+        fichier échapperait aux deux.
+
+        Le refus est net plutôt que silencieux : l'appelant doit savoir que rien n'est
+        parti. Pour transmettre un document, il existe le coffre, qui journalise le dépôt
+        et l'accès.
+        """
+        logger.warning(
+            "[Email] Pièce jointe refusée vers %s (%s) : l'agent n'expédie pas de fichier.",
+            chat_id, file_name or file_path)
+        return SendResult(
+            success=False,
+            error="piece_jointe_interdite : déposer au coffre et en donner le lien")
 
     def _send_email_with_attachment(
         self,
