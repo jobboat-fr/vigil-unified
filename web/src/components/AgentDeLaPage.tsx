@@ -1,4 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
+import { Lock } from "lucide-react";
 import { agentsPourPage, useAbonnementAgents } from "@/lib/agentique";
 
 /**
@@ -34,8 +35,12 @@ export default function AgentDeLaPage() {
               ouvrir
             </a>
           ) : (
-            <Link to="/abonnement" className="underline opacity-75">
-              🔒 s&apos;abonner
+            // Un cadenas dessiné, pas l'émoji 🔒 : celui-ci change de forme d'un système
+            // à l'autre, n'hérite ni de la couleur ni de la graisse du texte, et se lit
+            // « cadenas fermé » à voix haute au milieu d'une phrase.
+            <Link to="/abonnement" className="inline-flex items-center gap-1 underline opacity-75">
+              <Lock aria-hidden size={12} strokeWidth={2.25} />
+              s&apos;abonner
             </Link>
           )}
         </span>

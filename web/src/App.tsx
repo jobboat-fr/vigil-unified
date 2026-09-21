@@ -78,6 +78,7 @@ import { SelectionSwitcher } from "@nous-research/ui/ui/components/selection-swi
 import { Spinner } from "@nous-research/ui/ui/components/spinner";
 import { Typography } from "@nous-research/ui/ui/components/typography/index";
 import { cn } from "@/lib/utils";
+import { ecranAccesRefuse } from "@/components/AccesRefuse";
 import { Backdrop } from "@/components/Backdrop";
 import { SidebarFooter } from "@/components/SidebarFooter";
 import { SidebarStatusStrip, gatewayLine } from "@/components/SidebarStatusStrip";
@@ -684,11 +685,15 @@ export default function App() {
       // pendant la lecture de la session, ce qui est indiscernable de « aucun rôle ».
       // Rediriger là-dessus renvoyait un super_admin ouvrant /noyau directement vers le
       // tableau de bord, avant même que son rôle n'arrive.
+      // Ces routes existent, mais pas pour ce rôle. Elles étaient branchées sur
+      // `RootRedirect`, qui renvoyait au tableau de bord sans un mot : vu du siège, un
+      // bouton cassé. Le refus reste, la phrase arrive — et l'adresse demandée ne change
+      // plus sous les pieds de la personne.
       ...(roleResolu
         ? Object.fromEntries(
             [CHAT_NAV_ITEM, ...BUILTIN_NAV_REST].filter(
               (n) => (n.roles || n.capability) && !navAllowed(n, learnRole, pagePerms),
-            ).map((n) => [n.path, RootRedirect]),
+            ).map((n) => [n.path, ecranAccesRefuse(n.label)]),
           )
         : {}),
     }),

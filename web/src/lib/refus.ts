@@ -224,6 +224,9 @@ export function expliquer(erreur: unknown, quoi?: string): Explication {
       registre: "refus",
       titre: "Accès réservé",
       detail: `Votre rôle ne donne pas accès à ${sujet}. L'administration de votre organisme peut vous l'accorder.`,
+      // Un refus sans porte de sortie laisse sur place. Le tableau de bord Formation est
+      // la seule page que les six rôles peuvent ouvrir.
+      geste: { texte: "Retour au tableau de bord", vers: "/learn" },
       reessayable: false,
       reference,
     };
