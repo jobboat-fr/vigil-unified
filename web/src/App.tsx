@@ -153,7 +153,7 @@ import SignerDocumentPage from "@/pages/SignerDocumentPage";
 import IdentiteEmailsPage from "@/pages/IdentiteEmailsPage";
 import DocumentsASignerPage from "@/pages/DocumentsASignerPage";
 import ActionsRequisesPage from "@/pages/ActionsRequisesPage";
-import { getAccueil } from "@/lib/accueil";
+import { getAccueilRecent } from "@/lib/accueil";
 import { poserOrganisme } from "@/lib/organisme";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
@@ -645,7 +645,7 @@ export default function App() {
       return;
     }
     let vivant = true;
-    getAccueil()
+    getAccueilRecent()
       .then((e) => {
         if (!vivant) return;
         setASigner(e.statut === "a_signer");

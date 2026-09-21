@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Skeleton } from "@/components/EmptyState";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/components/card";
-import { getDocumentALire, messageAccueil, signerDocument, type DocumentALire } from "@/lib/accueil";
+import { getDocumentALire, messageAccueil, oublierAccueil, signerDocument, type DocumentALire } from "@/lib/accueil";
 
 /**
  * Lire, puis signer. Le document s'affiche dans un cadre isolé (le HTML vient de l'organisme,
@@ -46,6 +46,9 @@ export default function SignerDocumentPage() {
     setErreur(null);
     try {
       const r = await signerDocument(doc.id, nom.trim(), doc.empreinte);
+      // Le portail d'accueil vient de changer d'état : sans cela, la personne
+      // resterait retenue sur /accueil jusqu'à l'expiration du cache.
+      oublierAccueil();
       navigate(r.restants > 0 ? "/accueil" : "/", { replace: true });
       if (r.restants === 0) window.location.reload();
     } catch (e) {

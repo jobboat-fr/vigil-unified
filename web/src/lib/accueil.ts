@@ -85,6 +85,36 @@ export type DocumentALire = {
   consentement: string;
   deja_signe: { signed_at: string; signed_name: string; this_hash: string } | null;
 };
+/**
+ * L'état d'accueil, sans le redemander à chaque navigation.
+ *
+ * `App.tsx` lit cet état pour deux choses : savoir s'il reste un document à signer — auquel
+ * cas toute l'application est ramenée sur `/accueil` — et poser le nom et le favicon de
+ * l'organisme. Son effet dépendait de `pathname`, donc l'appel repartait à **chaque
+ * changement d'écran** : parcourir huit pages produisait dix-sept requêtes, mesurées en
+ * production. Chacune traverse la bordure, Railway et Supabase pour une réponse qui, elle,
+ * ne change presque jamais.
+ *
+ * Une minute de fraîcheur suffit pour un document à signer. Ce qui ne suffirait pas, c'est
+ * de laisser la porte fermée après une signature : `oublierAccueil()` doit être appelé dès
+ * qu'une action a pu changer ce que la personne doit faire, sinon elle reste enfermée
+ * jusqu'à l'expiration du cache.
+ */
+let _dernier: { pose: number; etat: EtatAccueil } | null = null;
+
+export async function getAccueilRecent(ageMax = 60_000): Promise<EtatAccueil> {
+  const maintenant = Date.now();
+  if (_dernier && maintenant - _dernier.pose < ageMax) return _dernier.etat;
+  const etat = await getAccueil();
+  _dernier = { pose: maintenant, etat };
+  return etat;
+}
+
+/** Jette l'état retenu : le prochain appel repartira au serveur. */
+export function oublierAccueil(): void {
+  _dernier = null;
+}
+
 export const getDocumentALire = (id: string) => call<DocumentALire>("GET", `/accueil/documents/${id}`);
 export const signerDocument = (id: string, nom_saisi: string, empreinte: string) =>
   call<{ signature_id: string; this_hash: string; restants: number; inscriptions_confirmees: number }>(
