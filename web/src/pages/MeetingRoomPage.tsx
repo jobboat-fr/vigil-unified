@@ -9,6 +9,7 @@ import { expliquerCourt } from "@/lib/refus";
 
 const PERSONAS = ["CFO", "CTO", "COO", "CRM", "CRO", "advisor"] as const;
 import { GatewayError } from "@/lib/ww";
+import { METAL } from "@/lib/brand";
 
 // The 4 council lenses, aligned with the Deal Board advisor templates.
 const LENSES = [
@@ -344,8 +345,12 @@ export default function MeetingRoomPage() {
             <button
               onClick={() => void bringAgentIn()}
               disabled={agentBusy || agentIn}
-              className="rounded px-2 py-1 text-xs font-semibold"
-              style={{ color: "#07080d", background: "linear-gradient(90deg,#7c5cff,#22d3ee)" }}
+              className="rounded px-2 py-1 text-xs font-semibold transition-[filter] duration-150 hover:brightness-[1.04] active:brightness-[0.97] disabled:opacity-50"
+              style={{
+                color: METAL.encre,
+                background: METAL.plaque,
+                boxShadow: `inset 0 1px 0 ${METAL.areteHaute}, inset 0 -1px 0 ${METAL.areteBasse}`,
+              }}
             >
               {agentBusy ? "AZZMIN arrive…" : agentIn ? "AZZMIN est dans la réunion" : "Faire entrer AZZMIN"}
             </button>
@@ -402,8 +407,8 @@ export default function MeetingRoomPage() {
               </button>
             </div>
             {suggestion?.speak && (
-              <div className="m-3 rounded-lg border p-2.5 space-y-2" style={{ borderColor: "#7c5cff66", background: "#7c5cff14" }}>
-                <div className="flex items-center gap-2"><span className="text-sm">✋</span><span className="text-[10px] font-mono uppercase" style={{ color: "#7c5cff" }}>Un avis demande la parole</span></div>
+              <div className="m-3 overflow-hidden rounded-lg border p-2.5 space-y-2" style={{ borderColor: "rgba(122,162,255,0.38)", background: "rgba(122,162,255,0.08)" }}>
+                <div className="flex items-center gap-2"><span aria-hidden className="h-3 w-[2px] rounded-full" style={{ background: METAL.accentSombre }} /><span className="text-[10px] font-mono uppercase" style={{ color: METAL.accentSombre }}>Un avis demande la parole</span></div>
                 <p className="text-sm">{suggestion.message}</p>
                 <div className="flex gap-2"><Button size="sm" onClick={() => void acceptSuggestion()}>Add</Button><button className="text-xs" style={{ opacity: 0.7 }} onClick={() => setSuggestion(null)}>Dismiss</button></div>
               </div>
@@ -585,8 +590,8 @@ export default function MeetingRoomPage() {
                         <span>Lève la main lorsqu'il a quelque chose à dire.</span>
                       </label>
                       {suggestion?.speak && (
-                        <div className="rounded-lg border p-3 space-y-2" style={{ borderColor: "#7c5cff66", background: "#7c5cff14" }}>
-                          <div className="flex items-center gap-2"><span className="text-sm">✋</span><span className="text-[10px] font-mono uppercase tracking-wide" style={{ color: "#7c5cff" }}>Un avis demande la parole</span></div>
+                        <div className="overflow-hidden rounded-lg border p-3 space-y-2" style={{ borderColor: "rgba(122,162,255,0.38)", background: "rgba(122,162,255,0.08)" }}>
+                          <div className="flex items-center gap-2"><span aria-hidden className="h-3 w-[2px] rounded-full" style={{ background: METAL.accentSombre }} /><span className="text-[10px] font-mono uppercase tracking-wide" style={{ color: METAL.accentSombre }}>Un avis demande la parole</span></div>
                           <p className="text-sm text-foreground/90">{suggestion.message}</p>
                           <div className="flex gap-2"><Button size="sm" onClick={() => void acceptSuggestion()}>Ajouter aux notes</Button><button className="text-xs text-text-secondary hover:text-foreground" onClick={() => setSuggestion(null)}>Dismiss</button></div>
                         </div>

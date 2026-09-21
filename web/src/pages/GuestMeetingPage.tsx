@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { MarqueVtlvs } from "@/components/MarqueVtlvs";
+import { METAL } from "@/lib/brand";
 import { useParams } from "react-router-dom";
 import { joinGuestRoom, type GuestRoomJoin } from "@/lib/vigil";
 import type { GatewayError } from "@/lib/ww";
@@ -42,7 +43,6 @@ export default function GuestMeetingPage() {
     }
   };
 
-  const A = "#7c5cff", B = "#22d3ee";
 
   if (join?.token && join.url) {
     return (
@@ -70,8 +70,12 @@ export default function GuestMeetingPage() {
         <button
           onClick={() => void doJoin()}
           disabled={joining || !name.trim()}
-          className="w-full rounded-xl px-5 py-3 text-sm font-semibold text-[#07080d] disabled:opacity-50"
-          style={{ background: `linear-gradient(90deg,${A},${B})` }}
+          className="w-full rounded-xl px-5 py-3 text-sm font-semibold transition-[filter] duration-150 hover:brightness-[1.04] active:brightness-[0.97] disabled:opacity-50"
+          style={{
+            background: METAL.plaque,
+            color: METAL.encre,
+            boxShadow: `inset 0 1px 0 ${METAL.areteHaute}, inset 0 -1px 0 ${METAL.areteBasse}`,
+          }}
         >
           {joining ? "Connexion…" : "Rejoindre la réunion"}
         </button>

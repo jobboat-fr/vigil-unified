@@ -21,3 +21,26 @@ export const BRAND = {
   display: "'Poppins', 'Inter', system-ui, sans-serif",
   mono: "'JetBrains Mono', ui-monospace, 'Cascadia Mono', Menlo, monospace",
 } as const;
+
+// Les surfaces sombres — la salle de réunion, l'écran d'invitation — ne peuvent pas porter
+// le bleu de marque tel quel : `#1d3fae` sur `#07080d` ne se distingue pas du fond. Elles
+// avaient donc hérité d'un dégradé violet → cyan qui n'appartient à aucune marque et qu'on
+// trouve sur la moitié des produits d'IA. C'est précisément le signal inverse de celui
+// qu'on cherche.
+//
+// Deux jetons remplacent ce dégradé.
+//
+// `plaque` est une chute de lumière verticale, pas une rampe de teintes : une arête claire
+// en haut, le corps au milieu, une arête sombre en bas. C'est ce qui fait lire une surface
+// comme du métal — trois valeurs d'une même couleur, et non deux couleurs différentes. Le
+// texte dessus est l'encre de marque, jamais du blanc.
+//
+// `accentSombre` est le bleu de marque éclairci jusqu'à être lisible sur du quasi-noir.
+// Même famille, donc même marque ; assez clair pour un liseré ou un mot d'alerte.
+export const METAL = {
+  plaque: "linear-gradient(180deg,#f3f6fb 0%,#dde3ec 52%,#c4ccd9 100%)",
+  areteHaute: "rgba(255,255,255,0.80)",
+  areteBasse: "rgba(6,10,18,0.45)",
+  encre: "#0b2239",
+  accentSombre: "#7aa2ff",
+} as const;
