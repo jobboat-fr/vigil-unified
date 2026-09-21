@@ -238,11 +238,16 @@ export type ModeleEmail = {
   famille_libelle: string;
   adresse: string;
   envoi_auto: boolean;
+  /** Faux pour la copie d'exploitation et le support : il n'y a personne à qui demander
+   *  cette validation, donc ces modèles ne figurent pas dans le compte en attente. */
+  approbation_requise: boolean;
   valide: boolean;
   valide_le: string | null;
   sujet_exemple: string;
 };
-export const getModelesEmail = () => call<{ items: ModeleEmail[] }>("GET", "/mail/modeles");
+/** `en_attente` : combien de modèles ne partiront pas faute de validation. */
+export const getModelesEmail = () =>
+  call<{ items: ModeleEmail[]; en_attente: number }>("GET", "/mail/modeles");
 export const validerModele = (cle: string) => call<{ valide: boolean }>("POST", `/mail/modeles/${cle}/valider`);
 export const retirerModele = (cle: string) => call<{ valide: boolean }>("POST", `/mail/modeles/${cle}/retirer`);
 export async function apercuModele(cle: string): Promise<string> {

@@ -56,6 +56,7 @@ export default function IdentiteEmailsPage() {
   const [marque, setM] = useState<Marque | null>(null);
   const [domaines, setDomaines] = useState<{ items: Domaine[]; repli: string; familles: { code: string; libelle: string; adresse: string }[] } | null>(null);
   const [modeles, setModeles] = useState<ModeleEmail[]>([]);
+  const [enAttente, setEnAttente] = useState(0);
   const [envois, setEnvois] = useState<Envoi[]>([]);
   const [apercu, setApercu] = useState<{ cle: string; html: string } | null>(null);
   const [nouveauDomaine, setNouveauDomaine] = useState("");
@@ -68,6 +69,7 @@ export default function IdentiteEmailsPage() {
       setM(m);
       setDomaines(d);
       setModeles(mo.items);
+      setEnAttente(mo.en_attente ?? 0);
       setEnvois(e.items);
     } catch (e) {
       setMsg({ ok: false, texte: messageAccueil(e) });
@@ -253,6 +255,29 @@ export default function IdentiteEmailsPage() {
           <CardTitle>Modèles d'e-mails</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
+          {/* Un gabarit non validé ne produit aucune erreur visible : l'envoi est consigné
+              en `modele_non_valide` et rien n'arrive. Sans ce compte affiché, un organisme
+              découvre six mois plus tard que ses convocations ne sont jamais parties —
+              d'où un bandeau, et pas une simple colonne dans la liste. */}
+          {enAttente > 0 && (
+            <div className="mx-4 mb-3 overflow-hidden rounded-lg border border-current/15">
+              <div
+                aria-hidden
+                className="h-[2px] w-full"
+                style={{ background: "var(--color-accent, currentColor)" }}
+              />
+              <p className="px-3 py-2.5 text-sm">
+                <b>
+                  {enAttente} modèle{enAttente > 1 ? "s" : ""} attend
+                  {enAttente > 1 ? "ent" : ""} votre validation.
+                </b>{" "}
+                <span className="text-text-secondary">
+                  Tant qu{"'"}ils ne sont pas validés, les messages correspondants ne
+                  partent pas — et rien ne le signale ailleurs.
+                </span>
+              </p>
+            </div>
+          )}
           <p className="text-text-secondary px-4 pb-2 text-xs">
             Un modèle automatique ne part qu'une fois validé. Si VTLVS modifie son texte, sa version change et il faut le revalider.
           </p>
