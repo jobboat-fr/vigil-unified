@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import os
 import time
 from collections import defaultdict, deque
 from datetime import UTC, datetime
@@ -27,6 +28,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field
 
 from winny_gateway.auth import get_current_user
+from winny_gateway import learn_api
 from winny_gateway.db import audit_log, db_delete, db_insert, db_select, db_update, get_admin_client
 from winny_gateway.logging import get_logger
 
@@ -149,10 +151,17 @@ class DemandeConnectee(BaseModel):
     page: str | None = Field(default=None, max_length=200)
 
 
+#: Le repli en mémoire, et rien d'autre qu'un repli.
+#:
+#: Il vit dans le processus : il repart à zéro à chaque déploiement, et deux instances ne
+#: partagent rien. Contre quelqu'un qui insiste, cela ne tient pas — il suffit d'attendre
+#: la prochaine mise en ligne, ou de tomber sur l'autre instance. Le compteur qui fait foi
+#: est en base (`learn_public_throttle`, migration 0016) ; celui-ci ne sert que lorsque la
+#: base ne répond pas, et mieux vaut alors un plafond imparfait que pas de plafond.
 _fenetres: dict[str, deque[float]] = defaultdict(deque)
 
 
-def _trop_de_demandes(cle: str, limite: int = 5, fenetre: float = 3600) -> bool:
+def _trop_de_demandes_memoire(cle: str, limite: int, fenetre: float) -> bool:
     t = time.monotonic()
     q = _fenetres[cle]
     while q and q[0] <= t - fenetre:
@@ -161,6 +170,37 @@ def _trop_de_demandes(cle: str, limite: int = 5, fenetre: float = 3600) -> bool:
         return True
     q.append(t)
     return False
+
+
+async def _trop_de_demandes(cle: str, limite: int = 5, fenetre: int = 3600) -> bool:
+    """Le plafond, compté en base pour survivre aux déploiements et aux instances.
+
+    `learn_public_throttle` rend `true` quand la requête est **autorisée** — on inverse
+    donc. La fenêtre glisse côté base, sur une seule ligne par seau, sans table à purger.
+
+    Si la base ne répond pas, on retombe sur le compteur en mémoire plutôt que de laisser
+    passer : un formulaire public sans aucun plafond est une invitation, et refuser à tort
+    quelques messages pendant une panne coûte moins cher que d'en accepter dix mille.
+    """
+    try:
+        client = get_admin_client()
+        reponse = await asyncio.to_thread(
+            lambda: client.rpc(
+                "learn_public_throttle",
+                {"p_bucket": f"support:{cle}", "p_window": int(fenetre), "p_limit": int(limite)},
+            ).execute()
+        )
+        autorise = reponse.data
+        if isinstance(autorise, list):
+            autorise = autorise[0] if autorise else None
+        if isinstance(autorise, bool):
+            return not autorise
+        logger.warning("Plafond de support : réponse inattendue de la base (%r).", autorise,
+                       extra={"evenement": "support.plafond_inattendu"})
+    except Exception as e:  # noqa: BLE001 — on se rabat, on ne casse pas le formulaire
+        logger.warning("Plafond de support : base injoignable (%s), repli en mémoire.", e,
+                       extra={"evenement": "support.plafond_repli"})
+    return _trop_de_demandes_memoire(cle, limite, fenetre)
 
 
 async def _creer_ticket(*, user_id: str | None, email: str, sujet: str, message: str, source: str,
@@ -177,6 +217,57 @@ async def _creer_ticket(*, user_id: str | None, email: str, sujet: str, message:
     return ticket
 
 
+#: Le délai annoncé dans l'accusé. Annoncer un délai qu'on ne tient pas coûte plus cher
+#: que de ne rien annoncer : une promesse tenue à moitié se retient mieux qu'un silence.
+DELAI_REPONSE = "un jour ouvré"
+
+
+def _plateforme() -> tuple[str, str] | None:
+    """L'organisme et la personne au nom de qui le support écrit.
+
+    Le formulaire public n'appartient à aucun organisme : il faut donc dire explicitement
+    lequel porte le courrier du support, plutôt que d'en deviner un. Non configuré, le
+    support continue d'enregistrer les demandes — il n'envoie simplement pas d'accusé, et
+    le journal le dit.
+    """
+    tenant = (os.getenv("VTLVS_TENANT_PLATEFORME") or "").strip()
+    porteur = (os.getenv("VTLVS_SUPPORT_AU_NOM_DE") or "").strip()
+    return (tenant, porteur) if tenant and porteur else None
+
+
+async def _accuser_reception(ticket: dict[str, Any], email: str, sujet: str, source: str) -> None:
+    """Accusé au demandeur, puis avis aux porteurs. Ni l'un ni l'autre ne peut faire échouer
+    la demande : elle est déjà enregistrée quand on arrive ici."""
+    couple = _plateforme()
+    if not couple:
+        logger.warning(
+            "Accusé de réception non envoyé : VTLVS_TENANT_PLATEFORME / VTLVS_SUPPORT_AU_NOM_DE absents.",
+            extra={"evenement": "support.accuse_impossible", "ticket": ticket["id"]})
+        return
+    tenant, porteur = couple
+    reference = str(ticket["id"])[:8].upper()
+
+    # L'accusé ne porte **pas** le message soumis : sinon le formulaire public devient un
+    # remailer anonyme, capable d'expédier un texte arbitraire vers une adresse arbitraire
+    # depuis un domaine vérifié, avec notre SPF et notre réputation.
+    await learn_api.envoyer_courriel(
+        on_behalf_of=porteur, tenant_id=tenant, email=email, cle="support_accuse",
+        ctx={"reference": reference, "delai": DELAI_REPONSE, "objet": sujet},
+        related_kind="support_ticket", related_id=str(ticket["id"]))
+
+    for exploitant in _exploitants():
+        await learn_api.envoyer_courriel(
+            on_behalf_of=porteur, tenant_id=tenant, email=exploitant, cle="support_avis",
+            ctx={"reference": reference, "source": source, "objet": sujet},
+            related_kind="support_ticket", related_id=str(ticket["id"]))
+
+
+def _exploitants() -> list[str]:
+    """Qui est prévenu qu'une demande est arrivée. Même variable que la copie de l'entonnoir."""
+    brut = os.getenv("VTLVS_MAIL_COPIE") or ""
+    return [a.strip() for a in brut.split(",") if a.strip()][:5]
+
+
 @router.post("/api/v1/support/public")
 async def demande_publique(body: DemandePublique, request: Request) -> dict[str, Any]:
     ip = request.headers.get("cf-connecting-ip") or (request.client.host if request.client else "")
@@ -185,7 +276,7 @@ async def demande_publique(body: DemandePublique, request: Request) -> dict[str,
         logger.info("Formulaire de contact : robot écarté (piège rempli).",
                     extra={"evenement": "securite.robot_formulaire", "ip": empreinte})
         return {"ok": True, "data": {"recu": True}}
-    if _trop_de_demandes(f"ip:{empreinte}") or _trop_de_demandes(f"mail:{str(body.email).lower()}"):
+    if await _trop_de_demandes(f"ip:{empreinte}") or await _trop_de_demandes(f"mail:{str(body.email).lower()}"):
         raise HTTPException(status_code=429, detail={"error": "trop_de_demandes",
                                                      "detail": "Vous avez déjà envoyé plusieurs messages. Nous revenons vers vous."},
                             headers={"Retry-After": "3600"})
@@ -193,6 +284,7 @@ async def demande_publique(body: DemandePublique, request: Request) -> dict[str,
     ticket = await _creer_ticket(user_id=None, email=str(body.email), sujet=body.sujet, message=message, source="site")
     logger.info("Demande de contact publique reçue (ticket %s).", ticket["id"],
                 extra={"evenement": "support.demande_publique", "ticket": ticket["id"], "ip": empreinte})
+    await _accuser_reception(ticket, str(body.email), body.sujet, "site public")
     return {"ok": True, "data": {"recu": True, "reference": str(ticket["id"])[:8].upper()}}
 
 
@@ -200,7 +292,7 @@ async def demande_publique(body: DemandePublique, request: Request) -> dict[str,
 async def demande_connectee(body: DemandeConnectee, user: dict = Depends(get_current_user)) -> dict[str, Any]:
     uid = _uid(user)
     prof = await _profil(uid)
-    if _trop_de_demandes(f"u:{uid}", limite=10):
+    if await _trop_de_demandes(f"u:{uid}", limite=10):
         raise HTTPException(status_code=429, detail={"error": "trop_de_demandes",
                                                      "detail": "Plusieurs demandes sont déjà ouvertes. Nous y répondons."})
     message = body.message + (f"\n\n(page : {body.page})" if body.page else "")
@@ -208,6 +300,9 @@ async def demande_connectee(body: DemandeConnectee, user: dict = Depends(get_cur
                                  message=message, source="application", tenant_id=prof.get("tenant_id"))
     logger.info("Demande d'aide de %s (%s), ticket %s.", uid, prof.get("role"), ticket["id"],
                 extra={"evenement": "support.demande", "acteur": uid, "ticket": ticket["id"]})
+    courriel = prof.get("email") or user.get("email") or ""
+    if courriel:
+        await _accuser_reception(ticket, courriel, body.sujet, "application")
     return {"ok": True, "data": {"id": ticket["id"], "reference": str(ticket["id"])[:8].upper()}}
 
 
@@ -261,7 +356,25 @@ async def repondre(ticket_id: str, body: Reponse, user: dict = Depends(get_curre
                     filters={"id": t["id"]}, allow_unscoped=True)
     logger.info("Réponse à la demande %s par %s.", t["id"], uid,
                 extra={"evenement": "support.reponse", "acteur": uid, "ticket": t["id"]})
-    return {"ok": True, "data": {"repondu": True}}
+
+    # L'adresse est **relue sur le ticket**, jamais prise dans la requête ni dans le corps
+    # du message : sinon répondre deviendrait un moyen d'écrire à n'importe qui depuis un
+    # domaine vérifié, ce qui est exactement la faille que l'accusé évite en se taisant.
+    couple = _plateforme()
+    destinataire = (t.get("email") or "").strip()
+    if couple and destinataire:
+        tenant, porteur = couple
+        envoi = await learn_api.envoyer_courriel(
+            on_behalf_of=str(uid), tenant_id=tenant, email=destinataire, cle="support_reponse",
+            ctx={"reference": str(t["id"])[:8].upper(), "corps": body.message},
+            related_kind="support_ticket", related_id=str(t["id"]))
+        if envoi is None:
+            # L'administration doit savoir que sa réponse est enregistrée mais pas partie,
+            # sinon elle croit avoir répondu et attend un retour qui ne viendra pas.
+            return {"ok": True, "data": {"repondu": True, "expedie": False}}
+        return {"ok": True, "data": {"repondu": True, "expedie": True}}
+
+    return {"ok": True, "data": {"repondu": True, "expedie": False}}
 
 
 class Statut(BaseModel):
