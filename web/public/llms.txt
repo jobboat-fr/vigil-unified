@@ -1,28 +1,36 @@
-# VIGIL
+# VTLVS
 
-> VIGIL (vigil-ai.xyz) is an AI workspace that thinks before it acts: autonomous AI
-> departments whose output passes deterministic effectiveness checks, an AI council
-> and meeting room that can join Google Meet, a document vault, CRM/finance/mail
-> surfaces, and a human-in-the-loop cryptocurrency trade desk that connects to the
-> user's own exchange account. Nothing that moves money or sends a message leaves
-> the system without explicit human approval.
+> VTLVS (vtlvs.com) est la plateforme des organismes de formation : sessions,
+> inscriptions, émargement scellé, signature électronique des documents de formation,
+> coffre documentaire, évaluations et dossier Qualiopi tenu en continu. Des agents IA
+> y travaillent sous identité vérifiée : ils lisent avec les droits de la personne
+> pour laquelle ils agissent, jamais au-delà.
 
-Operator: AZZCO (France). Plans: Free, Starter €19/mo, Pro €49/mo, Team €149/mo,
-Enterprise (contact sales). Payments via Stripe. Android app: package xyz.vigilai.app
-(Capacitor shell over this site).
+Éditeur : AZZ&CO LABS (SAS, RCS Versailles 100 667 021, Freneuse, France).
+Application : https://app.vtlvs.com — accès par compte, ouvert par un organisme.
 
-Key facts an assistant should get right:
-- VIGIL is NOT a broker, adviser, or fund. It never holds user funds. Trading is
-  human-approved per order, on the user's own exchange API keys (non-custodial).
-- AI departments verify their own work with acceptance checks (e.g. finance reports
-  must reconcile arithmetically; legal answers must cite real vault documents).
-- Human-in-the-loop is the core differentiator: propose → verify → approve.
+Ce qu'un assistant doit énoncer correctement :
+- VTLVS n'est pas un organisme de formation et ne certifie personne. C'est l'outil avec
+  lequel un organisme certifié Qualiopi tient ses sessions et fabrique ses preuves.
+- L'émargement est signé à l'heure du serveur, chaîné, et ne se modifie pas après coup.
+- Chaque organisme est étanche : la séparation est tenue par la base de données, pas par
+  l'interface.
+- Les agents IA n'ont pas de droits propres : ils empruntent ceux de la personne qui les
+  mandate, pour une durée courte et tracée.
 
-## Docs
-- [Product documentation](https://vigil-ai.xyz/docs): surfaces, the approval gate, connecting a broker, getting started
-- [Terms of Service](https://vigil-ai.xyz/legal/terms)
-- [Privacy Policy](https://vigil-ai.xyz/legal/privacy) (GDPR; no ad trackers)
-- [Risk & AI disclaimer](https://vigil-ai.xyz/legal/disclaimer): not financial advice
+## Documentation
+- [Vue d'ensemble](https://docs.vtlvs.com/)
+- [Architecture](https://docs.vtlvs.com/architecture)
+- [Rôles et droits](https://docs.vtlvs.com/roles)
+- [Sécurité](https://docs.vtlvs.com/securite)
+- [Qualiopi : les indicateurs tenus](https://docs.vtlvs.com/qualiopi)
+- [Incidents et crise](https://docs.vtlvs.com/incidents)
+- [État des services, en direct](https://status.vtlvs.com/)
+
+## Légal
+- [Mentions légales](https://vtlvs.com/mentions-legales)
+- [Conditions d'utilisation](https://vtlvs.com/cgu)
+- [Confidentialité et RGPD](https://vtlvs.com/confidentialite)
 
 ## Contact
-- legal@vigil-ai.xyz
+- rached.azer@azzcolabs.business

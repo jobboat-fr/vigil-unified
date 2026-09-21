@@ -1,11 +1,17 @@
-# VIGIL × WinnyWoo
+# VTLVS — app.vtlvs.com
+#
+# L'application est derrière une authentification : il n'y a presque rien à indexer ici.
+# Ce qui se présente au public vit sur vtlvs.com, docs.vtlvs.com et status.vtlvs.com.
 User-agent: *
 Allow: /$
-Allow: /docs
-# Keep auth + the signed-in app out of the index
 Disallow: /login
 Disallow: /signup
 Disallow: /auth
+# Pages à jeton : une invitation, un partage, une signature n'ont rien à faire dans un index.
 Disallow: /join/
+Disallow: /partage/
+Disallow: /activer
+Disallow: /desinscription
+Disallow: /nouveau-mot-de-passe
 
-Sitemap: https://vigil-ai.xyz/sitemap.xml
+Sitemap: https://app.vtlvs.com/sitemap.xml

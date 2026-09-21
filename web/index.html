@@ -36,79 +36,80 @@
     <meta name="apple-mobile-web-app-title" content="VTLVS" />
     <meta name="mobile-web-app-capable" content="yes" />
 
-    <!-- Open Graph (link previews) -->
+    <!-- Open Graph (aperçus de lien).
+         Tout ce bloc décrivait VIGIL : un bureau de trading crypto, ses offres, sa FAQ sur
+         les plafonds de NAV. C'était l'identité du produit dont VTLVS est issu, restée en
+         place après la bascule — si bien que tout lien vers app.vtlvs.com s'affichait,
+         dans un message, comme une carte de trading en anglais. -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="VTLVS" />
-    <meta property="og:title" content="VTLVS — plateforme de formation" />
+    <meta property="og:locale" content="fr_FR" />
+    <meta property="og:title" content="VTLVS — la formation, prouvée en temps réel" />
     <meta
       property="og:description"
-      content="A multi-advisor council, a data-grounded crypto desk, and your finance, CRM, mail and document studio — under one human-in-the-loop agent."
+      content="La plateforme des organismes de formation : émargement scellé, dossier Qualiopi tenu en continu, signature électronique, coffre documentaire et agents IA sous identité vérifiée."
     />
-    <meta property="og:url" content="https://vigil-ai.xyz/" />
-    <meta property="og:image" content="https://vigil-ai.xyz/og.png" />
+    <meta property="og:url" content="https://app.vtlvs.com/" />
+    <meta property="og:image" content="https://app.vtlvs.com/og.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="VIGIL — the AI workspace that thinks before it acts" />
+    <meta property="og:image:alt" content="VTLVS — la formation, prouvée en temps réel" />
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="VIGIL — the AI workspace that thinks before it acts" />
+    <meta name="twitter:title" content="VTLVS — la formation, prouvée en temps réel" />
     <meta
       name="twitter:description"
-      content="A multi-advisor council, a data-grounded crypto desk, and your finance, CRM, mail and document studio — under one human-in-the-loop agent."
+      content="Émargement scellé, dossier Qualiopi continu, signature électronique et agents IA sous identité vérifiée, pour les organismes de formation."
     />
-    <meta name="twitter:image" content="https://vigil-ai.xyz/og.png" />
+    <meta name="twitter:image" content="https://app.vtlvs.com/og.png" />
 
-    <!-- Structured data: Organization + the product as a SaaS application -->
+    <!-- Données structurées : l'éditeur, et l'application telle qu'elle est.
+         On ne déclare que ce qui est vrai et visible : pas de tarifs inventés, pas de FAQ
+         qui décrit un autre produit. -->
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
         "@graph": [
           {
             "@type": "Organization",
-            "name": "VIGIL",
+            "name": "AZZ&CO LABS",
             "legalName": "AZZ&CO LABS",
-            "email": "legal@vigil-ai.xyz",
-            "url": "https://vigil-ai.xyz/",
-            "logo": "https://vigil-ai.xyz/vigil-mark.svg"
+            "email": "rached.azer@azzcolabs.business",
+            "url": "https://vtlvs.com/",
+            "logo": "https://app.vtlvs.com/icon-512.png",
+            "address": {
+              "@type": "PostalAddress",
+              "streetAddress": "Bâtiment Fougères, rue de Guyenne",
+              "postalCode": "78840",
+              "addressLocality": "Freneuse",
+              "addressCountry": "FR"
+            }
           },
           {
             "@type": "SoftwareApplication",
-            "name": "VIGIL",
+            "name": "VTLVS",
             "applicationCategory": "BusinessApplication",
-            "operatingSystem": "Web",
-            "description": "An AI workspace that deliberates before acting: a multi-advisor council, a data-grounded crypto desk, and a finance, CRM, mail and document studio — all human-in-the-loop.",
-            "offers": [
-              { "@type": "Offer", "name": "Free", "price": "0", "priceCurrency": "EUR" },
-              { "@type": "Offer", "name": "Starter", "price": "19", "priceCurrency": "EUR", "description": "Monthly subscription" },
-              { "@type": "Offer", "name": "Pro", "price": "49", "priceCurrency": "EUR", "description": "Monthly subscription" },
-              { "@type": "Offer", "name": "Team", "price": "149", "priceCurrency": "EUR", "description": "Monthly subscription" }
-            ],
-            "featureList": ["Multi-advisor AI council", "Autonomous AI departments", "Human-in-the-loop crypto trade desk", "Finance, CRM, mail and document studio", "Tamper-evident audit log"]
-          },
-          {
-            "@type": "MobileApplication",
-            "name": "VIGIL",
-            "applicationCategory": "BusinessApplication",
-            "operatingSystem": "Android",
-            "description": "The VIGIL AI workspace on Android — the same human-in-the-loop council, departments and trade desk, in your pocket.",
-            "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" }
+            "applicationSubCategory": "Gestion d'organisme de formation",
+            "operatingSystem": "Navigateur web",
+            "url": "https://app.vtlvs.com/",
+            "inLanguage": "fr-FR",
+            "description": "Plateforme des organismes de formation : sessions, inscriptions, émargement scellé, signature électronique, coffre documentaire, dossier Qualiopi tenu en continu et agents IA sous identité vérifiée.",
+            "publisher": { "@type": "Organization", "name": "AZZ&CO LABS" },
+            "featureList": [
+              "Émargement scellé et vérifiable",
+              "Signature électronique des documents de formation",
+              "Dossier Qualiopi tenu en continu",
+              "Coffre documentaire par organisme",
+              "Salle de formation à distance",
+              "Agents IA sous identité et rôle vérifiés"
+            ]
           },
           {
             "@type": "WebSite",
-            "name": "VIGIL",
-            "url": "https://vigil-ai.xyz/"
-          },
-          {
-            "@type": "FAQPage",
-            "mainEntity": [
-              {"@type":"Question","name":"What is VIGIL?","acceptedAnswer":{"@type":"Answer","text":"VIGIL is an AI workspace that deliberates before it acts. It combines a multi-advisor AI council, autonomous AI departments, and a human-in-the-loop crypto trade desk with your finance, CRM, mail, and documents - all under one agent that thinks first and waits for your approval."}},
-              {"@type":"Question","name":"How is VIGIL different from a chatbot or AI assistant?","acceptedAnswer":{"@type":"Answer","text":"Unlike a chatbot, VIGIL is built around human-in-the-loop control: every trade passes a single-use approval gate and outbound mail is review-then-send, so nothing with real consequence happens autonomously. It also brainstorms and presents a plan before acting, and grounds answers in your own documents and live data."}},
-              {"@type":"Question","name":"What is the AI council?","acceptedAnswer":{"@type":"Answer","text":"The AI council is a panel of advisor lenses - CFO, CTO, Legal, and Product - that debate a decision, score it, and have a chairman synthesize a defensible verdict. It surfaces the bear case and dissent instead of hiding it, and you can always override the verdict."}},
-              {"@type":"Question","name":"Can VIGIL trade crypto automatically?","acceptedAnswer":{"@type":"Answer","text":"No. VIGIL proposes trades from data-grounded forecasts, but every order is human-approved and capped at 5% of NAV. You connect your own broker and your API keys never leave your account."}},
-              {"@type":"Question","name":"Is my data private and secure?","acceptedAnswer":{"@type":"Answer","text":"Yes. Every record is scoped to your account with row-level security, your broker and API keys stay in your account, and a tamper-evident, hash-chained audit log records everything the agent does."}},
-              {"@type":"Question","name":"What can VIGIL's AI departments do?","acceptedAnswer":{"@type":"Answer","text":"VIGIL runs autonomous AI departments for recurring work - support triage, finance reconciliation, revenue follow-ups, lead scouting, and legal review. Each department only counts a task as done when it passes a deterministic effectiveness check, so output is verified, not assumed."}}
-            ]
+            "name": "VTLVS",
+            "url": "https://app.vtlvs.com/",
+            "inLanguage": "fr-FR"
           }
         ]
       }
@@ -117,30 +118,18 @@
   <body>
     <div id="root"></div>
     <noscript>
-      <main style="max-width:760px;margin:0 auto;padding:2rem;font-family:system-ui,sans-serif;color:#ffe6cb;background:#041c1c">
-        <h1>VIGIL — the AI workspace that thinks before it acts</h1>
-        <p>VIGIL is an AI workspace that deliberates before it acts: a multi-advisor AI council, autonomous AI departments, and a human-in-the-loop crypto trade desk, with your finance, CRM, mail and documents in one place. Every trade passes a single-use approval gate and outbound mail is review-then-send, so nothing with consequence happens autonomously.</p>
-        <h2>What's inside</h2>
+      <main style="max-width:760px;margin:0 auto;padding:2rem;font-family:system-ui,sans-serif;color:#0b2239;background:#f4f7fb">
+        <h1>VTLVS — la formation, prouvée en temps réel</h1>
+        <p>VTLVS est la plateforme des organismes de formation : elle tient les sessions, les inscriptions, l'émargement, les signatures, le coffre documentaire et le dossier Qualiopi — et elle fabrique la preuve pendant le travail, plutôt que de la reconstituer avant un audit.</p>
+        <h2>Ce qu'elle tient</h2>
         <ul>
-          <li><strong>AI Council &amp; Meeting Room</strong> — CFO, CTO, Legal and Product advisor lenses debate a decision, score it, and a chairman synthesizes a defensible verdict with the dissent surfaced.</li>
-          <li><strong>Autonomous AI departments</strong> — support, finance, revenue, lead scouting and legal review, each verified by a deterministic effectiveness check.</li>
-          <li><strong>Human-in-the-loop trade desk</strong> — data-grounded forecasts propose trades; every order is human-approved and capped at 5% of NAV. Connect your own broker; keys never leave your account.</li>
-          <li><strong>Finance, CRM, Mail, Studio, Vault &amp; Audit</strong> — your books, pipeline, inbox, documents and a tamper-evident audit log, scoped to your account with row-level security.</li>
+          <li><strong>Émargement scellé</strong> — signé à l'heure du serveur, chaîné, non modifiable après coup.</li>
+          <li><strong>Signature électronique</strong> — règlement intérieur, convention, protocole individuel, horodatés et scellés.</li>
+          <li><strong>Dossier Qualiopi continu</strong> — appréciations, réclamations et actions d'amélioration liées à leur cause.</li>
+          <li><strong>Coffre et salle de formation</strong> — les pièces de chaque session, et le distanciel au même endroit.</li>
+          <li><strong>Agents IA</strong> — sous identité vérifiée : ils lisent avec vos droits, jamais au-delà.</li>
         </ul>
-        <h2>Frequently asked questions</h2>
-        <h3>What is VIGIL?</h3>
-        <p>VIGIL is an AI workspace that deliberates before it acts. It combines a multi-advisor AI council, autonomous AI departments, and a human-in-the-loop crypto trade desk with your finance, CRM, mail, and documents.</p>
-        <h3>How is VIGIL different from a chatbot or AI assistant?</h3>
-        <p>VIGIL is built around human-in-the-loop control: every trade passes a single-use approval gate and outbound mail is review-then-send, so nothing with real consequence happens autonomously. It also plans before acting and grounds answers in your own data.</p>
-        <h3>What is the AI council?</h3>
-        <p>A panel of advisor lenses — CFO, CTO, Legal, and Product — that debate a decision, score it, and have a chairman synthesize a defensible verdict, surfacing the bear case instead of hiding it.</p>
-        <h3>Can VIGIL trade crypto automatically?</h3>
-        <p>No. VIGIL proposes trades from data-grounded forecasts, but every order is human-approved and capped at 5% of NAV. You connect your own broker and your API keys never leave your account.</p>
-        <h3>Is my data private and secure?</h3>
-        <p>Yes. Every record is scoped to your account with row-level security, your broker and API keys stay in your account, and a tamper-evident audit log records everything the agent does.</p>
-        <h3>What can VIGIL's AI departments do?</h3>
-        <p>They run recurring work — support triage, finance reconciliation, revenue follow-ups, lead scouting, and legal review — and each only counts a task as done when it passes a deterministic effectiveness check.</p>
-        <p><a href="/signup">Get started</a> &middot; <a href="/docs">Read the documentation</a></p>
+        <p>Cette application nécessite JavaScript. <a href="https://vtlvs.com">Découvrir VTLVS</a> &middot; <a href="https://docs.vtlvs.com">Documentation</a> &middot; <a href="https://status.vtlvs.com">État des services</a></p>
       </main>
     </noscript>
     <script type="module" src="/src/main.tsx"></script>

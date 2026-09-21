@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { MarqueVtlvs } from "@/components/MarqueVtlvs";
 import { useParams } from "react-router-dom";
 import { joinGuestRoom, type GuestRoomJoin } from "@/lib/vigil";
 import type { GatewayError } from "@/lib/ww";
@@ -54,7 +55,7 @@ export default function GuestMeetingPage() {
   return (
     <div style={{ background: "#07080d", color: "#e7e9f3", minHeight: "100dvh" }} className="flex items-center justify-center p-4">
       <div className="w-full max-w-sm flex flex-col items-center gap-5 text-center">
-        <img src="/vigil-mark.svg" alt="" width={44} height={44} />
+        <MarqueVtlvs hauteur={44} titre="VTLVS" />
         <div>
           <h1 className="text-lg font-bold tracking-[0.05em]">Vous êtes invité à une réunion</h1>
           <p className="mt-1 text-sm text-white/55">Indiquez votre nom pour rejoindre. Aucun compte n'est nécessaire.</p>

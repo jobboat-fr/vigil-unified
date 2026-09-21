@@ -59,7 +59,7 @@ function TierCard({
             outlined
             className="mt-3"
             onClick={() => {
-              window.location.href = "mailto:sales@vigil-ai.xyz?subject=VIGIL%20Enterprise";
+              window.location.href = "mailto:rached.azer@azzcolabs.business?subject=VTLVS%20%E2%80%94%20offre%20sur%20mesure";
             }}
           >
             Nous contacter
