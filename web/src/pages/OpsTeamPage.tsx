@@ -3,6 +3,7 @@ import { SkeletonRows } from "@/components/EmptyState";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/components/card";
 import { Button } from "@nous-research/ui/ui/components/button";
+import { EnTetePage } from "@/components/EnTetePage";
 import { vigil, type Department, type OpsEvent, type OpsTask, type OpsUsage } from "@/lib/vigil";
 import { GatewayError } from "@/lib/ww";
 import AgentsMarques from "@/components/AgentsMarques";
@@ -86,22 +87,24 @@ export default function OpsTeamPage() {
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
-      <header className="flex items-start justify-between gap-3">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-xl font-bold tracking-tight">Équipe agentique</h1>
-          <p className="text-sm text-text-secondary">
-            Les pôles de l'assistant. Chacun travaille <em>on demand</em> and only counts as working once its
-            self-test passes its effectiveness contract.
-          </p>
-        </div>
-        <Button
-          onClick={() => void toggleKill()}
-          disabled={pausing}
-          style={anyPaused ? undefined : { color: "#ef4444", borderColor: "#ef4444" }}
-        >
-          {pausing ? "…" : anyPaused ? "Tout reprendre" : "Tout suspendre"}
-        </Button>
-      </header>
+      <EnTetePage
+        titre="Équipe agentique"
+        description={
+          <>
+            Les pôles de l'assistant. Chacun ne travaille qu'à la demande, et n'est compté
+            comme opérationnel qu'une fois son autotest passé.
+          </>
+        }
+        actions={
+          <Button
+            onClick={() => void toggleKill()}
+            disabled={pausing}
+            style={anyPaused ? undefined : { color: "#ef4444", borderColor: "#ef4444" }}
+          >
+            {pausing ? "…" : anyPaused ? "Tout reprendre" : "Tout suspendre"}
+          </Button>
+        }
+      />
 
       {/* Les agents d'AZZ&CO Labs passent avant les pôles : c'est ce que le client achète. */}
       <AgentsMarques role={role as never} />

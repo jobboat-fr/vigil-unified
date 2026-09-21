@@ -164,7 +164,7 @@ export default function LearnParcoursPage() {
           const items = byStatus[col.key] ?? [];
           return (
             <section key={col.key} className="flex min-w-0 flex-col gap-2">
-              <header className="flex items-baseline justify-between gap-2 px-1">
+              <header className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-2 px-1 [&_button]:whitespace-nowrap">
                 <h2 className="text-[11px] font-semibold uppercase tracking-wider opacity-70">
                   {col.label}
                 </h2>

@@ -90,7 +90,7 @@ export default function MailPage() {
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
-      <header className="flex items-start justify-between gap-2">
+      <header className="flex flex-wrap items-start justify-between gap-x-2 gap-y-3 [&_button]:whitespace-nowrap">
         <div className="flex flex-col gap-1">
           <h1 className="text-xl font-bold tracking-tight">Mail</h1>
           <p className="text-sm text-text-secondary">Tri du courrier entrant. Rien ne part sans relecture : aucun message n'est envoyé automatiquement au nom de l'organisme.</p>
