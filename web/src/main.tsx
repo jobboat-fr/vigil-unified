@@ -15,6 +15,7 @@ import GuestMeetingPage from "./pages/GuestMeetingPage";
 import PartageArtefactPage from "./pages/PartageArtefactPage";
 import ActiverComptePage from "./pages/ActiverComptePage";
 import DesinscriptionPage from "./pages/DesinscriptionPage";
+import ConfirmationPage from "./pages/ConfirmationPage";
 import NouveauMotDePassePage from "./pages/NouveauMotDePassePage";
 
 // Expose the plugin SDK before rendering so plugins loaded via <script>
@@ -50,6 +51,7 @@ createRoot(document.getElementById("root")!).render(
               {/* Pages à jeton, ouvertes depuis un e-mail : activation, désinscription, mot de passe. */}
               <Route path="/activer" element={<ActiverComptePage />} />
               <Route path="/desinscription" element={<DesinscriptionPage />} />
+              <Route path="/confirmer" element={<ConfirmationPage />} />
               <Route path="/nouveau-mot-de-passe" element={<NouveauMotDePassePage />} />
               <Route
                 path="*"

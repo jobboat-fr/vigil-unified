@@ -330,3 +330,16 @@ export const composerMessage = (body: {
 }) => call<{ id: string; cibles: number; differes: number }>("POST", "/messages", body);
 
 export const getMessagesAdmin = () => call<{ items: MessageAdmin[] }>("GET", "/messages");
+
+/** Double opt-in : ce que le lien propose, puis l'acte lui-même.
+ *
+ *  La lecture et la confirmation sont deux appels distincts, et c'est délibéré : les
+ *  passerelles antivirus suivent les liens d'un e-mail avant que le destinataire ne le
+ *  lise. Si la confirmation était un `GET`, c'est l'antivirus de l'entreprise qui
+ *  consentirait à la place de la personne. */
+export const lireConfirmation = (j: string) =>
+  call<{ organisme: string; email: string; categorie: string; phrase: string }>(
+    "GET", `/public/inscription/confirmer?j=${encodeURIComponent(j)}`);
+
+export const confirmerInscription = (j: string) =>
+  call<{ inscrit: boolean; categorie: string }>("POST", "/public/inscription/confirmer", { j });
