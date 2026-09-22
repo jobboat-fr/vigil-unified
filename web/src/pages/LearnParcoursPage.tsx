@@ -25,6 +25,8 @@ import {
 } from "@/lib/learn";
 import { expliquerCourt } from "@/lib/refus";
 import { statutInscription } from "@/lib/mots";
+import { modalite } from "@/lib/mots";
+import { Pastilles } from "@/components/PastilleTheme";
 
 /**
  * Le tableau des parcours — les sessions par état, et tout ce qui s'y rattache.
@@ -64,11 +66,6 @@ const COLUMNS: { key: string; label: string; gestion: string; suivi: string }[] 
     gestion: "conservée pour la traçabilité", suivi: "annulée" },
 ];
 
-const MODALITE: Record<string, string> = {
-  presentiel: "Présentiel",
-  distanciel: "Distanciel",
-  mixte: "Mixte",
-};
 
 function jour(d: string) {
   const [y, m, j] = d.split("-");
@@ -209,14 +206,18 @@ export default function LearnParcoursPage() {
                             <span>
                               {jour(s.starts_on)} → {jour(s.ends_on)}
                             </span>
-                            <span>{MODALITE[s.modality] ?? s.modality}</span>
+                            <span>{modalite(s.modality)}</span>
                           </div>
+                          {/* Les mêmes pastilles que sur « Formations », et calculées au
+                              même endroit : « Complet », « Plus que 2 places », « Session
+                              confirmée » se lisent ici sans rouvrir la fiche. */}
+                          <Pastilles themes={s.themes} className="mt-1.5" />
                         </CardHeader>
                         <CardContent className="flex items-center justify-between gap-2 pb-3 text-[11px]">
                           <span className="opacity-60">
                             {s._can?.update
                               ? `${s.enrolled ?? 0}/${s.capacity} inscrits`
-                              : `${MODALITE[s.modality] ?? s.modality}${s.place ? ` · ${s.place}` : ""}`}
+                              : `${modalite(s.modality)}${s.place ? ` · ${s.place}` : ""}`}
                           </span>
                           {prog?.certifiante && (
                             <span

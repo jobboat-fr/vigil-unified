@@ -350,6 +350,42 @@ export async function clearHermesSession(): Promise<void> {
   }
 }
 
+/**
+ * Les préférences que **ce** déploiement ne sert peut-être pas.
+ *
+ * `/api/dashboard/themes` et `/api/dashboard/font` viennent du tableau de bord Hermes, qui
+ * enregistrait le thème et la police côté serveur pour les retrouver d'un navigateur à
+ * l'autre. La passerelle VTLVS ne monte aucune route `/api/dashboard` : les deux appels
+ * échouent, sont rattrapés par un `.catch(() => {})`, et l'application retombe sur ses
+ * thèmes internes. Personne ne voit rien — c'est bien le problème.
+ *
+ * Relevé dans le journal réseau : **trois** paires d'appels par chargement de page, pour
+ * deux réponses qui ne viendront jamais. Le tableau de bord Hermes, lui, les sert encore,
+ * et ce dépôt reste capable de tourner sous lui : on ne supprime donc pas l'appel, on
+ * l'essaie une fois. Si la réponse n'arrive pas, on n'insiste plus de la session.
+ *
+ * Le verrou porte sur l'échec, jamais sur le succès : un déploiement qui répond continue
+ * d'être interrogé normalement.
+ */
+const absents = new Set<string>();
+const enCours = new Map<string, Promise<unknown>>();
+
+function unFoisParDeploiement<T>(cle: string, appel: () => Promise<T>): Promise<T> {
+  if (absents.has(cle)) return Promise.reject(new Error(`${cle}_non_servi`));
+  // Deux montages simultanés (React en mode strict le fait exprès) partagent la même
+  // requête plutôt que d'en lancer deux.
+  const encours = enCours.get(cle);
+  if (encours) return encours as Promise<T>;
+  const p = appel()
+    .catch((e: unknown) => {
+      absents.add(cle);
+      throw e;
+    })
+    .finally(() => enCours.delete(cle));
+  enCours.set(cle, p);
+  return p;
+}
+
 export const api = {
   getStatus: () => fetchJSON<StatusResponse>("/api/status"),
   /**
@@ -931,9 +967,11 @@ export const api = {
 
   // Dashboard themes
   getThemes: () =>
-    fetchJSON<DashboardThemesResponse>("/api/dashboard/themes", undefined, {
-      allowUnauthorized: true,
-    }),
+    unFoisParDeploiement("themes", () =>
+      fetchJSON<DashboardThemesResponse>("/api/dashboard/themes", undefined, {
+        allowUnauthorized: true,
+      }),
+    ),
   setTheme: (name: string) =>
     fetchJSON<{ ok: boolean; theme: string }>("/api/dashboard/theme", {
       method: "PUT",
@@ -941,9 +979,11 @@ export const api = {
       body: JSON.stringify({ name }),
     }),
   getFontPref: () =>
-    fetchJSON<DashboardFontResponse>("/api/dashboard/font", undefined, {
-      allowUnauthorized: true,
-    }),
+    unFoisParDeploiement("font", () =>
+      fetchJSON<DashboardFontResponse>("/api/dashboard/font", undefined, {
+        allowUnauthorized: true,
+      }),
+    ),
   setFontPref: (font: string) =>
     fetchJSON<{ ok: boolean; font: string }>("/api/dashboard/font", {
       method: "PUT",

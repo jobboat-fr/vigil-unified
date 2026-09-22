@@ -1,4 +1,6 @@
 import {
+  Suspense,
+  lazy,
   useCallback,
   useEffect,
   useMemo,
@@ -88,14 +90,10 @@ import { useBelowBreakpoint } from "@nous-research/ui/hooks/use-below-breakpoint
 import { useSidebarStatus } from "@/hooks/useSidebarStatus";
 import { AuthWidget } from "@/components/AuthWidget";
 import { OnboardingWizard } from "@/components/OnboardingWizard";
-import AssistantChatPage from "@/pages/AssistantChatPage";
-import AbonnementPage from "@/pages/AbonnementPage";
-import ProduitsPage from "@/pages/ProduitsPage";
 import AgentDeLaPage from "@/components/AgentDeLaPage";
 import { FrontiereErreur } from "@/components/ErreurEcran";
 import { MarqueVtlvs, MOT } from "@/components/MarqueVtlvs";
 import { BandeauReseau } from "@/components/BandeauReseau";
-import PageIntrouvable from "@/pages/PageIntrouvable";
 import { PageHeaderProvider } from "@/contexts/PageHeaderProvider";
 import { ProfileProvider } from "@/contexts/ProfileProvider";
 import { useProfileScope } from "@/contexts/useProfileScope";
@@ -103,61 +101,10 @@ import { ProfileSwitcher } from "@/components/ProfileSwitcher";
 import { ProfileScopeBanner } from "@/components/ProfileScopeBanner";
 import { useSystemActions } from "@/contexts/useSystemActions";
 import type { SystemAction } from "@/contexts/system-actions-context";
-import ConfigPage from "@/pages/ConfigPage";
-import EnvPage from "@/pages/EnvPage";
-import FilesPage from "@/pages/FilesPage";
-import SessionsPage from "@/pages/SessionsPage";
-import LogsPage from "@/pages/LogsPage";
-import AnalyticsPage from "@/pages/AnalyticsPage";
-import ModelsPage from "@/pages/ModelsPage";
-import CronPage from "@/pages/CronPage";
-import ProfilesPage from "@/pages/ProfilesPage";
-import ProfileBuilderPage from "@/pages/ProfileBuilderPage";
-import SkillsPage from "@/pages/SkillsPage";
-import PluginsPage from "@/pages/PluginsPage";
-import McpPage from "@/pages/McpPage";
-import PairingPage from "@/pages/PairingPage";
-import ChannelsPage from "@/pages/ChannelsPage";
-import WebhooksPage from "@/pages/WebhooksPage";
-import SystemPage from "@/pages/SystemPage";
-import ChatPage from "@/pages/ChatPage";
 // VIGIL × WinnyWoo product pages (added on top of the agent runtime)
-import MeetingRoomPage from "@/pages/MeetingRoomPage";
-import StudioPage from "@/pages/StudioPage";
-import OpsTeamPage from "@/pages/OpsTeamPage";
-import ConnectionsPage from "@/pages/ConnectionsPage";
-import ApprovalsPage from "@/pages/ApprovalsPage";
-import BillingPage from "@/pages/BillingPage";
-import VaultPage from "@/pages/VaultPage";
-import FinancePage from "@/pages/FinancePage";
-import CrmPage from "@/pages/CrmPage";
-import MailPage from "@/pages/MailPage";
-import AuditPage from "@/pages/AuditPage";
-import LearnCalendarPage from "@/pages/LearnCalendarPage";
-import NoyauPage from "@/pages/NoyauPage";
-import MonComptePage from "@/pages/MonComptePage";
-import AidePage from "@/pages/AidePage";
-import SupportBoitePage from "@/pages/SupportBoitePage";
-import LearnParcoursPage from "@/pages/LearnParcoursPage";
-import LearnAcquisPage from "@/pages/LearnAcquisPage";
-import LearnDashboardPage from "@/pages/LearnDashboardPage";
-import LearnFormationsPage from "@/pages/LearnFormationsPage";
-import LearnEmargementPage from "@/pages/LearnEmargementPage";
-import LearnVaultPage from "@/pages/LearnVaultPage";
-import LearnPeoplePage from "@/pages/LearnPeoplePage";
-import LearnDemandesPage from "@/pages/LearnDemandesPage";
 import { supabase, useLearnRole } from "@/lib/supabase";
-import CompteSansRole from "@/pages/CompteSansRole";
 import { usePagePermissions, type PagePermissions } from "@/lib/vigil";
 import { AssistantIndisponible } from "@/components/AssistantIndisponible";
-import AccueilPage from "@/pages/AccueilPage";
-import SignerDocumentPage from "@/pages/SignerDocumentPage";
-import IdentiteEmailsPage from "@/pages/IdentiteEmailsPage";
-import ComposerPage from "@/pages/ComposerPage";
-import MesSalariesPage from "@/pages/MesSalariesPage";
-import SocietesPage from "@/pages/SocietesPage";
-import DocumentsASignerPage from "@/pages/DocumentsASignerPage";
-import ActionsRequisesPage from "@/pages/ActionsRequisesPage";
 import { getAccueilRecent } from "@/lib/accueil";
 import { poserOrganisme } from "@/lib/organisme";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
@@ -170,6 +117,75 @@ import { useTheme } from "@/themes";
 import { isDashboardEmbeddedChatEnabled } from "@/lib/dashboard-flags";
 import { api } from "@/lib/api";
 import type { StatusResponse } from "@/lib/api";
+
+/**
+ * Les écrans, chargés à la demande.
+ *
+ * Ils étaient tous importés statiquement : un seul morceau de 3,0 Mo (845 ko compressés)
+ * que le navigateur devait lire en entier avant d'afficher quoi que ce soit — y compris
+ * les cinquante écrans que la personne connectée n'ouvrira jamais, son rôle ne lui en
+ * donnant l'accès qu'à une poignée.
+ *
+ * `lazy` déplace chaque écran dans son propre fichier, récupéré au moment où l'on y va.
+ * Le `Suspense` qui les entoure est posé **sous** le menu et la barre latérale : pendant
+ * qu'un écran arrive, la navigation reste à l'écran et cliquable. Le mettre plus haut
+ * ferait clignoter toute l'application à chaque changement de page.
+ */
+const AssistantChatPage = lazy(() => import("@/pages/AssistantChatPage"));
+const AbonnementPage = lazy(() => import("@/pages/AbonnementPage"));
+const ProduitsPage = lazy(() => import("@/pages/ProduitsPage"));
+const PageIntrouvable = lazy(() => import("@/pages/PageIntrouvable"));
+const ConfigPage = lazy(() => import("@/pages/ConfigPage"));
+const EnvPage = lazy(() => import("@/pages/EnvPage"));
+const FilesPage = lazy(() => import("@/pages/FilesPage"));
+const SessionsPage = lazy(() => import("@/pages/SessionsPage"));
+const LogsPage = lazy(() => import("@/pages/LogsPage"));
+const AnalyticsPage = lazy(() => import("@/pages/AnalyticsPage"));
+const ModelsPage = lazy(() => import("@/pages/ModelsPage"));
+const CronPage = lazy(() => import("@/pages/CronPage"));
+const ProfilesPage = lazy(() => import("@/pages/ProfilesPage"));
+const ProfileBuilderPage = lazy(() => import("@/pages/ProfileBuilderPage"));
+const SkillsPage = lazy(() => import("@/pages/SkillsPage"));
+const PluginsPage = lazy(() => import("@/pages/PluginsPage"));
+const McpPage = lazy(() => import("@/pages/McpPage"));
+const PairingPage = lazy(() => import("@/pages/PairingPage"));
+const ChannelsPage = lazy(() => import("@/pages/ChannelsPage"));
+const WebhooksPage = lazy(() => import("@/pages/WebhooksPage"));
+const SystemPage = lazy(() => import("@/pages/SystemPage"));
+const ChatPage = lazy(() => import("@/pages/ChatPage"));
+const MeetingRoomPage = lazy(() => import("@/pages/MeetingRoomPage"));
+const StudioPage = lazy(() => import("@/pages/StudioPage"));
+const OpsTeamPage = lazy(() => import("@/pages/OpsTeamPage"));
+const ConnectionsPage = lazy(() => import("@/pages/ConnectionsPage"));
+const ApprovalsPage = lazy(() => import("@/pages/ApprovalsPage"));
+const BillingPage = lazy(() => import("@/pages/BillingPage"));
+const VaultPage = lazy(() => import("@/pages/VaultPage"));
+const FinancePage = lazy(() => import("@/pages/FinancePage"));
+const CrmPage = lazy(() => import("@/pages/CrmPage"));
+const MailPage = lazy(() => import("@/pages/MailPage"));
+const AuditPage = lazy(() => import("@/pages/AuditPage"));
+const LearnCalendarPage = lazy(() => import("@/pages/LearnCalendarPage"));
+const NoyauPage = lazy(() => import("@/pages/NoyauPage"));
+const MonComptePage = lazy(() => import("@/pages/MonComptePage"));
+const AidePage = lazy(() => import("@/pages/AidePage"));
+const SupportBoitePage = lazy(() => import("@/pages/SupportBoitePage"));
+const LearnParcoursPage = lazy(() => import("@/pages/LearnParcoursPage"));
+const LearnAcquisPage = lazy(() => import("@/pages/LearnAcquisPage"));
+const LearnDashboardPage = lazy(() => import("@/pages/LearnDashboardPage"));
+const LearnFormationsPage = lazy(() => import("@/pages/LearnFormationsPage"));
+const LearnEmargementPage = lazy(() => import("@/pages/LearnEmargementPage"));
+const LearnVaultPage = lazy(() => import("@/pages/LearnVaultPage"));
+const LearnPeoplePage = lazy(() => import("@/pages/LearnPeoplePage"));
+const LearnDemandesPage = lazy(() => import("@/pages/LearnDemandesPage"));
+const CompteSansRole = lazy(() => import("@/pages/CompteSansRole"));
+const AccueilPage = lazy(() => import("@/pages/AccueilPage"));
+const SignerDocumentPage = lazy(() => import("@/pages/SignerDocumentPage"));
+const IdentiteEmailsPage = lazy(() => import("@/pages/IdentiteEmailsPage"));
+const ComposerPage = lazy(() => import("@/pages/ComposerPage"));
+const MesSalariesPage = lazy(() => import("@/pages/MesSalariesPage"));
+const SocietesPage = lazy(() => import("@/pages/SocietesPage"));
+const DocumentsASignerPage = lazy(() => import("@/pages/DocumentsASignerPage"));
+const ActionsRequisesPage = lazy(() => import("@/pages/ActionsRequisesPage"));
 
 /** Où atterrit quelqu'un qui n'a rien demandé de précis — ou qui a demandé une page
  *  que son rôle ne lui ouvre pas.
@@ -570,6 +586,23 @@ function buildRoutes(
 }
 
 const SIDEBAR_COLLAPSED_KEY = "hermes-sidebar-collapsed";
+
+/**
+ * L'attente d'un écran — une forme, pas un mot.
+ *
+ * « Chargement… » se lit, donc se remarque, donc paraît long. Deux blocs neutres aux
+ * proportions d'un en-tête et d'un contenu occupent la place que l'écran prendra : sur une
+ * connexion correcte, personne ne les voit ; sur une mauvaise, la page ne saute pas quand
+ * le contenu arrive. `aria-busy` le dit aux lecteurs d'écran, qui eux ne voient pas la forme.
+ */
+function AttenteEcran() {
+  return (
+    <div className="flex flex-col gap-4 p-4 md:p-6" aria-busy="true" aria-label="Chargement de la page">
+      <div className="h-7 w-52 animate-pulse rounded-md bg-current/5" />
+      <div className="h-40 animate-pulse rounded-xl bg-current/5" />
+    </div>
+  );
+}
 
 export default function App() {
   const { t } = useI18n();
@@ -1091,6 +1124,7 @@ export default function App() {
                   {/* Un écran qui casse ne doit pas emporter le menu : la frontière l'arrête
                       ici, et `cle` la remet à zéro dès qu'on change de page. */}
                   <FrontiereErreur cle={pathname}>
+                  <Suspense fallback={<AttenteEcran />}>
                   <Routes>
                     {routes.map(({ key, path, element }) => (
                       <Route key={key} path={path} element={element} />
@@ -1102,6 +1136,7 @@ export default function App() {
                       }
                     />
                   </Routes>
+                  </Suspense>
                   </FrontiereErreur>
                   </div>
                 </ProfileKeyedRoutes>

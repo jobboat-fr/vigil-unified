@@ -23,6 +23,7 @@ import {
 import { expliquerCourt } from "@/lib/refus";
 import { modalite, typeEvaluation } from "@/lib/mots";
 import { Pastilles } from "@/components/PastilleTheme";
+import { AvisCreation } from "@/components/learn/AvisCreation";
 
 /**
  * L'offre de formation, et tout ce qui s'y rattache.
@@ -187,6 +188,16 @@ export default function LearnFormationsPage() {
                     </div>
                   </details>
                 ) : null}
+
+                {/* La traçabilité se range avec la formation, pas dans le coffre : c'est
+                    là qu'on décide de l'ouvrir, donc là qu'on pense à joindre l'avis.
+                    Replié par défaut — la plupart des visites ne le concernent pas. */}
+                <details>
+                  <summary className="cursor-pointer text-xs font-medium opacity-80">Avis de création</summary>
+                  <div className="mt-3">
+                    <AvisCreation programId={p.id} peutDeposer={Boolean(canProg?.create)} />
+                  </div>
+                </details>
 
                 <Group title="Sessions" count={ps.length}>
                   {ps.slice(0, 4).map((s) => {

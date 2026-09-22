@@ -497,17 +497,29 @@ export interface VaultObject {
   _can?: Can;
 }
 
-export const getVault = (kind?: string) =>
-  call<{ items: VaultObject[]; _can?: Can }>(
-    "GET",
-    `/vault${kind ? `?kind=${encodeURIComponent(kind)}` : ""}`,
-  );
+/** Le coffre, filtrable. Les trois filtres se combinent, et aucun n'est obligatoire. */
+export const getVault = (f: { kind?: string; program_id?: string; session_id?: string } = {}) => {
+  const q = new URLSearchParams();
+  if (f.kind) q.set("kind", f.kind);
+  if (f.program_id) q.set("program_id", f.program_id);
+  if (f.session_id) q.set("session_id", f.session_id);
+  const s = q.toString();
+  return call<{ items: VaultObject[]; _can?: Can }>("GET", `/vault${s ? `?${s}` : ""}`);
+};
 
 /** Déposer une pièce au coffre. `FormData`, donc pas de `content-type` posé à la main :
  *  le navigateur doit écrire lui-même la frontière multipart. */
 export async function uploadVault(
   fichier: File,
-  opts: { kind?: string; session_id?: string; subject_id?: string; visibility?: string } = {},
+  opts: {
+    kind?: string;
+    session_id?: string;
+    subject_id?: string;
+    visibility?: string;
+    /** Le programme auquel la pièce se rapporte — l'avis de création, typiquement.
+     *  Distinct de `session_id` : on décide d'ouvrir un programme, pas une session. */
+    program_id?: string;
+  } = {},
 ): Promise<VaultObject> {
   const fd = new FormData();
   fd.append("fichier", fichier);
@@ -517,6 +529,7 @@ export async function uploadVault(
   fd.append("visibility", opts.visibility ?? "tenant");
   if (opts.session_id) fd.append("session_id", opts.session_id);
   if (opts.subject_id) fd.append("subject_id", opts.subject_id);
+  if (opts.program_id) fd.append("program_id", opts.program_id);
   return call<VaultObject>("POST", "/vault", fd);
 }
 
