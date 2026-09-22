@@ -705,3 +705,68 @@ export const putNoyauModel = (model: Record<string, unknown>, slug = "noyau") =>
   call<{ slug: string; version: number; updated_at: string }>(
     "PUT", `/noyau/${encodeURIComponent(slug)}/model`, { model },
   );
+
+// ----------------------------------------------------------------- entreprise cliente
+
+export interface Salarie {
+  id: string;
+  full_name: string | null;
+  email: string;
+  created_at: string;
+}
+
+export interface DemandeSalarie {
+  id: string;
+  email: string;
+  nom_complet: string | null;
+  statut: "deposee" | "verifiee" | "refusee" | "creee";
+  motif: string | null;
+  par_un_agent: boolean;
+  created_at: string;
+  traite_le: string | null;
+}
+
+export interface EtatSalaries {
+  societe: { name: string; max_apprenants: number | null; actif: boolean; cliente_depuis: string | null } | null;
+  places: { occupees: number; plafond: number | null };
+  /** Faux tant que la société n'est pas cliente établie, suspendue, ou au plafond. */
+  eligible: boolean;
+  motif: string | null;
+  items: Salarie[];
+  demandes: DemandeSalarie[];
+}
+
+export const getSalaries = () => call<EtatSalaries>("GET", "/entreprise/salaries");
+
+export const inscrireSalarie = (email: string, nom_complet: string) =>
+  call<{ id: string; email: string; demande_id: string; responsables_prevenus: number }>(
+    "POST", "/entreprise/salaries", { email, nom_complet });
+
+export interface Societe {
+  id: string;
+  name: string;
+  siret: string | null;
+  actif: boolean;
+  /** Date à partir de laquelle la société est cliente établie. `null` = pas encore :
+   *  aucun agent ne crée alors de compte pour elle, quoi qu'on lui demande. */
+  cliente_depuis: string | null;
+  max_apprenants: number | null;
+  outils_autorises: string[];
+  apis_autorisees: string[];
+  salaries: number;
+}
+
+export const getSocietes = () => call<{ items: Societe[] }>("GET", "/companies");
+
+/** Les réglages d'une société, côté administration. Champ absent = inchangé. */
+export const reglerSociete = (
+  id: string,
+  reglages: {
+    actif?: boolean;
+    cliente?: boolean;
+    max_apprenants?: number;
+    plafond_illimite?: boolean;
+    outils_autorises?: string[];
+    apis_autorisees?: string[];
+  },
+) => call<Societe>("PATCH", `/companies/${id}`, reglages);
