@@ -19,6 +19,8 @@ import {
 import { RejoindreSalle } from "@/components/RejoindreSalle";
 import { isoDay } from "@/lib/day";
 import { expliquerCourt } from "@/lib/refus";
+import { Pastilles } from "@/components/PastilleTheme";
+import { modalite } from "@/lib/mots";
 
 /**
  * Le tableau de bord de l'apprenant.
@@ -245,9 +247,10 @@ export default function LearnDashboardApprenant() {
                     {dateLongue(s.starts_on)} → {dateLongue(s.ends_on)}
                   </span>
                   <span className="text-text-secondary text-xs">
-                    {s.modality}
+                    {modalite(s.modality)}
                     {s.place ? ` · ${s.place}` : ""}
                   </span>
+                  <Pastilles themes={s.themes} />
                 </li>
               ))}
             </ul>
