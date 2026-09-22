@@ -124,7 +124,13 @@ export default function LearnAcquisPage() {
     //
     // Le rôle sert donc uniquement d'arbitre à zéro ligne. La page continue de ne jamais
     // tester un profil, et dès qu'une donnée existe c'est elle qui décide.
-    return role !== "formateur" && role !== "admin" && role !== "super_admin" && role !== "auditeur";
+    //
+    // La liste est **positive** : seul l'apprenant consulte ses propres résultats. Écrite
+    // en négatif (« tout sauf formateur, admin, auditeur… »), elle rangeait l'entreprise
+    // du côté « mes résultats » — or une entreprise cliente regarde ceux de ses salariés,
+    // jamais les siens : elle ne passe aucune évaluation. Une liste d'exclusions oublie
+    // toujours quelqu'un, et c'est le rôle ajouté en dernier qui en fait les frais.
+    return role === "apprenant";
   }, [grades, role]);
 
   const parApprenant = useMemo(() => {
