@@ -77,6 +77,21 @@ const RESSOURCES: Record<string, string> = {
   vault: "le coffre",
 };
 
+/**
+ * Les fonctions qui dépendent d'un prestataire externe, et ce qu'elles s'appellent.
+ *
+ * Elles échouent en 501 ou 503 quand la clé du prestataire manque. Le 503 générique dit
+ * « c'est temporaire, réessayez » : c'est faux ici, et cruel — attendre ne configurera
+ * jamais rien. Ces pannes-là se règlent par quelqu'un, pas par le temps, et le message
+ * doit envoyer vers ce quelqu'un.
+ */
+const NON_INSTALLE: Record<string, string> = {
+  livekit_not_configured: "La visioconférence",
+  livekit_api_missing: "La visioconférence",
+  avatar_unavailable: "L'avatar en réunion",
+  tavus_not_configured: "L'avatar en réunion",
+};
+
 const ACTIONS: Record<string, string> = {
   read: "consulter",
   create: "créer dans",
@@ -168,15 +183,34 @@ export function expliquer(erreur: unknown, quoi?: string): Explication {
   }
 
   if (statut === 402) {
-    // Voulu, pas cassé : l'assistant accompagne pendant les créneaux de formation, et
-    // reste ouvert aux abonnés. On propose, on ne s'excuse pas.
-    const prochain = quand(detail?.prochain_creneau);
+    // Voulu, pas cassé : une limite d'offre n'est pas une panne. On propose, on ne
+    // s'excuse pas, et on ne propose surtout pas de « réessayer » — rien ne changerait.
+    //
+    // Le texte dépendait de l'assistant, seul émetteur de 402 le jour où ce fichier a été
+    // écrit. Une salle ou un studio qui refuserait pour la même raison aurait annoncé
+    // « L'assistant est ouvert pendant vos formations » : faux, et déroutant. Le code
+    // porte le cas particulier ; le cas général reste vrai partout.
+    if (code === "assistant_hors_formation") {
+      const prochain = quand(detail?.prochain_creneau);
+      // Pas de bouton vers /abonnement ici, et c'est délibéré. Ce refus-là n'atteint
+      // qu'un apprenant — la passerelle rend les autres rôles toujours ouverts — et
+      // /abonnement est réservé à l'administration de l'organisme. Le bouton aurait donc
+      // mené, à tous les coups, à un écran « accès réservé » : le défaut qu'on corrige,
+      // déplacé d'un clic. On dit plutôt à qui s'adresser.
+      return {
+        registre: "offre",
+        titre: "L'assistant est ouvert pendant vos formations",
+        detail: prochain
+          ? `Il vous accompagnera de nouveau ${prochain}. En dehors, l'accès permanent est ouvert par votre organisme de formation.`
+          : "Il vous accompagne pendant vos créneaux. En dehors, l'accès permanent est ouvert par votre organisme de formation.",
+        reessayable: false,
+        reference,
+      };
+    }
     return {
       registre: "offre",
-      titre: "L'assistant est ouvert pendant vos formations",
-      detail: prochain
-        ? `Il vous accompagnera de nouveau ${prochain}. L'abonnement y donne accès à tout moment.`
-        : "Il vous accompagne pendant vos créneaux. L'abonnement y donne accès à tout moment.",
+      titre: `${sujet.charAt(0).toUpperCase()}${sujet.slice(1)} demande un abonnement`,
+      detail: phrasePrete(e) ?? "Cette fonction n'est pas comprise dans votre offre actuelle.",
       geste: { texte: "Voir l'abonnement", vers: "/abonnement" },
       reessayable: false,
       reference,
@@ -184,6 +218,22 @@ export function expliquer(erreur: unknown, quoi?: string): Explication {
   }
 
   if (statut === 403) {
+    // Une limite d'offre annoncée en 403 reste une limite d'offre. Certaines routes
+    // anciennes refusent en 403 avec une phrase qui parle d'abonnement (auto_trade) :
+    // la rendre en « votre rôle ne donne pas ce droit » enverrait la personne demander
+    // à son administration ce que seule une souscription débloque.
+    const phrase403 = phrasePrete(e);
+    if (code === "plan_requis" || (phrase403 && /abonnement|subscription|forfait|offre payante/i.test(phrase403))) {
+      return {
+        registre: "offre",
+        titre: `${sujet.charAt(0).toUpperCase()}${sujet.slice(1)} demande un abonnement`,
+        detail: "Cette fonction n'est pas comprise dans votre offre actuelle.",
+        geste: { texte: "Voir l'abonnement", vers: "/abonnement" },
+        reessayable: false,
+        reference,
+      };
+    }
+
     // Hors périmètre : on ne confirme pas l'existence de la ressource. Même phrase
     // qu'un 404, volontairement.
     if (code === "organisme_hors_perimetre" || code === "tenant_mismatch") {
@@ -243,6 +293,35 @@ export function expliquer(erreur: unknown, quoi?: string): Explication {
     };
   }
 
+  if (statut === 410) {
+    // 410 tombait dans le fourre-tout final, et `meeting_closed` étant un code et non une
+    // phrase, `phrasePrete` l'écartait à juste titre : il ne restait que « Cette action
+    // n'a pas abouti ». La personne venait de cliquer sur un lien de réunion.
+    // Trois 410 distincts, et il faut les distinguer : le studio périme aussi ses liens
+    // de partage. Un « Cette réunion est terminée » sur un document partagé enverrait
+    // chercher une visioconférence qui n'a jamais existé.
+    if (code === "lien_expire") {
+      return {
+        registre: "absent",
+        titre: "Ce lien de partage a expiré",
+        detail: "Les liens ont une durée de vie limitée. Demandez-en un nouveau à la personne qui vous l'a envoyé.",
+        reessayable: false,
+        reference,
+      };
+    }
+    const expire = code === "expired_share_token";
+    return {
+      registre: "absent",
+      titre: expire ? "Ce lien d'invitation a expiré" : "Cette réunion est terminée",
+      detail: expire
+        ? "Demandez un nouveau lien à la personne qui vous a invité."
+        : "L'hôte y a mis fin. Le compte rendu, s'il a été déposé, se trouve dans le coffre.",
+      geste: { texte: "Retour au tableau de bord", vers: "/learn" },
+      reessayable: false,
+      reference,
+    };
+  }
+
   if (statut === 409) {
     return {
       registre: "saisie",
@@ -281,6 +360,36 @@ export function expliquer(erreur: unknown, quoi?: string): Explication {
       titre: "Trop de demandes d'un coup",
       detail: patienter(e.detail),
       reessayable: true,
+      reference,
+    };
+  }
+
+  // Une fonction qui n'a jamais été installée sur cet espace. Elle doit se distinguer
+  // des deux voisines dont elle empruntait les mots : ce n'est pas une panne (rien n'est
+  // cassé) et ce n'est pas temporaire (attendre n'installe rien). C'est un réglage
+  // manquant, et la seule suite utile est de le dire à qui peut le poser.
+  //
+  // On ne relaie jamais `detail.message` ici : la passerelle y met `str(exc)` du
+  // prestataire, c'est-à-dire une trace technique — parfois une URL interne.
+  if (code && NON_INSTALLE[code]) {
+    return {
+      registre: "panne",
+      titre: `${NON_INSTALLE[code]} n'est pas activée sur votre espace`,
+      detail:
+        "Rien n'est cassé de votre côté, et réessayer n'y changera rien : la fonction n'a pas encore été configurée. Signalez-le à l'administration de votre organisme.",
+      geste: { texte: "Aide et support", vers: "/aide" },
+      reessayable: false,
+      reference,
+    };
+  }
+
+  if (statut === 501) {
+    return {
+      registre: "panne",
+      titre: "Cette fonction n'est pas disponible ici",
+      detail: "Elle n'est pas installée sur cet espace. Réessayer n'y changera rien.",
+      geste: { texte: "Aide et support", vers: "/aide" },
+      reessayable: false,
       reference,
     };
   }

@@ -5,10 +5,10 @@ import { Button } from "@nous-research/ui/ui/components/button";
 import { vigil, googleMeet, streamRoomCouncil, type Room, type CouncilRecord, type SseEvent, type LiveIntervention, type MeetingSummary, type MeetBotStatus, type AvatarSession } from "@/lib/vigil";
 import { LiveRoom } from "@/components/LiveRoom";
 import { EcartsEmargement } from "@/components/EcartsEmargement";
-import { expliquerCourt } from "@/lib/refus";
+import { expliquer, expliquerCourt } from "@/lib/refus";
+import { Refus } from "@/components/Refus";
 
 const PERSONAS = ["CFO", "CTO", "COO", "CRM", "CRO", "advisor"] as const;
-import { GatewayError } from "@/lib/ww";
 import { METAL } from "@/lib/brand";
 
 // The 4 council lenses, aligned with the Deal Board advisor templates.
@@ -30,11 +30,23 @@ const STAGE_LABEL: Record<string, string> = {
   error: "Error",
 };
 
+/**
+ * Une erreur née dans le navigateur, écrite comme une réponse de la passerelle.
+ *
+ * Elle traverse ensuite le même traducteur que les vraies : un seul jeu de phrases, un
+ * seul rendu, et rien à retenir de particulier pour les cas locaux.
+ */
+const erreurLocale = (status: number, code: string, detail: string) => ({
+  status,
+  code,
+  detail: { error: code, detail },
+});
+
 export default function MeetingRoomPage() {
   const navigate = useNavigate();
   const [rooms, setRooms] = useState<Room[]>([]);
   const [active, setActive] = useState<Room | null>(null);
-  const [authError, setAuthError] = useState<string | null>(null);
+  const [authError, setAuthError] = useState<unknown>(null);
   const [speaker, setSpeaker] = useState("You");
   const [text, setText] = useState("");
   const [convening, setConvening] = useState(false);
@@ -49,7 +61,7 @@ export default function MeetingRoomPage() {
   const [liveJoin, setLiveJoin] = useState<{ token: string; url: string } | null>(null);
   const [inviteLink, setInviteLink] = useState<string>("");
   const [liveBusy, setLiveBusy] = useState(false);
-  const [liveErr, setLiveErr] = useState<string>("");
+  const [liveErr, setLiveErr] = useState<unknown>(null);
   const [agentBusy, setAgentBusy] = useState(false);
   const [agentIn, setAgentIn] = useState(false);
   const [avatarSession, setAvatarSession] = useState<AvatarSession | null>(null);
@@ -60,24 +72,25 @@ export default function MeetingRoomPage() {
   const [meetMode, setMeetMode] = useState<"transcribe" | "realtime">("realtime");
   const [meetStatus, setMeetStatus] = useState<MeetBotStatus | null>(null);
   const [meetBusy, setMeetBusy] = useState(false);
-  const [meetErr, setMeetErr] = useState("");
+  const [meetErr, setMeetErr] = useState<unknown>(null);
   const [meetImported, setMeetImported] = useState<number | null>(null);
   const [sayText, setSayText] = useState("");
 
   const sendToMeet = async () => {
     const url = meetUrl.trim();
     if (!/^https:\/\/meet\.google\.com\//.test(url)) {
-      setMeetErr("Enter a valid https://meet.google.com/… link");
+      setMeetErr(erreurLocale(422, "lien_meet_invalide", "Collez un lien de la forme https://meet.google.com/…"));
       return;
     }
     setMeetBusy(true);
-    setMeetErr("");
+    setMeetErr(null);
     try {
       const res = await googleMeet.join(url, persona, meetMode);
       setMeetStatus(res);
-      if (res.success === false || res.error) setMeetErr(res.error || "join failed");
+      if (res.success === false || res.error)
+        setMeetErr(erreurLocale(502, "meet_join_failed", res.error || "La connexion à Google Meet n'a pas abouti."));
     } catch (e) {
-      setMeetErr(expliquerCourt(e));
+      setMeetErr(e);
     } finally {
       setMeetBusy(false);
     }
@@ -86,7 +99,7 @@ export default function MeetingRoomPage() {
     try {
       setMeetStatus(await googleMeet.status());
     } catch (e) {
-      setMeetErr(expliquerCourt(e));
+      setMeetErr(e);
     }
   };
   const sayInMeet = async () => {
@@ -97,7 +110,7 @@ export default function MeetingRoomPage() {
       await googleMeet.say(t);
       setSayText("");
     } catch (e) {
-      setMeetErr(expliquerCourt(e));
+      setMeetErr(e);
     } finally {
       setMeetBusy(false);
     }
@@ -124,7 +137,7 @@ export default function MeetingRoomPage() {
       setMeetImported(n);
       await reloadActive(active.id);
     } catch (e) {
-      setMeetErr(expliquerCourt(e));
+      setMeetErr(e);
     } finally {
       setMeetBusy(false);
     }
@@ -142,7 +155,7 @@ export default function MeetingRoomPage() {
       await googleMeet.leave();
       setMeetStatus(null);
     } catch (e) {
-      setMeetErr(expliquerCourt(e));
+      setMeetErr(e);
     } finally {
       setMeetBusy(false);
     }
@@ -154,8 +167,11 @@ export default function MeetingRoomPage() {
       setRooms(rooms);
       setAuthError(null);
     } catch (e) {
-      if (e instanceof GatewayError && e.code === "NO_SESSION") setAuthError("Sign in to VIGIL to use the Salle de réunion.");
-      else setAuthError(expliquerCourt(e));
+      // Le cas NO_SESSION était traité ici par une phrase en anglais, dans une application
+      // en français. Le traducteur commun connaît déjà ce code et rend « Votre session a
+      // expiré » avec le bon geste : le laisser faire supprime la seule phrase non
+      // traduite de la page.
+      setAuthError(e);
     }
   }, []);
 
@@ -238,7 +254,7 @@ export default function MeetingRoomPage() {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- deliberate reset on room change
     setLiveJoin(null);
     setInviteLink("");
-    setLiveErr("");
+    setLiveErr(null);
     setSummary(null);
     setAgentIn(false);
     setAvatarSession(null);
@@ -264,7 +280,7 @@ export default function MeetingRoomPage() {
         await convene(active.lens || "cfo_review", "summary");
       }
     } catch (e) {
-      setLiveErr(expliquerCourt(e));
+      setLiveErr(e);
       setSummarizing(false);
     }
   };
@@ -282,14 +298,20 @@ export default function MeetingRoomPage() {
   const startLiveMeeting = async () => {
     if (!active) return;
     setLiveBusy(true);
-    setLiveErr("");
+    setLiveErr(null);
     try {
       const [t, s] = await Promise.all([vigil.rooms.livekitToken(active.id), vigil.rooms.share(active.id)]);
-      if (!t.url) throw new Error("LiveKit n'est pas configuré sur la passerelle.");
+      if (!t.url) {
+        // Une `Error` nue n'a pas de statut : le traducteur la lisait comme une requête
+        // jamais partie et conseillait de vérifier sa connexion réseau. Le réseau va très
+        // bien ; c'est la passerelle qui n'a pas de LiveKit.
+        setLiveErr(erreurLocale(503, "livekit_not_configured", "La visioconférence n'est pas configurée sur la passerelle."));
+        return;
+      }
       setLiveJoin({ token: t.token, url: t.url });
       setInviteLink(`${window.location.origin}/join/${s.share_token}`);
     } catch (e) {
-      setLiveErr(expliquerCourt(e));
+      setLiveErr(e);
     } finally {
       setLiveBusy(false);
     }
@@ -301,7 +323,7 @@ export default function MeetingRoomPage() {
   const bringAgentIn = async () => {
     if (!active) return;
     setAgentBusy(true);
-    setLiveErr("");
+    setLiveErr(null);
     try {
       const evidence = active.transcript.map((m) => `${m.speaker}: ${m.text}`).join("\n");
       // La passerelle envoie le worker LiveKit dans CETTE salle (POST /v1/rooms/{id}/bring-agent).
@@ -310,7 +332,7 @@ export default function MeetingRoomPage() {
       await vigil.rooms.bringAgent(active.id, "AZZMIN", evidence || undefined);
       setAgentIn(true);
     } catch (e) {
-      setLiveErr(expliquerCourt(e));
+      setLiveErr(e);
     } finally {
       setAgentBusy(false);
     }
@@ -322,11 +344,13 @@ export default function MeetingRoomPage() {
     if (active) await vigil.rooms.endAvatar(active.id).catch(() => {});
   };
 
-  if (authError) {
+  if (authError != null) {
     return (
       <Card>
         <CardHeader><CardTitle>Salle de réunion</CardTitle></CardHeader>
-        <CardContent><p className="text-text-secondary text-sm py-6 text-center">{authError}</p></CardContent>
+        <CardContent className="py-6">
+          <Refus erreur={authError} quoi="la salle de réunion" onReessayer={() => void refresh()} />
+        </CardContent>
       </Card>
     );
   }
@@ -339,7 +363,17 @@ export default function MeetingRoomPage() {
           <span className="text-sm font-semibold">
             {active?.title || "Réunion en cours"}
             {/* En pleine réunion, l'erreur doit se voir ici : le panneau du tableau de bord est masqué. */}
-            {liveErr && <span className="ml-3 text-xs font-normal" style={{ color: "#ff8a8a" }}>{liveErr}</span>}
+            {liveErr != null && (
+              // Pas de place pour un bloc ici : une ligne. La couleur suit le registre —
+              // l'ambre d'un incident, le blanc cassé d'une limite ou d'une attente. Tout
+              // en rouge disait « panne » pour des refus qui n'en sont pas.
+              <span
+                className="ml-3 text-xs font-normal"
+                style={{ color: expliquer(liveErr).registre === "panne" ? "#ff8a8a" : "#e7e9f3b8" }}
+              >
+                {expliquerCourt(liveErr, "la visioconférence")}
+              </span>
+            )}
           </span>
           <div className="flex items-center gap-2">
             <button
@@ -532,7 +566,7 @@ export default function MeetingRoomPage() {
                           <button className="text-text-secondary hover:text-foreground" onClick={() => void navigator.clipboard?.writeText(inviteLink)}>Copy</button>
                         </div>
                       )}
-                      {liveErr && <p className="text-xs" style={{ color: "#ff3366" }}>{liveErr}</p>}
+                      {liveErr != null && <Refus erreur={liveErr} quoi="la visioconférence" compact className="mt-2" />}
                     </div>
                   )}
 
@@ -571,7 +605,7 @@ export default function MeetingRoomPage() {
                           )}
                         </div>
                       )}
-                      {meetErr && <p className="text-xs" style={{ color: "#ff3366" }}>{meetErr}</p>}
+                      {meetErr != null && <Refus erreur={meetErr} quoi="Google Meet" compact className="mt-2" />}
                     </div>
                   )}
 

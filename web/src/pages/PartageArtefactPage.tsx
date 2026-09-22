@@ -4,6 +4,7 @@ import { openSharedArtifact, type SharedArtifactPublic } from "@/lib/vigil";
 import type { GatewayError } from "@/lib/ww";
 import { KIND_LABELS, dateLongue } from "@/lib/studio";
 import { BlocMarqueVtlvs } from "@/components/MarqueVtlvs";
+import { expliquerCourt } from "@/lib/refus";
 
 const ArtifactCanvas = lazy(() => import("@/components/ArtifactCanvas").then((m) => ({ default: m.ArtifactCanvas })));
 
@@ -28,7 +29,11 @@ export default function PartageArtefactPage() {
           setErreur({ titre: "Ce lien a expiré", texte: "Les liens de partage ont une durée de vie limitée. Demandez un nouveau lien à la personne qui vous l'a envoyé." });
         else if (code === "lien_invalide" || e.status === 404)
           setErreur({ titre: "Ce lien ne mène nulle part", texte: "Il a peut-être été remplacé par un lien plus récent, ou retiré par son auteur." });
-        else setErreur({ titre: "Le document ne s'ouvre pas", texte: e.message || "Réessayez dans un instant." });
+        // `e.message` vaut le plus souvent « HTTP 502 » : un code de journal, montré à
+        // quelqu'un qui a seulement cliqué sur un lien reçu. Les deux cas au-dessus
+        // gardent leur texte — cette page est publique, et son vocabulaire lui est
+        // propre ; seul le cas restant passe par le traducteur commun.
+        else setErreur({ titre: "Le document ne s'ouvre pas", texte: expliquerCourt(e, "ce document") });
       });
   }, [token]);
 

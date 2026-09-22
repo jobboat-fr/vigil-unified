@@ -5,6 +5,7 @@ import { useParams } from "react-router-dom";
 import { joinGuestRoom, type GuestRoomJoin } from "@/lib/vigil";
 import type { GatewayError } from "@/lib/ww";
 import { LiveRoom } from "@/components/LiveRoom";
+import { expliquerCourt } from "@/lib/refus";
 
 /**
  * Public page for EXTERNAL (non-account) guests. Opened via the host's invite
@@ -36,7 +37,9 @@ export default function GuestMeetingPage() {
       } else if (code === "livekit_not_configured" || err.status === 503) {
         setError("La vidéo n'est pas encore disponible. Réessayez dans un instant.");
       } else {
-        setError(err.message || "Impossible de rejoindre la réunion.");
+        // Même défaut, même correction : le repli affichait le message brut de la
+        // passerelle à un invité qui n'a pas de compte et ne peut rien en faire.
+        setError(expliquerCourt(err, "cette réunion"));
       }
     } finally {
       setJoining(false);

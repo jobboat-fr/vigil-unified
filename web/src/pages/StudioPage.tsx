@@ -4,12 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/c
 import { Button } from "@nous-research/ui/ui/components/button";
 import { useSearchParams } from "react-router-dom";
 import { vigil, type Artifact, type BrainstormPlan } from "@/lib/vigil";
-import { GatewayError } from "@/lib/ww";
 import { useLearnRole } from "@/lib/supabase";
 import { ACCESS_LABELS, KINDS, KIND_LABELS, dateRelative } from "@/lib/studio";
 import { PartagerArtefact } from "@/components/studio/PartagerArtefact";
 import { AssistantArtefact } from "@/components/studio/AssistantArtefact";
-import { expliquerCourt } from "@/lib/refus";
+import { Refus } from "@/components/Refus";
 
 const ArtifactCanvas = lazy(() =>
   import("@/components/ArtifactCanvas").then((m) => ({ default: m.ArtifactCanvas })),
@@ -38,7 +37,7 @@ export default function StudioPage() {
   const [miens, setMiens] = useState<Artifact[] | null>(null);
   const [partages, setPartages] = useState<Artifact[]>([]);
   const [organisme, setOrganisme] = useState<Artifact[] | null>(null);
-  const [erreurListe, setErreurListe] = useState<string | null>(null);
+  const [erreurListe, setErreurListe] = useState<unknown>(null);
 
   const [brief, setBrief] = useState("");
   const [kind, setKind] = useState<string>("proposal");
@@ -47,7 +46,7 @@ export default function StudioPage() {
   const [planStub, setPlanStub] = useState(false);
   const [thinking, setThinking] = useState(false);
   const [drafting, setDrafting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<{ e: unknown; note?: string } | null>(null);
 
   const [active, setActive] = useState<Artifact | null>(null);
   const [partager, setPartager] = useState(false);
@@ -61,7 +60,7 @@ export default function StudioPage() {
       setErreurListe(null);
     } catch (e) {
       setMiens([]);
-      setErreurListe(e instanceof GatewayError && e.code === "NO_SESSION" ? "Connectez-vous pour ouvrir le studio." : expliquerCourt(e));
+      setErreurListe(e);
     }
   }, []);
 
@@ -74,14 +73,14 @@ export default function StudioPage() {
     if (onglet !== "organisme" || !estAdmin) return;
     vigil.studio.listOrganisme().then((r) => setOrganisme(r.artifacts)).catch((e) => {
       setOrganisme([]);
-      setErreurListe(expliquerCourt(e));
+      setErreurListe(e);
     });
   }, [onglet, estAdmin]);
 
   const [searchParams] = useSearchParams();
   useEffect(() => {
     const id = searchParams.get("artifact");
-    if (id) vigil.studio.get(id).then(setActive).catch((e) => setError(expliquerCourt(e)));
+    if (id) vigil.studio.get(id).then(setActive).catch((e: unknown) => setError({ e }));
   }, [searchParams]);
 
   const { setTitle } = usePageHeader();
@@ -99,7 +98,7 @@ export default function StudioPage() {
       setPlan(res.plan);
       setPlanStub(res.stub);
     } catch (e) {
-      setError(`${expliquerCourt(e)} Votre consigne est gardée : réessayez quand vous voulez.`);
+      setError({ e, note: "Votre consigne est gardée : réessayez quand vous voulez." });
     } finally {
       setThinking(false);
     }
@@ -123,7 +122,7 @@ export default function StudioPage() {
       setOnglet("miens");
       await refresh();
     } catch (e) {
-      setError(`${expliquerCourt(e)} Les approches restent affichées : vous pouvez relancer la rédaction.`);
+      setError({ e, note: "Les approches restent affichées : vous pouvez relancer la rédaction." });
     } finally {
       setDrafting(false);
     }
@@ -134,7 +133,7 @@ export default function StudioPage() {
     try {
       setActive(await vigil.studio.get(id));
     } catch (e) {
-      setError(expliquerCourt(e));
+      setError({ e });
     }
   };
 
@@ -145,7 +144,7 @@ export default function StudioPage() {
       setConfirmerSuppression(null);
       await refresh();
     } catch (e) {
-      setError(expliquerCourt(e));
+      setError({ e });
     }
   };
 
@@ -156,7 +155,7 @@ export default function StudioPage() {
       setOnglet("miens");
       await refresh();
     } catch (e) {
-      setError(expliquerCourt(e));
+      setError({ e });
     }
   };
 
@@ -228,7 +227,12 @@ export default function StudioPage() {
                 <Button onClick={() => void runBrainstorm()} disabled={thinking || !brief.trim()} className="w-full">
                   {thinking ? "L'assistant réfléchit…" : "Réfléchir d'abord →"}
                 </Button>
-                {error && <p className="text-xs" role="alert" style={{ color: "#e11d48" }}>{error}</p>}
+                {error && (
+                  <div>
+                    <Refus erreur={error.e} quoi="le studio" compact />
+                    {error.note && <p className="mt-1.5 text-xs text-text-secondary">{error.note}</p>}
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
@@ -289,7 +293,7 @@ export default function StudioPage() {
               </div>
             </CardHeader>
             <CardContent className="flex flex-col gap-2">
-              {erreurListe && <p className="text-sm" style={{ color: "#f59e0b" }}>{erreurListe}</p>}
+              {erreurListe != null && <Refus erreur={erreurListe} quoi="vos documents" compact />}
               {liste === null ? (
                 <Squelette />
               ) : liste.length === 0 ? (

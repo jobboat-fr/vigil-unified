@@ -1,8 +1,10 @@
-import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useLocation } from "react-router-dom";
 import { accesAssistant, streamAssistantChat, type AccesAssistant } from "@/lib/vigil";
 import { GatewayError } from "@/lib/ww";
 import { useLearnRole } from "@/lib/supabase";
+import { Refus } from "@/components/Refus";
+import { expliquerCourt } from "@/lib/refus";
 
 /**
  * Assistant de l'application — une conversation, pensée d'abord pour le téléphone.
@@ -27,8 +29,6 @@ function newSession(): string {
 
 const heure = (iso?: string | null) =>
   iso ? new Date(iso).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) : "";
-const jourHeure = (iso?: string | null) =>
-  iso ? new Date(iso).toLocaleString("fr-FR", { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }) : "";
 
 /** Rendu sûr d'un texte court : puces « - », gras **…** ; aucun HTML interprété. */
 function Texte({ texte }: { texte: string }) {
@@ -57,6 +57,7 @@ export default function AssistantChatPage() {
   const { pathname } = useLocation();
   const { role } = useLearnRole();
   const [acces, setAcces] = useState<AccesAssistant | null>(null);
+  const [erreurAcces, setErreurAcces] = useState<unknown>(null);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -66,8 +67,17 @@ export default function AssistantChatPage() {
 
   useEffect(() => {
     accesAssistant()
-      .then(setAcces)
-      .catch((e: Error) => setAcces({ ouvert: false, raison: "indisponible", message: e.message }));
+      .then((a) => {
+        setAcces(a);
+        setErreurAcces(null);
+      })
+      // On garde l'erreur, on ne la recopie pas dans `message` : `e.message` est souvent
+      // un code (« HTTP 503 »), et il finissait affiché tel quel sous un titre qui
+      // annonçait une indisponibilité alors qu'il s'agissait d'une session expirée.
+      .catch((e: unknown) => {
+        setAcces({ ouvert: false });
+        setErreurAcces(e);
+      });
   }, []);
 
   useEffect(() => {
@@ -96,9 +106,25 @@ export default function AssistantChatPage() {
     } catch (e) {
       const err = e as GatewayError;
       if (err.status === 402 || err.status === 403) {
-        accesAssistant().then(setAcces).catch(() => undefined);
+        // Une limite d'offre n'est pas une réponse ratée. On retire la bulle vide et on
+        // relit l'accès : le bandeau au-dessus dira ce qui est fermé et proposera le
+        // geste. Écrire en rouge « il faut payer » dans le fil de la conversation donne
+        // à une limite prévue l'allure d'une panne — c'est exactement ce qu'on corrige.
+        setMessages((m) => m.slice(0, -1));
+        accesAssistant()
+          .then((a) => {
+            setAcces(a);
+            setErreurAcces(null);
+          })
+          .catch(() => setErreurAcces(e));
+        return;
       }
-      ajouter(err.code === "NO_SESSION" ? "Votre session a expiré : reconnectez-vous pour continuer." : `${err.message} Votre message est gardé ci-dessus.`, true);
+      ajouter(
+        err.code === "NO_SESSION"
+          ? "Votre session a expiré : reconnectez-vous pour continuer."
+          : `${expliquerCourt(e, "l'assistant")} Votre message est gardé ci-dessus.`,
+        true,
+      );
     } finally {
       setBusy(false);
       inputRef.current?.focus();
@@ -106,7 +132,32 @@ export default function AssistantChatPage() {
   };
 
   const suggestions = SUGGESTIONS[role ?? ""] ?? SUGGESTIONS.apprenant;
-  const ferme = acces && !acces.ouvert;
+  const ferme = Boolean(acces && !acces.ouvert);
+
+  /**
+   * Pourquoi c'est fermé, sous la forme que le traducteur commun sait lire.
+   *
+   * `/acces` répond 200 avec `{ouvert:false, raison}` là où `/chat` lève le refus HTTP
+   * correspondant — mêmes codes, deux formes. On ramène la première à la seconde plutôt
+   * que d'écrire ici un second jeu de phrases : deux textes pour un même refus finissent
+   * toujours par ne plus dire la même chose.
+   *
+   * `assistant_hors_formation` est une limite d'offre (402) et se lit comme telle, avec
+   * le lien vers l'abonnement. Tout autre motif est un refus de rôle (403).
+   */
+  const motifFerme = useMemo(() => {
+    if (erreurAcces) return erreurAcces;
+    if (!ferme) return null;
+    return {
+      status: acces?.raison === "assistant_hors_formation" ? 402 : 403,
+      code: acces?.raison,
+      detail: {
+        error: acces?.raison,
+        detail: acces?.message,
+        prochain_creneau: acces?.prochain_creneau,
+      },
+    };
+  }, [ferme, acces, erreurAcces]);
 
   return (
     <div className="flex min-h-0 w-full flex-1 flex-col">
@@ -121,18 +172,7 @@ export default function AssistantChatPage() {
         <div className="mx-auto flex w-full max-w-2xl flex-col gap-3">
           {acces === null && <div className="h-16 animate-pulse rounded-xl bg-current/5" aria-label="Chargement" />}
 
-          {ferme && (
-            <div className="rounded-xl border border-current/15 p-4 text-sm">
-              <p className="font-semibold">
-                {acces.raison === "assistant_hors_formation" ? "L'assistant vous retrouve pendant votre formation" : "L'assistant n'est pas disponible"}
-              </p>
-              <p className="mt-2 text-text-secondary">{acces.message}</p>
-              {acces.prochain_creneau && <p className="mt-2">Prochain créneau : <strong>{jourHeure(acces.prochain_creneau)}</strong>.</p>}
-              {acces.raison === "assistant_hors_formation" && (
-                <p className="mt-2 text-xs text-text-secondary">L'abonnement est proposé par votre organisme de formation.</p>
-              )}
-            </div>
-          )}
+          {motifFerme != null && <Refus erreur={motifFerme} quoi="l'assistant" compact className="my-2" />}
 
           {acces?.ouvert && messages.length === 0 && (
             <div className="flex flex-col gap-3 py-6 text-center">
@@ -187,7 +227,13 @@ export default function AssistantChatPage() {
             rows={1}
             disabled={busy || !acces?.ouvert}
             aria-label="Écrire à l'assistant"
-            placeholder={acces?.ouvert ? "Écrivez votre question…" : "Indisponible pour le moment"}
+            placeholder={
+              acces?.ouvert
+                ? "Écrivez votre question…"
+                : ferme || erreurAcces
+                  ? "Fermé pour l'instant — la raison est indiquée ci-dessus"
+                  : "Vérification de l'accès…"
+            }
             className="max-h-40 min-h-[44px] min-w-0 flex-1 resize-none rounded-xl border border-current/20 bg-transparent px-3 py-2.5 text-base outline-none focus:border-current/50"
           />
           <button
