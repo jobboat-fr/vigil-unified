@@ -8,6 +8,8 @@ import {
   getProfiles,
   listCompanies,
   type Person,
+  THEMES_DECLARABLES,
+  type ThemeDeclare,
 } from "@/lib/learn";
 import { expliquerCourt } from "@/lib/refus";
 import { nomRole } from "@/lib/mots";
@@ -139,7 +141,7 @@ export function FormulaireCompte({ roles, onCree }: { roles: string[]; onCree: (
 // ── Programmes ───────────────────────────────────────────────────────────────────────
 
 export function FormulaireProgramme({ onCree }: { onCree: () => void }) {
-  const vide = { title: "", code: "", duration_hours: "21", modality: "distanciel", objectives: "", prerequisites: "", published: true };
+  const vide = { title: "", code: "", duration_hours: "21", modality: "distanciel", objectives: "", prerequisites: "", published: true, theme_declare: "" };
   const [f, setF] = useState(vide);
   const { busy, message, run } = useEnvoi();
   return (
@@ -157,6 +159,7 @@ export function FormulaireProgramme({ onCree }: { onCree: () => void }) {
               objectives: f.objectives.trim() || null,
               prerequisites: f.prerequisites.trim() || null,
               published: f.published,
+              theme_declare: (f.theme_declare || null) as ThemeDeclare | null,
             }),
           "Programme créé.",
         );
@@ -176,6 +179,27 @@ export function FormulaireProgramme({ onCree }: { onCree: () => void }) {
       </select>
       <textarea className={`${champ} sm:col-span-2`} rows={2} placeholder="Objectifs" value={f.objectives} onChange={(e) => setF({ ...f, objectives: e.target.value })} />
       <textarea className={`${champ} sm:col-span-2`} rows={2} placeholder="Prérequis" value={f.prerequisites} onChange={(e) => setF({ ...f, prerequisites: e.target.value })} />
+      <label className="flex flex-col gap-1 text-sm sm:col-span-2">
+        <span className="text-xs text-text-secondary">Mention affichée sur la carte</span>
+        <select className={champ} value={f.theme_declare}
+                onChange={(e) => setF({ ...f, theme_declare: e.target.value })}
+                aria-label="Mention déclarative">
+          <option value="">Aucune mention</option>
+          {THEMES_DECLARABLES.map((x) => (
+            <option key={x.code} value={x.code}>{x.libelle} — {x.engage}</option>
+          ))}
+        </select>
+        {/* Ce que la liste ne contient pas, et pourquoi : « Nouveau », « Plus que 2 places »
+            ou « Le plus suivi » ne se saisissent nulle part. Ils se calculent à chaque
+            lecture, pour qu'on ne puisse pas les affirmer à tort — une allégation de rareté
+            fausse est une pratique commerciale trompeuse. Le dire ici évite qu'on les
+            cherche. */}
+        <span className="text-xs leading-relaxed text-text-secondary">
+          « Nouveau », « Plus que 2 places » ou « Le plus suivi » ne figurent pas ici :
+          la plateforme les calcule d&apos;elle-même à partir des inscriptions et des dates,
+          pour qu&apos;ils ne puissent pas être affirmés à tort.
+        </span>
+      </label>
       <label className="flex items-center gap-2 text-sm sm:col-span-2">
         <input type="checkbox" checked={f.published} onChange={(e) => setF({ ...f, published: e.target.checked })} /> Publié
       </label>
@@ -190,7 +214,7 @@ export function FormulaireProgramme({ onCree }: { onCree: () => void }) {
 // ── Sessions ─────────────────────────────────────────────────────────────────────────
 
 export function FormulaireSession({ programId, modalite, onCree }: { programId: string; modalite?: string; onCree: () => void }) {
-  const vide = { starts_on: "", ends_on: "", code: "", capacity: "12", modality: modalite ?? "distanciel", place: "" };
+  const vide = { starts_on: "", ends_on: "", code: "", capacity: "12", modality: modalite ?? "distanciel", place: "", effectif_minimum: "0" };
   const [f, setF] = useState(vide);
   const { busy, message, run } = useEnvoi();
   return (
@@ -208,6 +232,7 @@ export function FormulaireSession({ programId, modalite, onCree }: { programId: 
               capacity: Number(f.capacity) || 12,
               modality: f.modality,
               place: f.place.trim() || null,
+              effectif_minimum: Number(f.effectif_minimum) || 0,
             }),
           "Session planifiée.",
         );
@@ -220,6 +245,7 @@ export function FormulaireSession({ programId, modalite, onCree }: { programId: 
       <label className="text-xs opacity-70">Début<input className={champ} type="date" required value={f.starts_on} onChange={(e) => setF({ ...f, starts_on: e.target.value })} /></label>
       <label className="text-xs opacity-70">Fin<input className={champ} type="date" value={f.ends_on} onChange={(e) => setF({ ...f, ends_on: e.target.value })} /></label>
       <label className="text-xs opacity-70">Places<input className={champ} type="number" min={1} value={f.capacity} onChange={(e) => setF({ ...f, capacity: e.target.value })} /></label>
+      <label className="text-xs opacity-70" title="À partir de combien d'inscrits la session est réputée partir. 0 = aucun engagement, et « Session confirmée » ne s'affiche pas.">Départ garanti dès<input className={champ} type="number" min={0} value={f.effectif_minimum} onChange={(e) => setF({ ...f, effectif_minimum: e.target.value })} /></label>
       <input className={champ} placeholder="Code (facultatif)" value={f.code} onChange={(e) => setF({ ...f, code: e.target.value })} />
       <select className={champ} value={f.modality} onChange={(e) => setF({ ...f, modality: e.target.value })} aria-label="Modalité">
         <option value="distanciel">Distanciel</option>

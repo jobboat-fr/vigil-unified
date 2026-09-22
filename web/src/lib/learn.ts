@@ -577,7 +577,27 @@ export const createProgram = (body: {
   duration_hours?: number;
   modality?: string;
   published?: boolean;
+  /** Mention déclarative, sur liste fermée. La rareté, la nouveauté et la popularité ne
+   *  sont **pas** saisissables : elles se calculent, pour qu'on ne puisse pas les
+   *  affirmer à tort. Voir `app/learn/themes.py`. */
+  theme_declare?: ThemeDeclare | null;
 }) => call<Program>("POST", "/programs", body);
+
+/** Les seules mentions qu'un organisme peut déclarer : des faits vérifiables sur pièce. */
+export type ThemeDeclare =
+  | "certifiante"
+  | "opco"
+  | "entree_permanente"
+  | "nouveau_format"
+  | "prix_ferme";
+
+export const THEMES_DECLARABLES: { code: ThemeDeclare; libelle: string; engage: string }[] = [
+  { code: "certifiante", libelle: "Certifiante", engage: "se prouve par un enregistrement RNCP" },
+  { code: "opco", libelle: "Éligible OPCO", engage: "opposable : le financement doit exister" },
+  { code: "entree_permanente", libelle: "Entrée permanente", engage: "on entre quand on veut, pas à date fixe" },
+  { code: "nouveau_format", libelle: "Nouveau format", engage: "le programme existait, sa forme a changé" },
+  { code: "prix_ferme", libelle: "Prix ferme", engage: "le tarif annoncé est le tarif payé" },
+];
 
 export const createSession = (body: {
   program_id: string;
@@ -588,6 +608,9 @@ export const createSession = (body: {
   modality?: string;
   place?: string | null;
   capacity?: number;
+  /** À partir de combien d'inscrits la session est réputée partir. 0 = aucun engagement,
+   *  et la pastille « Session confirmée » ne s'affichera jamais. */
+  effectif_minimum?: number;
 }) => call<Session>("POST", "/sessions", body);
 
 export const generateSlots = (
