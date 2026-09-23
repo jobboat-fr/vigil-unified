@@ -28,7 +28,7 @@ def env(monkeypatch):
     monkeypatch.setattr(rooms_mod, "db_update", db.update)
 
     db.tables["learn_sessions"] = [
-        {"id": "s-dist", "title": "IA 360", "code": "IA360-2026-10-26", "modality": "distanciel", "status": "planned", "tenant_id": T1},
+        {"id": "s-dist", "title": "TOPLEVEL IA", "code": "IA360-2026-10-26", "modality": "distanciel", "status": "planned", "tenant_id": T1},
         {"id": "s-pres", "title": "Marketing", "modality": "presentiel", "status": "planned", "tenant_id": T1},
     ]
     def slot(i, session, start):
@@ -74,7 +74,7 @@ def test_formateur_anime_et_la_salle_est_creee_a_son_nom(env):
     assert d["role"] == "host" and d["token"]
     room = env.db.tables["rooms"][0]
     assert room["user_id"] == "u-form" and room["kind"] == "formation" and room["learn_slot_id"] == "sl-now"
-    assert "IA 360" in room["title"]
+    assert "TOPLEVEL IA" in room["title"]
 
 
 def test_apprenant_inscrit_participe_dans_la_meme_salle(env):

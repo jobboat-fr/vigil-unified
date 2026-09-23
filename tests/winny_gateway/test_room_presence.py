@@ -100,7 +100,7 @@ def client(monkeypatch):
 
 
 def _room(client, **extra):
-    row = {"id": "11111111-2222-3333-4444-555555555555", "user_id": "u-form", "title": "IA 360 — matin",
+    row = {"id": "11111111-2222-3333-4444-555555555555", "user_id": "u-form", "title": "TOPLEVEL IA — matin",
            "transcript": [{"speaker": "Claire", "text": "Bonjour à tous"}], "status": "active", **extra}
     client.db.tables.setdefault("rooms", []).append(row)
     return row["id"]

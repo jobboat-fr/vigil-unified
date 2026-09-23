@@ -82,7 +82,7 @@ class FakeSession:
 
 
 def _tour(worker, passerelle, texte="Comment calcule-t-on le taux d'atteinte ?"):
-    agent = worker.AgentDeSalle(instructions="", passerelle=passerelle, topic="IA 360",
+    agent = worker.AgentDeSalle(instructions="", passerelle=passerelle, topic="TOPLEVEL IA",
                                 noms={"u-form": "Claire (formatrice)"})
     agent.session = FakeSession()
     agent.orateur = "u-form"

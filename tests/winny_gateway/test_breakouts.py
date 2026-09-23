@@ -42,7 +42,7 @@ def env(monkeypatch):
     monkeypatch.setattr(rooms_mod, "db_insert", db.insert)
     monkeypatch.setattr(rooms_mod, "db_update", db.update)
     now = datetime.now(UTC)
-    db.tables["rooms"] = [{"id": RID, "user_id": "u-form", "title": "IA 360", "status": "active",
+    db.tables["rooms"] = [{"id": RID, "user_id": "u-form", "title": "TOPLEVEL IA", "status": "active",
                            "learn_slot_id": "sl-1", "learn_session_id": "s-1", "breakouts": []}]
     db.tables["learn_session_slots"] = [{"id": "sl-1", "session_id": "s-1", "tenant_id": T, "formateur_id": "u-form",
                                          "status": "planned", "starts_at": (now - timedelta(minutes=5)).isoformat(),

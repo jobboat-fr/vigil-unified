@@ -16,7 +16,7 @@ def _livekit(monkeypatch):
 
 
 def _room(client):
-    return _data(client.post("/v1/rooms", json={"title": "Atelier IA 360"}))["id"]
+    return _data(client.post("/v1/rooms", json={"title": "Atelier TOPLEVEL IA"}))["id"]
 
 
 def test_lien_porte_une_echeance_et_reste_stable(client):
@@ -31,7 +31,7 @@ def test_lien_porte_une_echeance_et_reste_stable(client):
 def test_invite_entre_avec_un_lien_valable(client):
     rid = _room(client)
     tok = _data(client.post(f"/v1/rooms/{rid}/share"))["share_token"]
-    assert _data(client.get(f"/v1/rooms/meeting/{tok}"))["room_title"] == "Atelier IA 360"
+    assert _data(client.get(f"/v1/rooms/meeting/{tok}"))["room_title"] == "Atelier TOPLEVEL IA"
     join = _data(client.post(f"/v1/rooms/guest/{tok}/join", json={"name": "Camille"}))
     assert join["token"] and join["room"] == f"vigil-{rid}"
 
