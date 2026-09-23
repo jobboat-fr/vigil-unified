@@ -82,7 +82,7 @@ export default function GuestMeetingPage() {
         >
           {joining ? "Connexion…" : "Rejoindre la réunion"}
         </button>
-        {error && <p className="text-xs" style={{ color: "#c0392b" }}>{error}</p>}
+        {error && <p className="text-xs" style={{ color: "var(--color-destructive)" }}>{error}</p>}
       </div>
     </div>
   );

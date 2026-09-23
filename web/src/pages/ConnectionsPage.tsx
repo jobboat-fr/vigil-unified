@@ -99,7 +99,7 @@ export default function ConnectionsPage() {
         </p>
       </header>
 
-      {authError && <Card><CardContent className="py-4 text-sm" style={{ color: "#f59e0b" }}>{authError}</CardContent></Card>}
+      {authError && <Card><CardContent className="py-4 text-sm" style={{ color: "var(--color-warning)" }}>{authError}</CardContent></Card>}
 
       <div className="grid gap-4 md:grid-cols-2">
         {status?.providers.map((p) => {
@@ -120,7 +120,7 @@ export default function ConnectionsPage() {
                       {c.external_account || c.provider} · <span className="text-text-secondary">{c.token_masked}</span>
                       {c.last_synced_at && <span className="text-text-secondary"> · synced {new Date(c.last_synced_at).toLocaleDateString()}</span>}
                     </span>
-                    <span className="text-[10px] uppercase" style={{ color: c.status === "active" ? "#059669" : "#ef4444" }}>{c.status}</span>
+                    <span className="text-[10px] uppercase" style={{ color: c.status === "active" ? "var(--color-success)" : "var(--color-destructive)" }}>{c.status}</span>
                     <button type="button" className="text-xs text-text-secondary hover:text-foreground" disabled={!!busy} onClick={() => void sync(c)}>{busy === c.id + ":sync" ? "…" : "Sync"}</button>
                     <button type="button" className="text-xs text-text-secondary hover:text-foreground" disabled={!!busy} onClick={() => void disconnect(c)}>✕</button>
                   </div>
@@ -149,8 +149,8 @@ export default function ConnectionsPage() {
                     </Button>
                   </div>
                 </div>
-                {msg[p.id] && <p className="text-xs" style={{ color: "#059669" }}>{msg[p.id]}</p>}
-                {err[p.id] && <p className="text-xs" style={{ color: "#ff3366" }}>{err[p.id]}</p>}
+                {msg[p.id] && <p className="text-xs" style={{ color: "var(--color-success)" }}>{msg[p.id]}</p>}
+                {err[p.id] && <p className="text-xs" style={{ color: "var(--color-destructive)" }}>{err[p.id]}</p>}
               </CardContent>
             </Card>
           );

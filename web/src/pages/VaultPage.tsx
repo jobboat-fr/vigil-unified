@@ -19,9 +19,9 @@ interface VaultDoc {
 
 const sevColor = (s?: string) => {
   const v = (s || "").toLowerCase();
-  if (v === "high" || v === "critical") return "#ff3366";
-  if (v === "medium") return "#f59e0b";
-  return "#38bdf8";
+  if (v === "high" || v === "critical") return "var(--color-destructive)";
+  if (v === "medium") return "var(--color-warning)";
+  return "var(--color-accent)";
 };
 
 export default function VaultPage() {

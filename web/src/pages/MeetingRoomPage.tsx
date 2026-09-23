@@ -13,9 +13,9 @@ import { METAL } from "@/lib/brand";
 
 // The 4 council lenses, aligned with the Deal Board advisor templates.
 const LENSES = [
-  { key: "cfo_review", member: "cfo", label: "CFO", color: "#2563EB" },
+  { key: "cfo_review", member: "cfo", label: "CFO", color: "var(--color-primary)" },
   { key: "tech_review", member: "cto", label: "CTO", color: "#7C3AED" },
-  { key: "legal_review", member: "legal", label: "Legal", color: "#059669" },
+  { key: "legal_review", member: "legal", label: "Legal", color: "var(--color-success)" },
   { key: "product_review", member: "product", label: "Product", color: "#DB2777" },
 ] as const;
 
@@ -399,7 +399,7 @@ export default function MeetingRoomPage() {
               </button>
             )}
             <button onClick={() => setLiveJoin(null)} className="rounded px-2 py-1 text-xs" style={{ color: "#e7e9f3", border: "1px solid #ffffff33" }}>Minimize</button>
-            <button onClick={() => void closeMeeting()} disabled={summarizing} className="rounded px-2 py-1 text-xs font-semibold" style={{ color: "#fff", background: "#c0392b" }}>
+            <button onClick={() => void closeMeeting()} disabled={summarizing} className="rounded px-2 py-1 text-xs font-semibold" style={{ color: "#fff", background: "var(--color-destructive)" }}>
               {summarizing ? "Closing…" : "⏹ Terminer la réunion"}
             </button>
           </div>
@@ -409,7 +409,7 @@ export default function MeetingRoomPage() {
             <div className="min-h-0 flex-1"><LiveRoom token={liveJoin.token} url={liveJoin.url} onLeave={() => setLiveJoin(null)} /></div>
             {avatarSession && (
               <div className="relative min-h-0 flex-1" style={{ borderLeft: "1px solid #ffffff14", background: "#000" }}>
-                <div className="absolute left-2 top-2 z-10 flex items-center gap-2 rounded-full px-2 py-1 text-[10px] font-semibold" style={{ background: "#0b2239cc", color: "#1f7a4c" }}>
+                <div className="absolute left-2 top-2 z-10 flex items-center gap-2 rounded-full px-2 py-1 text-[10px] font-semibold" style={{ background: "#0b2239cc", color: "var(--color-success)" }}>
                   <span className="vigil-breathe">●</span> AI {persona} · {avatarSession.provider === "tavus" ? "Tavus" : "Beyond Presence"}
                   <button onClick={() => void dismissAvatar()} className="ml-1 opacity-70 hover:opacity-100" title="Retirer l'avatar">✕</button>
                 </div>
@@ -591,7 +591,7 @@ export default function MeetingRoomPage() {
                       {meetStatus && (
                         <div className="rounded-lg border border-current/10 p-2 space-y-2">
                           <div className="flex flex-wrap items-center gap-2 text-xs">
-                            <span className="rounded-full px-2 py-0.5" style={{ background: "#1f7a4c22", color: "#1f7a4c" }}>{meetStatus.state || (meetStatus.ok ? "in call" : meetStatus.reason || "—")}</span>
+                            <span className="rounded-full px-2 py-0.5" style={{ background: "#1f7a4c22", color: "var(--color-success)" }}>{meetStatus.state || (meetStatus.ok ? "in call" : meetStatus.reason || "—")}</span>
                             <button className="text-text-secondary hover:text-foreground" onClick={() => void refreshMeetStatus()}>Refresh</button>
                             <button className="text-text-secondary hover:text-foreground" disabled={meetBusy} onClick={() => void pullMeetNow()}>Récupérer la transcription</button>
                             <button className="text-text-secondary hover:text-foreground" onClick={() => void leaveMeet()}>Leave</button>
@@ -618,7 +618,7 @@ export default function MeetingRoomPage() {
                         ))}
                       </div>
                       <label className="flex items-center gap-2 text-xs text-text-secondary pt-1">
-                        <button onClick={() => { setLiveAdvisor((v) => !v); setSuggestion(null); }} className="text-xs px-2.5 py-1 rounded-full border" style={{ borderColor: liveAdvisor ? "#1f7a4c66" : "currentColor", color: liveAdvisor ? "#1f7a4c" : undefined, background: liveAdvisor ? "#1f7a4c14" : "transparent" }}>
+                        <button onClick={() => { setLiveAdvisor((v) => !v); setSuggestion(null); }} className="text-xs px-2.5 py-1 rounded-full border" style={{ borderColor: liveAdvisor ? "#1f7a4c66" : "currentColor", color: liveAdvisor ? "var(--color-success)" : undefined, background: liveAdvisor ? "#1f7a4c14" : "transparent" }}>
                           {liveAdvisor ? "● Avis en direct listening" : "○ Avis en direct off"}
                         </button>
                         <span>Lève la main lorsqu'il a quelque chose à dire.</span>
@@ -712,7 +712,7 @@ export default function MeetingRoomPage() {
                 <span
                   className="text-xs font-mono px-2 py-0.5 rounded"
                   style={{
-                    color: verdict.readiness_pass ? "#00ff88" : "#f59e0b",
+                    color: verdict.readiness_pass ? "#00ff88" : "var(--color-warning)",
                     background: verdict.readiness_pass ? "#00ff881a" : "#f59e0b1a",
                   }}
                 >
@@ -740,7 +740,7 @@ function StepHeader({ n, title, hint }: { n: number; title: string; hint: string
       <div className="flex items-center gap-2">
         <span
           className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold"
-          style={{ background: "#1d3fae", color: "#0b2239" }}
+          style={{ background: "var(--color-primary)", color: "#0b2239" }}
         >
           {n}
         </span>
@@ -769,7 +769,7 @@ function ModeTile({
       onClick={onClick}
       className="vigil-lift flex flex-col items-start gap-1 rounded-xl border p-3 text-left transition"
       style={{
-        borderColor: active ? "#1f7a4c" : "currentColor",
+        borderColor: active ? "var(--color-success)" : "currentColor",
         background: active ? "#1f7a4c14" : "transparent",
         opacity: active ? 1 : 0.72,
       }}

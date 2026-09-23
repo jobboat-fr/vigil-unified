@@ -45,7 +45,7 @@ export default function SupportBoitePage() {
           </button>
         ))}
       </div>
-      {erreur && <p className="text-sm" style={{ color: "#e11d48" }}>{erreur}</p>}
+      {erreur && <p className="text-sm" style={{ color: "var(--color-destructive)" }}>{erreur}</p>}
       {demandes === null ? (
         <div className="h-24 animate-pulse rounded-xl bg-current/5" />
       ) : demandes.length === 0 ? (

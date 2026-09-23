@@ -133,8 +133,8 @@ export default function IdentiteEmailsPage() {
           </div>
           <input className={champ} placeholder="Raison sociale" value={marque.legal_name ?? ""} onChange={set("legal_name")} />
           <div className="flex items-center gap-2">
-            <input type="color" value={marque.primary_colour || "#1D3FAE"} onChange={set("primary_colour")} className="h-9 w-12 rounded" aria-label="Couleur" />
-            <input className={champ} placeholder="#1D3FAE" value={marque.primary_colour ?? ""} onChange={set("primary_colour")} />
+            <input type="color" value={marque.primary_colour || "var(--color-primary)"} onChange={set("primary_colour")} className="h-9 w-12 rounded" aria-label="Couleur" />
+            <input className={champ} placeholder="var(--color-primary)" value={marque.primary_colour ?? ""} onChange={set("primary_colour")} />
           </div>
           <input className={champ} placeholder="Adresse postale" value={marque.address ?? ""} onChange={set("address")} />
           <input className={champ} placeholder="E-mail de contact (adresse de réponse)" value={marque.contact_email ?? ""} onChange={set("contact_email")} />

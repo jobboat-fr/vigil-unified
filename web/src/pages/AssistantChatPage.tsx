@@ -193,7 +193,7 @@ export default function AssistantChatPage() {
                 className={`max-w-[88%] break-words rounded-2xl px-3.5 py-2 text-[15px] leading-relaxed sm:max-w-[80%] ${
                   m.role === "user" ? "rounded-br-md bg-current/10" : "rounded-bl-md border border-current/10"
                 }`}
-                style={m.error ? { color: "#e11d48" } : undefined}
+                style={m.error ? { color: "var(--color-destructive)" } : undefined}
               >
                 {m.role === "assistant" && !m.text && busy && i === messages.length - 1 ? (
                   <span className="inline-flex gap-1" aria-label="L'assistant écrit">

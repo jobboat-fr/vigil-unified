@@ -80,7 +80,7 @@ export function AssistantArtefact({
         {busy === "consigne" || busy === "expand" ? "L'assistant écrit…" : estTableau ? "Ajouter au tableau" : "Réviser le document"}
       </Button>
       {retour && (
-        <p className="text-xs" role="status" style={{ color: retour.ton === "ok" ? "#059669" : "#e11d48" }}>{retour.texte}</p>
+        <p className="text-xs" role="status" style={{ color: retour.ton === "ok" ? "var(--color-success)" : "var(--color-destructive)" }}>{retour.texte}</p>
       )}
     </div>
   );

@@ -34,7 +34,7 @@ export default function AuditPage() {
                     </span>
                     <span
                       className="shrink-0 w-24 truncate"
-                      style={{ color: e.critical ? "#ff3366" : "#38bdf8" }}
+                      style={{ color: e.critical ? "var(--color-destructive)" : "var(--color-accent)" }}
                     >
                       {e.component || "—"}
                     </span>
@@ -47,7 +47,7 @@ export default function AuditPage() {
                       {e.actor_email ? ` · ${e.actor_email}` : ""}
                     </span>
                     {e.critical ? (
-                      <span className="ml-auto shrink-0 text-[10px] px-1.5 rounded" style={{ color: "#ff3366", background: "#ff33661a" }}>
+                      <span className="ml-auto shrink-0 text-[10px] px-1.5 rounded" style={{ color: "var(--color-destructive)", background: "#ff33661a" }}>
                         CRITICAL
                       </span>
                     ) : null}

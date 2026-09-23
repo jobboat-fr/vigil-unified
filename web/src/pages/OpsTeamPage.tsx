@@ -15,9 +15,9 @@ import { expliquerCourt } from "@/lib/refus";
 // org board + the Support reference department, wired live to /v1/ops.
 
 const STATUS_COLOR: Record<string, string> = {
-  live: "#22c55e",
-  failing: "#ef4444",
-  provisioning: "#9ca3af",
+  live: "var(--color-success)",
+  failing: "var(--color-destructive)",
+  provisioning: "var(--color-muted-foreground)",
 };
 
 function healthLine(d: Department): string {
@@ -99,7 +99,7 @@ export default function OpsTeamPage() {
           <Button
             onClick={() => void toggleKill()}
             disabled={pausing}
-            style={anyPaused ? undefined : { color: "#ef4444", borderColor: "#ef4444" }}
+            style={anyPaused ? undefined : { color: "var(--color-destructive)", borderColor: "var(--color-destructive)" }}
           >
             {pausing ? "…" : anyPaused ? "Tout reprendre" : "Tout suspendre"}
           </Button>
@@ -110,7 +110,7 @@ export default function OpsTeamPage() {
       <AgentsMarques role={role as never} />
 
       {authError && (
-        <Card><CardContent className="py-4 text-sm" style={{ color: "#f59e0b" }}>{authError}</CardContent></Card>
+        <Card><CardContent className="py-4 text-sm" style={{ color: "var(--color-warning)" }}>{authError}</CardContent></Card>
       )}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -133,7 +133,7 @@ export default function OpsTeamPage() {
         </div>
         <div className="rounded-md p-3" style={{ background: "var(--color-background-secondary, rgba(127,127,127,0.06))" }}>
           <div className="text-xs text-text-secondary">Arrêt d'urgence</div>
-          <div className="text-2xl font-semibold" style={{ color: anyPaused ? "#ef4444" : "#22c55e" }}>{anyPaused ? "paused" : "armed"}</div>
+          <div className="text-2xl font-semibold" style={{ color: anyPaused ? "var(--color-destructive)" : "var(--color-success)" }}>{anyPaused ? "paused" : "armed"}</div>
         </div>
       </div>
 
@@ -146,7 +146,7 @@ export default function OpsTeamPage() {
               <CardHeader>
                 <CardTitle className="flex items-center justify-between gap-2">
                   <span className="flex items-center gap-2">
-                    <span style={{ width: 9, height: 9, borderRadius: "50%", background: STATUS_COLOR[d.status] || "#9ca3af", display: "inline-block" }} />
+                    <span style={{ width: 9, height: 9, borderRadius: "50%", background: STATUS_COLOR[d.status] || "var(--color-muted-foreground)", display: "inline-block" }} />
                     <span className="truncate">{d.name}</span>
                   </span>
                   <span className="text-[10px] uppercase tracking-wide text-text-secondary">
@@ -176,7 +176,7 @@ export default function OpsTeamPage() {
                       <button
                         onClick={() => navigate(`/studio?artifact=${r.output_artifact_id}`)}
                         className="mt-1.5 inline-flex items-center gap-1 font-medium underline hover:text-foreground"
-                        style={{ color: "#2563EB" }}
+                        style={{ color: "var(--color-primary)" }}
                       >
                         Open output →
                       </button>

@@ -10,8 +10,8 @@ import { expliquerCourt } from "@/lib/refus";
 // (gateway /v1/billing/checkout → redirect); the webhook provisions the org's
 // subscription row, which is what tenant_plan() gates quotas/features on.
 
-const GOLD = "#1d3fae";
-const EMER = "#1f7a4c";
+const GOLD = "var(--color-primary)";
+const EMER = "var(--color-success)";
 
 function eur(cents: number): string {
   return cents === 0 ? "€0" : `€${(cents / 100).toFixed(0)}`;

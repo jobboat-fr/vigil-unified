@@ -70,7 +70,7 @@ export default function FinancePage() {
   };
 
   const inputCls = "w-full rounded-md border border-current/20 bg-transparent px-3 py-2 text-sm outline-none focus:border-current/50";
-  const statusColor: Record<string, string> = { uncategorized: "#f59e0b", categorized: "#3b82f6", reconciled: "#059669" };
+  const statusColor: Record<string, string> = { uncategorized: "var(--color-warning)", categorized: "var(--color-accent)", reconciled: "var(--color-success)" };
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
@@ -79,13 +79,13 @@ export default function FinancePage() {
         <p className="text-sm text-text-secondary">Capture → classify → reconcile. The books the CFO suite reasons over.</p>
       </header>
 
-      {authError && <Card><CardContent className="py-4 text-sm" style={{ color: "#f59e0b" }}>{authError}</CardContent></Card>}
+      {authError && <Card><CardContent className="py-4 text-sm" style={{ color: "var(--color-warning)" }}>{authError}</CardContent></Card>}
 
       {summary && (
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          <Stat label="Income" value={money(summary.income)} color="#059669" />
-          <Stat label="Expense" value={money(summary.expense)} color="#ef4444" />
-          <Stat label="Net" value={money(summary.net)} color={summary.net >= 0 ? "#059669" : "#ef4444"} />
+          <Stat label="Income" value={money(summary.income)} color="var(--color-success)" />
+          <Stat label="Expense" value={money(summary.expense)} color="var(--color-destructive)" />
+          <Stat label="Net" value={money(summary.net)} color={summary.net >= 0 ? "var(--color-success)" : "var(--color-destructive)"} />
           <Stat label="Rapproché" value={`${Math.round(summary.reconcile_progress * 100)}%`} sub={`${summary.reconciled_count}/${summary.transaction_count}`} />
         </div>
       )}
@@ -105,7 +105,7 @@ export default function FinancePage() {
               <input className={inputCls} placeholder="Description" value={desc} onChange={(e) => setDesc(e.target.value)} />
               <input className={inputCls} placeholder="Catégorie (facultatif)" value={category} onChange={(e) => setCategory(e.target.value)} />
               <Button onClick={() => void capture()} disabled={busy || !amount} className="w-full">{busy ? "…" : "Ajouter à l'écriture"}</Button>
-              {err && <p className="text-xs" style={{ color: "#ff3366" }}>{err}</p>}
+              {err && <p className="text-xs" style={{ color: "var(--color-destructive)" }}>{err}</p>}
             </CardContent>
           </Card>
 
@@ -116,7 +116,7 @@ export default function FinancePage() {
                 {Object.entries(summary.by_category).sort((a, b) => a[1] - b[1]).map(([cat, val]) => (
                   <div key={cat} className="flex justify-between text-sm">
                     <span className="capitalize text-text-secondary">{cat}</span>
-                    <span style={{ color: val >= 0 ? "#059669" : "#ef4444" }}>{money(val)}</span>
+                    <span style={{ color: val >= 0 ? "var(--color-success)" : "var(--color-destructive)" }}>{money(val)}</span>
                   </div>
                 ))}
               </CardContent>
@@ -138,7 +138,7 @@ export default function FinancePage() {
                   <span className="text-xs text-text-secondary">{t.txn_date}</span>
                 </div>
                 <button type="button" onClick={() => void cycleStatus(t)} className="rounded px-2 py-0.5 text-[10px] uppercase" style={{ color: statusColor[t.status] || "#888", border: `1px solid ${statusColor[t.status] || "#888"}` }} title="Basculer le rapprochement">{t.status}</button>
-                <span className="w-24 text-right text-sm tabular-nums" style={{ color: t.amount >= 0 ? "#059669" : "#ef4444" }}>{money(t.amount, t.currency)}</span>
+                <span className="w-24 text-right text-sm tabular-nums" style={{ color: t.amount >= 0 ? "var(--color-success)" : "var(--color-destructive)" }}>{money(t.amount, t.currency)}</span>
                 <button type="button" onClick={() => void remove(t.id)} className="text-xs text-text-secondary hover:text-foreground">✕</button>
               </div>
             ))}
@@ -193,13 +193,13 @@ function ConnectPanel({ onSynced }: { onSynced: () => void }) {
             <div key={p.id} className="rounded-md border border-current/10 px-3 py-2">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-sm font-medium">{p.name}</span>
-                <span className="rounded px-2 py-0.5 text-[10px] uppercase" style={{ color: p.configured ? "#059669" : "#f59e0b", border: "1px solid currentColor" }}>
+                <span className="rounded px-2 py-0.5 text-[10px] uppercase" style={{ color: p.configured ? "var(--color-success)" : "var(--color-warning)", border: "1px solid currentColor" }}>
                   {p.configured ? "configured" : p.implemented ? "keys needed" : "coming soon"}
                 </span>
               </div>
               <div className="mt-1 flex flex-wrap gap-1.5">
                 {p.required_keys.map((k) => (
-                  <span key={k.name} className="rounded px-1.5 py-0.5 text-[10px] font-mono" style={{ color: k.set ? "#059669" : "#9ca3af", border: "1px solid currentColor" }} title={k.set ? "set" : "not set"}>
+                  <span key={k.name} className="rounded px-1.5 py-0.5 text-[10px] font-mono" style={{ color: k.set ? "var(--color-success)" : "var(--color-muted-foreground)", border: "1px solid currentColor" }} title={k.set ? "set" : "not set"}>
                     {k.set ? "✓ " : "○ "}{k.name}
                   </span>
                 ))}
@@ -255,7 +255,7 @@ function ConnectPanel({ onSynced }: { onSynced: () => void }) {
             {status.connections.map((c) => (
               <div key={c.id} className="flex items-center gap-2 rounded-md border border-current/10 px-3 py-2 text-sm">
                 <span className="flex-1 truncate">{c.institution || c.provider} · <span className="text-text-secondary">{c.accounts_count} accts · {c.token_masked}</span></span>
-                <span className="text-[10px] uppercase" style={{ color: c.status === "active" ? "#059669" : "#ef4444" }}>{c.status}</span>
+                <span className="text-[10px] uppercase" style={{ color: c.status === "active" ? "var(--color-success)" : "var(--color-destructive)" }}>{c.status}</span>
                 <button type="button" className="text-xs text-text-secondary hover:text-foreground" onClick={() => void wrap("dc" + c.id, async () => { await vigil.finance.connect.disconnect(c.id); return "Déconnecté."; })}>✕</button>
               </div>
             ))}
@@ -278,8 +278,8 @@ function ConnectPanel({ onSynced }: { onSynced: () => void }) {
             Set <code>PLAID_CLIENT_ID</code>, <code>PLAID_SECRET</code> and <code>PLAID_ENV</code> on the gateway to enable bank connections.
           </p>
         )}
-        {msg && <p className="text-xs" style={{ color: "#059669" }}>{msg}</p>}
-        {err && <p className="text-xs" style={{ color: "#ff3366" }}>{err}</p>}
+        {msg && <p className="text-xs" style={{ color: "var(--color-success)" }}>{msg}</p>}
+        {err && <p className="text-xs" style={{ color: "var(--color-destructive)" }}>{err}</p>}
       </CardContent>
     </Card>
   );

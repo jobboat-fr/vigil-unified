@@ -7,8 +7,8 @@ import { EmptyState } from "@/components/EmptyState";
 import { expliquerCourt } from "@/lib/refus";
 
 const CAT_COLOR: Record<string, string> = {
-  urgent: "#ef4444", respond: "#f59e0b", fyi: "#3b82f6",
-  newsletter: "#8b5cf6", spam: "#6b7280", archive: "#10b981",
+  urgent: "var(--color-destructive)", respond: "var(--color-warning)", fyi: "var(--color-accent)",
+  newsletter: "#8b5cf6", spam: "var(--color-muted-foreground)", archive: "#10b981",
 };
 
 export default function MailPage() {
@@ -98,13 +98,13 @@ export default function MailPage() {
         <Button onClick={() => void sync()} disabled={syncing}>{syncing ? "Syncing…" : "Synchroniser la boîte"}</Button>
       </header>
 
-      {authError && <Card><CardContent className="py-4 text-sm" style={{ color: "#f59e0b" }}>{authError}</CardContent></Card>}
+      {authError && <Card><CardContent className="py-4 text-sm" style={{ color: "var(--color-warning)" }}>{authError}</CardContent></Card>}
       {syncNote && <Card><CardContent className="py-3 text-xs text-text-secondary">{syncNote}</CardContent></Card>}
 
       {summary && (
         <div className="grid grid-cols-3 gap-3 md:grid-cols-6">
           <Stat label="Total" value={String(summary.total)} />
-          <Stat label="Unread" value={String(summary.unread)} color="#f59e0b" />
+          <Stat label="Unread" value={String(summary.unread)} color="var(--color-warning)" />
           <Stat label="Triaged" value={`${summary.triaged}/${summary.total}`} />
           {(["urgent", "respond", "fyi"] as const).map((c) => (
             <Stat key={c} label={c} value={String(summary.by_category[c] ?? 0)} color={CAT_COLOR[c]} />
@@ -121,7 +121,7 @@ export default function MailPage() {
           <Button onClick={() => void ingest()}>Add</Button>
         </CardContent>
       </Card>
-      {err && <p className="text-xs" style={{ color: "#ff3366" }}>{err}</p>}
+      {err && <p className="text-xs" style={{ color: "var(--color-destructive)" }}>{err}</p>}
 
       <Card>
         <CardHeader><CardTitle>Inbox</CardTitle></CardHeader>
@@ -129,12 +129,12 @@ export default function MailPage() {
           {messages.length === 0 && <EmptyState title="Aucun message" hint="Reliez Gmail depuis la page Connexions, ou importez une boîte ci-dessus, puis triez votre courrier." />}
           {messages.map((m) => (
             <div key={m.id} className="flex items-center gap-3 rounded-md border border-current/10 px-3 py-2">
-              <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: m.status === "unread" ? "#f59e0b" : "transparent", border: "1px solid currentColor" }} />
+              <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: m.status === "unread" ? "var(--color-warning)" : "transparent", border: "1px solid currentColor" }} />
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <span className="truncate text-sm font-medium">{m.subject || "(no subject)"}</span>
                   {m.category && <span className="rounded px-1.5 py-0.5 text-[10px] uppercase" style={{ color: CAT_COLOR[m.category], border: `1px solid ${CAT_COLOR[m.category]}` }}>{m.category}</span>}
-                  {m.priority === "high" && <span className="text-[10px] font-bold" style={{ color: "#ef4444" }}>HIGH</span>}
+                  {m.priority === "high" && <span className="text-[10px] font-bold" style={{ color: "var(--color-destructive)" }}>HIGH</span>}
                 </div>
                 <span className="text-xs text-text-secondary">{m.from_name || m.from_addr || "unknown"}</span>
               </div>

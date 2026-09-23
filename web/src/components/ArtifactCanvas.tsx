@@ -17,12 +17,12 @@ import { vigil, type Artifact, type MeetingCanvas } from "@/lib/vigil";
 
 // council canvas kind → VigilNode shape/color
 const KIND_NODE: Record<string, { shape: string; color: string }> = {
-  problem:  { shape: "block",     color: "#00e5ff" },
+  problem:  { shape: "block",     color: "var(--color-accent)" },
   decision: { shape: "decision",  color: "#a78bfa" },
-  outcome:  { shape: "milestone", color: "#1f7a4c" },
+  outcome:  { shape: "milestone", color: "var(--color-success)" },
 };
 
-const EDGE_COLOR = "#00e5ff";
+const EDGE_COLOR = "var(--color-accent)";
 
 function edge(source: string, target: string, i: number): Edge {
   return {
@@ -42,7 +42,7 @@ function seedFromCanvas(canvas: MeetingCanvas | null): CanvasData {
   const nodes: Node[] = [];
 
   for (const n of canvas.nodes ?? []) {
-    const km = KIND_NODE[n.kind] || { shape: "block", color: "#00e5ff" };
+    const km = KIND_NODE[n.kind] || { shape: "block", color: "var(--color-accent)" };
     nodes.push({
       id: n.id,
       type: "vigil",

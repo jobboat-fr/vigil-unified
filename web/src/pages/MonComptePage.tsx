@@ -92,8 +92,8 @@ export default function MonComptePage() {
             <Button onClick={() => void exporter()} disabled={exportEtat === "cours"}>
               {exportEtat === "cours" ? "Préparation…" : "Télécharger mes données"}
             </Button>
-            {exportEtat === "pret" && <span className="text-xs" style={{ color: "#059669" }}>Fichier téléchargé.</span>}
-            {exportEtat === "erreur" && <span className="text-xs" style={{ color: "#e11d48" }}>{exportMsg}</span>}
+            {exportEtat === "pret" && <span className="text-xs" style={{ color: "var(--color-success)" }}>Fichier téléchargé.</span>}
+            {exportEtat === "erreur" && <span className="text-xs" style={{ color: "var(--color-destructive)" }}>{exportMsg}</span>}
           </div>
         </CardContent>
       </Card>
@@ -134,7 +134,7 @@ export default function MonComptePage() {
               <label className="text-xs" htmlFor="conf">Pour confirmer, écrivez <strong>SUPPRIMER</strong></label>
               <input id="conf" value={saisie} onChange={(e) => setSaisie(e.target.value)} autoComplete="off"
                 className="rounded-md border border-current/20 bg-transparent px-3 py-2 text-base outline-none" />
-              {erreur && <p className="text-xs" style={{ color: "#e11d48" }}>{erreur}</p>}
+              {erreur && <p className="text-xs" style={{ color: "var(--color-destructive)" }}>{erreur}</p>}
               <div className="flex flex-wrap gap-2">
                 <button type="button" disabled={saisie.trim().toUpperCase() !== "SUPPRIMER" || etape === "cours"}
                   onClick={() => void supprimer()}

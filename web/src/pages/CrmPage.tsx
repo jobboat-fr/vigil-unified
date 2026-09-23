@@ -78,12 +78,12 @@ export default function CrmPage() {
         <p className="text-sm text-text-secondary">Contacts et opportunités — les montants remontent vers la finance, les dossiers vers le conseil.</p>
       </header>
 
-      {authError && <Card><CardContent className="py-4 text-sm" style={{ color: "#f59e0b" }}>{authError}</CardContent></Card>}
+      {authError && <Card><CardContent className="py-4 text-sm" style={{ color: "var(--color-warning)" }}>{authError}</CardContent></Card>}
 
       {pipeline && (
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
           <Stat label="Pipeline ouvert" value={money(pipeline.open_value)} />
-          <Stat label="Weighted" value={money(pipeline.weighted_open_value)} color="#059669" />
+          <Stat label="Weighted" value={money(pipeline.weighted_open_value)} color="var(--color-success)" />
           <Stat label="Deals" value={String(pipeline.deal_count)} />
         </div>
       )}
@@ -141,7 +141,7 @@ export default function CrmPage() {
             <input className={inputCls} placeholder="Company" value={cCompany} onChange={(e) => setCCompany(e.target.value)} />
             <Button onClick={() => void addContact()} disabled={!cName.trim()}>Add</Button>
           </div>
-          {err && <p className="mb-2 text-xs" style={{ color: "#ff3366" }}>{err}</p>}
+          {err && <p className="mb-2 text-xs" style={{ color: "var(--color-destructive)" }}>{err}</p>}
           <div className="flex flex-col gap-1">
             {contacts.length === 0 && <EmptyState title="Aucun contact" hint="Ajoutez un contact, ou reliez HubSpot depuis la page Connexions pour synchroniser votre pipeline." />}
             {contacts.map((c) => (

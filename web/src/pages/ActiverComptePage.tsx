@@ -134,7 +134,7 @@ export default function ActiverComptePage() {
         </label>
         <ul className="grid grid-cols-2 gap-x-3 text-[11px]">
           {regles.map((r) => (
-            <li key={r.texte} style={{ color: r.ok ? "#1F7A4C" : "#5B6B7F" }}>
+            <li key={r.texte} style={{ color: r.ok ? "var(--color-success)" : "var(--color-muted-foreground)" }}>
               {r.ok ? "✓" : "○"} {r.texte}
             </li>
           ))}
@@ -180,7 +180,7 @@ export default function ActiverComptePage() {
         <BoutonPublic couleur={info.couleur} disabled={!valide || attente}>
           {attente ? "Activation…" : "Activer mon compte"}
         </BoutonPublic>
-        <p className="text-center text-[11px]" style={{ color: "#5B6B7F" }}>
+        <p className="text-center text-[11px]" style={{ color: "var(--color-muted-foreground)" }}>
           Lien valable jusqu'au{" "}
           {new Date(info.expire_le).toLocaleString("fr-FR", { dateStyle: "long", timeStyle: "short" })}.
         </p>

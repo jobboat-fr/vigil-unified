@@ -9,7 +9,7 @@ import { expliquerCourt } from "@/lib/refus";
 // (and the UI) only ever PROPOSE; nothing leaves the system until it's approved here.
 
 const STATUS_COLOR: Record<string, string> = {
-  pending: "#f59e0b", executed: "#059669", rejected: "#6b7280", failed: "#ef4444",
+  pending: "var(--color-warning)", executed: "var(--color-success)", rejected: "var(--color-muted-foreground)", failed: "var(--color-destructive)",
 };
 
 function summarize(a: OutboundAction): string {
@@ -66,8 +66,8 @@ export default function ApprovalsPage() {
         </p>
       </header>
 
-      {authError && <Card><CardContent className="py-4 text-sm" style={{ color: "#f59e0b" }}>{authError}</CardContent></Card>}
-      {err && <Card><CardContent className="py-3 text-sm" style={{ color: "#ff3366" }}>{err}</CardContent></Card>}
+      {authError && <Card><CardContent className="py-4 text-sm" style={{ color: "var(--color-warning)" }}>{authError}</CardContent></Card>}
+      {err && <Card><CardContent className="py-3 text-sm" style={{ color: "var(--color-destructive)" }}>{err}</CardContent></Card>}
 
       <Card>
         <CardHeader><CardTitle>En attente · {pending.length}</CardTitle></CardHeader>
@@ -78,7 +78,7 @@ export default function ApprovalsPage() {
               <span className="rounded px-1.5 py-0.5 text-[10px] uppercase" style={{ color: "#888", border: "1px solid currentColor" }}>{a.provider}</span>
               <span className="min-w-0 flex-1 truncate text-sm">{summarize(a)}</span>
               <span className="text-[10px] text-text-secondary">{a.requested_by}</span>
-              <Button disabled={!!busy} onClick={() => void decide(a, "approve")} style={{ color: "#059669", borderColor: "#059669" }}>
+              <Button disabled={!!busy} onClick={() => void decide(a, "approve")} style={{ color: "var(--color-success)", borderColor: "var(--color-success)" }}>
                 {busy === a.id + "approve" ? "…" : "Approve"}
               </Button>
               <button type="button" disabled={!!busy} className="text-xs text-text-secondary hover:text-foreground" onClick={() => void decide(a, "reject")}>Reject</button>
@@ -95,7 +95,7 @@ export default function ApprovalsPage() {
             <div key={a.id} className="flex items-center gap-2 text-sm">
               <span className="text-[10px] uppercase w-16" style={{ color: STATUS_COLOR[a.status] }}>{a.status}</span>
               <span className="min-w-0 flex-1 truncate">{summarize(a)}</span>
-              {a.error && <span className="truncate text-xs" style={{ color: "#ef4444" }}>{a.error}</span>}
+              {a.error && <span className="truncate text-xs" style={{ color: "var(--color-destructive)" }}>{a.error}</span>}
               {a.result && typeof (a.result as { issue_url?: string }).issue_url === "string" && (
                 <a href={(a.result as { issue_url: string }).issue_url} className="text-xs underline" style={{ color: "var(--color-text-info)" }}>view</a>
               )}

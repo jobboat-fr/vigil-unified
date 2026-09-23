@@ -54,7 +54,7 @@ export default function NouveauMotDePassePage() {
             value={mdp}
             onChange={(e) => setMdp(e.target.value)}
           />
-          <p className="text-[11px]" style={{ color: solide ? "#1F7A4C" : "#5B6B7F" }}>
+          <p className="text-[11px]" style={{ color: solide ? "var(--color-success)" : "var(--color-muted-foreground)" }}>
             10 caractères au moins, dont une minuscule, une majuscule et un chiffre.
           </p>
           <input

@@ -49,6 +49,12 @@ export const defaultTheme: DashboardTheme = {
     warmGlow: "rgba(255, 189, 56, 0.35)",
     noiseOpacity: 1,
   },
+  colorOverrides: {
+    success: "#2fd98f",
+    warning: "#ffbd38",
+    destructive: "#ff6b5b",
+    destructiveForeground: "#12040a",
+  },
   typography: DEFAULT_TYPOGRAPHY,
   layout: DEFAULT_LAYOUT,
   terminalBackground: "#000000",
@@ -64,6 +70,12 @@ export const midnightTheme: DashboardTheme = {
     foreground: { hex: "#ffffff", alpha: 0 },
     warmGlow: "rgba(167, 139, 250, 0.32)",
     noiseOpacity: 0.8,
+  },
+  colorOverrides: {
+    success: "#5ce6b0",
+    warning: "#ffc95c",
+    destructive: "#ff7a9c",
+    destructiveForeground: "#12040a",
   },
   typography: {
     ...DEFAULT_TYPOGRAPHY,
@@ -102,6 +114,7 @@ export const emberTheme: DashboardTheme = {
     radius: "0.25rem",
   },
   colorOverrides: {
+    success: "#5fd39b",
     destructive: "#c92d0f",
     warning: "#f97316",
   },
@@ -117,6 +130,12 @@ export const monoTheme: DashboardTheme = {
     foreground: { hex: "#ffffff", alpha: 0 },
     warmGlow: "rgba(255, 255, 255, 0.1)",
     noiseOpacity: 0.6,
+  },
+  colorOverrides: {
+    success: "#a9cdb5",
+    warning: "#d9c79b",
+    destructive: "#d9a3a3",
+    destructiveForeground: "#12040a",
   },
   typography: {
     ...DEFAULT_TYPOGRAPHY,
@@ -170,6 +189,12 @@ export const roseTheme: DashboardTheme = {
     foreground: { hex: "#ffffff", alpha: 0 },
     warmGlow: "rgba(249, 168, 212, 0.3)",
     noiseOpacity: 0.9,
+  },
+  colorOverrides: {
+    success: "#6fe3b4",
+    warning: "#ffc46b",
+    destructive: "#ff6f91",
+    destructiveForeground: "#12040a",
   },
   typography: {
     ...DEFAULT_TYPOGRAPHY,
@@ -288,6 +313,12 @@ export const defaultLargeTheme: DashboardTheme = {
   label: "Hermes Teal (Large)",
   description: "Hermes Teal with bigger fonts and roomier spacing",
   palette: defaultTheme.palette,
+  colorOverrides: {
+    success: "#2fd98f",
+    warning: "#ffbd38",
+    destructive: "#ff6b5b",
+    destructiveForeground: "#12040a",
+  },
   typography: {
     ...DEFAULT_TYPOGRAPHY,
     baseSize: "18px",
@@ -347,16 +378,29 @@ export const vtlvsTheme: DashboardTheme = {
 };
 
 export const BUILTIN_THEMES: Record<string, DashboardTheme> = {
-  // Une seule charte, et c'est délibéré.
+  // Neuf chartes, et c'est délibéré — comme ce l'était, en sens inverse, quand il n'y
+  // en avait qu'une.
   //
-  // Les presets hérités de Hermes (Hermes Teal, Midnight, Ember, Cyberpunk, Rose…) sont
-  // des canevas sombres. Le reste de cette application est construit pour un canevas
-  // clair : cartes blanches, filets définis, encre marine. Choisir un preset sombre ne
-  // produisait pas « la même application en sombre », mais de l'encre marine sur du vert
-  // profond — illisible, et c'est exactement ce qui a été constaté à l'écran.
+  // Elles avaient été retirées pour une raison réelle : les canevas sombres hérités de
+  // Hermes donnaient de l'encre marine sur du vert profond. Mais la cause n'était pas le
+  // thème, c'était l'écran — 107 couleurs écrites en dur dans 24 fichiers, qui ne
+  // suivaient aucune charte. Un vert de réussite `#059669` reste `#059669` sur fond noir.
   //
-  // Un produit vendu à des organismes de formation n'a pas besoin d'un thème « Cyberpunk ».
-  // Il a besoin de ressembler au site vitrine par lequel l'apprenant est arrivé.
-  default: vtlvsTheme,
+  // Ces couleurs passent désormais par les jetons (`--color-success`, `--color-warning`,
+  // `--color-destructive`…), que chaque charte définit pour son propre canevas. Retirer
+  // les thèmes soignait le symptôme ; c'était la seule chose à faire tant que la cause
+  // tenait. Elle ne tient plus.
+  //
+  // `vtlvs` reste le défaut : un organisme de formation doit retrouver le site par lequel
+  // son apprenant est arrivé. Le reste est un choix, pas une surprise.
   vtlvs: vtlvsTheme,
+  default: vtlvsTheme,
+  midnight: midnightTheme,
+  ember: emberTheme,
+  mono: monoTheme,
+  cyberpunk: cyberpunkTheme,
+  rose: roseTheme,
+  "nous-blue": nousBlueTheme,
+  "default-large": defaultLargeTheme,
+  hermes: defaultTheme,
 };

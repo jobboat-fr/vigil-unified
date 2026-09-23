@@ -47,22 +47,13 @@ const FONT_STORAGE_KEY = "hermes-dashboard-font";
  *  Keep entries here until enough release cycles have passed that we can
  *  reasonably assume nobody still has the old value persisted. */
 const THEME_NAME_ALIASES: Record<string, string> = {
-  // Renamed during the LENS_5I port + Nous-blue rebrand.
+  // Un alias sert à rattraper un nom **disparu**, pas à en confisquer un qui existe.
+  //
+  // Les neuf entrées précédentes pointaient toutes sur « vtlvs » : quiconque avait choisi
+  // Midnight ou Ember était ramené à la charte unique, et le sélecteur n'avait plus qu'un
+  // choix à offrir. C'était cohérent tant que `BUILTIN_THEMES` n'en livrait qu'une ; ça ne
+  // l'est plus. Ne reste que le vrai renommage.
   "lens-5i": "vtlvs",
-  // Les canevas sombres hérités de Hermes ne sont plus livrés — voir la note sur
-  // `BUILTIN_THEMES`. Sans ces alias, un compte qui avait « Hermes Teal » enregistré
-  // (localStorage ou côté serveur) restait bloqué sur un thème qui n'existe plus, et
-  // `resolveTheme` le renvoyait certes vers la charte — mais le nom stocké, lui, ne
-  // changeait jamais, si bien que le sélecteur affichait un choix introuvable.
-  default: "vtlvs",
-  hermes: "vtlvs",
-  "default-large": "vtlvs",
-  "nous-blue": "vtlvs",
-  midnight: "vtlvs",
-  ember: "vtlvs",
-  mono: "vtlvs",
-  cyberpunk: "vtlvs",
-  rose: "vtlvs",
 };
 
 function migrateThemeName(name: string): string {

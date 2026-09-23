@@ -257,7 +257,7 @@ export default function StudioPage() {
                   <div key={i} className="rounded-md border border-current/15 p-3">
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-sm font-semibold">{a.name}</span>
-                      {a.recommended && <span className="rounded px-2 py-0.5 text-[10px] uppercase" style={{ background: "#059669", color: "#fff" }}>Recommandée</span>}
+                      {a.recommended && <span className="rounded px-2 py-0.5 text-[10px] uppercase" style={{ background: "var(--color-success)", color: "#fff" }}>Recommandée</span>}
                     </div>
                     <p className="mt-1 text-sm">{a.summary}</p>
                     {a.tradeoffs && <p className="mt-1 text-xs text-text-secondary">Compromis : {a.tradeoffs}</p>}
@@ -316,7 +316,7 @@ export default function StudioPage() {
                     {a.access === "owner" && (
                       confirmerSuppression === a.id ? (
                         <span className="flex shrink-0 gap-2 text-xs">
-                          <button type="button" style={{ color: "#e11d48" }} onClick={() => void remove(a.id)}>Supprimer définitivement</button>
+                          <button type="button" style={{ color: "var(--color-destructive)" }} onClick={() => void remove(a.id)}>Supprimer définitivement</button>
                           <button type="button" className="text-text-secondary" onClick={() => setConfirmerSuppression(null)}>Garder</button>
                         </span>
                       ) : (

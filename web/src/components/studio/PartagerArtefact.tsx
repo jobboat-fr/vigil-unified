@@ -163,7 +163,7 @@ export function PartagerArtefact({ artifactId, onClose }: { artifactId: string; 
       </section>
 
       {message && (
-        <p className="text-xs" role="status" style={{ color: message.ton === "ok" ? "#059669" : "#e11d48" }}>{message.texte}</p>
+        <p className="text-xs" role="status" style={{ color: message.ton === "ok" ? "var(--color-success)" : "var(--color-destructive)" }}>{message.texte}</p>
       )}
     </div>
   );

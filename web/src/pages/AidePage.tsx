@@ -103,7 +103,7 @@ export default function AidePage() {
           <Button onClick={() => void envoyer()} disabled={envoi.etat === "cours" || sujet.trim().length < 3 || message.trim().length < 10}>
             {envoi.etat === "cours" ? "Envoi…" : "Envoyer"}
           </Button>
-          {envoi.texte && <span className="text-xs" role="status" style={{ color: envoi.etat === "ok" ? "#059669" : "#e11d48" }}>{envoi.texte}</span>}
+          {envoi.texte && <span className="text-xs" role="status" style={{ color: envoi.etat === "ok" ? "var(--color-success)" : "var(--color-destructive)" }}>{envoi.texte}</span>}
         </div>
       </section>
 

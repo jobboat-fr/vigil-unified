@@ -40,9 +40,9 @@ export default function PartageArtefactPage() {
   const aTableau = !!art && !!(art.canvas || art.tldraw);
 
   return (
-    <div className="min-h-dvh px-4 py-8" style={{ background: "#F4F6FA", color: "#0B2239" }}>
+    <div className="min-h-dvh px-4 py-8" style={{ background: "var(--color-muted)", color: "#0B2239" }}>
       <div className="mx-auto w-full max-w-4xl">
-        <div className="mb-4 flex items-center justify-between gap-3 text-xs" style={{ color: "#5B6B7F" }}>
+        <div className="mb-4 flex items-center justify-between gap-3 text-xs" style={{ color: "var(--color-muted-foreground)" }}>
           <span className="rounded-full border px-2.5 py-1" style={{ borderColor: "#CBD5E1" }}>Lecture seule</span>
           {art?.expires_at && <span>Lien valable jusqu'au {dateLongue(art.expires_at)}</span>}
         </div>
@@ -62,7 +62,7 @@ export default function PartageArtefactPage() {
           ) : (
             <>
               <div className="px-6 pt-6 pb-4" style={{ borderBottom: "3px solid #1D3FAE" }}>
-                <p className="text-xs uppercase tracking-wide" style={{ color: "#5B6B7F" }}>
+                <p className="text-xs uppercase tracking-wide" style={{ color: "var(--color-muted-foreground)" }}>
                   {KIND_LABELS[art.kind] ?? "Document"} · mis à jour le {dateLongue(art.updated_at)}
                 </p>
                 <h1 className="mt-1 text-2xl font-bold">{art.title}</h1>
@@ -77,7 +77,7 @@ export default function PartageArtefactPage() {
             </>
           )}
         </div>
-        <a href="https://vtlvs.com" className="mt-6 flex flex-col items-center gap-1 text-[11px]" style={{ color: "#5B6B7F" }}>
+        <a href="https://vtlvs.com" className="mt-6 flex flex-col items-center gap-1 text-[11px]" style={{ color: "var(--color-muted-foreground)" }}>
           <BlocMarqueVtlvs hauteur={14} />
           Partagé via VTLVS
         </a>

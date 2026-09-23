@@ -17,9 +17,9 @@ export function CadreOrganisme({
   couleur?: string | null;
   children: ReactNode;
 }) {
-  const accent = couleur && /^#[0-9a-fA-F]{6}$/.test(couleur) ? couleur : "#1D3FAE";
+  const accent = couleur && /^#[0-9a-fA-F]{6}$/.test(couleur) ? couleur : "var(--color-primary)";
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center px-4 py-10" style={{ background: "#F4F6FA", color: "#0B2239" }}>
+    <div className="flex min-h-dvh flex-col items-center justify-center px-4 py-10" style={{ background: "var(--color-muted)", color: "#0B2239" }}>
       <div className="w-full max-w-md overflow-hidden rounded-xl bg-white shadow-sm">
         <div className="px-6 py-5" style={{ borderBottom: `3px solid ${accent}` }}>
           {logoUrl ? (
@@ -30,7 +30,7 @@ export function CadreOrganisme({
         </div>
         <div className="px-6 py-6">{children}</div>
       </div>
-      <a href="https://vtlvs.com" className="mt-5 flex flex-col items-center gap-1 text-[11px]" style={{ color: "#5B6B7F" }}>
+      <a href="https://vtlvs.com" className="mt-5 flex flex-col items-center gap-1 text-[11px]" style={{ color: "var(--color-muted-foreground)" }}>
         <BlocMarqueVtlvs hauteur={14} />
         Propulsé par VTLVS
       </a>
@@ -53,7 +53,7 @@ export function BoutonPublic({
   type?: "submit" | "button";
   onClick?: () => void;
 }) {
-  const accent = couleur && /^#[0-9a-fA-F]{6}$/.test(couleur) ? couleur : "#1D3FAE";
+  const accent = couleur && /^#[0-9a-fA-F]{6}$/.test(couleur) ? couleur : "var(--color-primary)";
   return (
     <button
       type={type}
