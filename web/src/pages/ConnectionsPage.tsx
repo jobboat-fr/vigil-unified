@@ -4,6 +4,7 @@ import { Button } from "@nous-research/ui/ui/components/button";
 import { vigil, type ConnectStatus, type Connection } from "@/lib/vigil";
 import { GatewayError } from "@/lib/ww";
 import { expliquerCourt } from "@/lib/refus";
+import { familleConnecteur, statutLiaison } from "@/lib/mots";
 
 // Connections — tenants link their systems of record (GitHub, HubSpot, Stripe, …)
 // with a per-provider token. Tokens are stored encrypted and never returned; the
@@ -13,8 +14,23 @@ const PROVIDER_LABEL: Record<string, { name: string; hint: string; account?: str
   github: { name: "GitHub", hint: "Jeton d'accès personnel (repo, read:org)" },
   hubspot: { name: "HubSpot", hint: "Jeton d'application privée" },
   stripe: { name: "Stripe", hint: "Clé restreinte (lecture seule)" },
-  gmail: { name: "Gmail", hint: "Mot de passe d'application (16 caractères, 2FA requise)", account: "you@gmail.com" },
-  notion: { name: "Notion", hint: "Internal integration token (secret_…)" },
+  gmail: { name: "Gmail", hint: "Mot de passe d'application (16 caractères, 2FA requise)", account: "vous@gmail.com" },
+  notion: { name: "Notion", hint: "Jeton d'intégration interne (secret_…)" },
+};
+
+// Les compteurs que renvoie la synchronisation de chaque connecteur (`integrations/*.py`).
+// Notion compte des tâches, d'où le féminin.
+const COMPTEUR: Record<string, string> = {
+  repos: "dépôts",
+  open_issues: "tickets ouverts",
+  messages_added: "messages ajoutés",
+  contacts_added: "contacts ajoutés",
+  deals_added: "affaires ajoutées",
+  charges_added: "paiements ajoutés",
+  added: "ajoutées",
+  updated: "mises à jour",
+  closed: "fermées",
+  open: "ouvertes",
 };
 
 export default function ConnectionsPage() {
@@ -54,7 +70,7 @@ export default function ConnectionsPage() {
       const { connection } = await vigil.connect.token(provider, token, (accounts[provider] || "").trim() || undefined);
       setTokens((t) => ({ ...t, [provider]: "" }));
       setAccounts((a) => ({ ...a, [provider]: "" }));
-      note(provider, `Connected ${connection.external_account || provider}.`);
+      note(provider, `Relié : ${connection.external_account || provider}.`);
       await refresh();
     } catch (e) {
       note(provider, "", expliquerCourt(e));
@@ -67,8 +83,8 @@ export default function ConnectionsPage() {
     setBusy(c.id + ":sync");
     try {
       const r = await vigil.connect.sync(c.provider, c.id);
-      const counts = Object.entries(r).filter(([, v]) => typeof v === "number").map(([k, v]) => `${v} ${k.replace(/_/g, " ")}`).join(", ");
-      note(c.provider, `Synced: ${counts || "ok"}.`);
+      const counts = Object.entries(r).filter(([, v]) => typeof v === "number").map(([k, v]) => `${v} ${COMPTEUR[k] ?? k.replace(/_/g, " ")}`).join(", ");
+      note(c.provider, counts ? `Synchronisé : ${counts}.` : "Synchronisé.");
       await refresh();
     } catch (e) {
       note(c.provider, "", expliquerCourt(e));
@@ -110,7 +126,7 @@ export default function ConnectionsPage() {
               <CardHeader>
                 <CardTitle className="flex items-center justify-between gap-2">
                   <span className="capitalize">{label.name}</span>
-                  <span className="text-[10px] uppercase tracking-wide text-text-secondary">{p.kind}</span>
+                  <span className="text-[10px] uppercase tracking-wide text-text-secondary">{familleConnecteur(p.kind)}</span>
                 </CardTitle>
               </CardHeader>
               <CardContent className="flex flex-col gap-3">
@@ -118,11 +134,11 @@ export default function ConnectionsPage() {
                   <div key={c.id} className="flex items-center gap-2 rounded-md border border-current/10 px-3 py-2 text-sm">
                     <span className="flex-1 truncate">
                       {c.external_account || c.provider} · <span className="text-text-secondary">{c.token_masked}</span>
-                      {c.last_synced_at && <span className="text-text-secondary"> · synced {new Date(c.last_synced_at).toLocaleDateString()}</span>}
+                      {c.last_synced_at && <span className="text-text-secondary"> · synchronisé le {new Date(c.last_synced_at).toLocaleDateString("fr-FR")}</span>}
                     </span>
-                    <span className="text-[10px] uppercase" style={{ color: c.status === "active" ? "var(--color-success)" : "var(--color-destructive)" }}>{c.status}</span>
-                    <button type="button" className="text-xs text-text-secondary hover:text-foreground" disabled={!!busy} onClick={() => void sync(c)}>{busy === c.id + ":sync" ? "…" : "Sync"}</button>
-                    <button type="button" className="text-xs text-text-secondary hover:text-foreground" disabled={!!busy} onClick={() => void disconnect(c)}>✕</button>
+                    <span className="text-[10px] uppercase" style={{ color: c.status === "active" ? "var(--color-success)" : "var(--color-destructive)" }}>{statutLiaison(c.status)}</span>
+                    <button type="button" className="text-xs text-text-secondary hover:text-foreground" disabled={!!busy} onClick={() => void sync(c)}>{busy === c.id + ":sync" ? "…" : "Synchroniser"}</button>
+                    <button type="button" className="text-xs text-text-secondary hover:text-foreground" disabled={!!busy} title="Déconnecter" aria-label="Déconnecter" onClick={() => void disconnect(c)}>✕</button>
                   </div>
                 ))}
                 <div className="flex flex-col gap-2">
@@ -145,7 +161,7 @@ export default function ConnectionsPage() {
                       onKeyDown={(e) => { if (e.key === "Enter") void connect(p.id); }}
                     />
                     <Button disabled={busy === p.id + ":connect" || !(tokens[p.id] || "").trim() || (!!label.account && !(accounts[p.id] || "").trim())} onClick={() => void connect(p.id)}>
-                      {busy === p.id + ":connect" ? "Connecting…" : "Connect"}
+                      {busy === p.id + ":connect" ? "Liaison…" : "Relier"}
                     </Button>
                   </div>
                 </div>
@@ -155,7 +171,7 @@ export default function ConnectionsPage() {
             </Card>
           );
         })}
-        {!status && !authError && <Card><CardContent className="py-6 text-center text-sm text-text-secondary">Loading providers…</CardContent></Card>}
+        {!status && !authError && <Card><CardContent className="py-6 text-center text-sm text-text-secondary">Chargement des connecteurs…</CardContent></Card>}
       </div>
     </div>
   );
