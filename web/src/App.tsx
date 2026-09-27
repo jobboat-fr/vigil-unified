@@ -175,6 +175,7 @@ const LearnDashboardPage = lazy(() => import("@/pages/LearnDashboardPage"));
 const LearnFormationsPage = lazy(() => import("@/pages/LearnFormationsPage"));
 const LearnEmargementPage = lazy(() => import("@/pages/LearnEmargementPage"));
 const LearnVaultPage = lazy(() => import("@/pages/LearnVaultPage"));
+const LearnFacturesPage = lazy(() => import("@/pages/LearnFacturesPage"));
 const LearnPeoplePage = lazy(() => import("@/pages/LearnPeoplePage"));
 const LearnDemandesPage = lazy(() => import("@/pages/LearnDemandesPage"));
 const CompteSansRole = lazy(() => import("@/pages/CompteSansRole"));
@@ -311,6 +312,7 @@ const BUILTIN_ROUTES_CORE: Record<string, ComponentType> = {
   "/learn/formations": LearnFormationsPage,
   "/learn/emargement": LearnEmargementPage,
   "/learn/coffre": LearnVaultPage,
+  "/learn/factures": LearnFacturesPage,
   "/learn/comptes": LearnPeoplePage,
   "/learn/demandes": LearnDemandesPage,
   // Accueil des comptes (hbs-backend 0041) : à faire, signature, administration.
@@ -390,6 +392,8 @@ const BUILTIN_NAV_REST: NavItem[] = [
   { path: "/learn/acquis", label: "Acquis", icon: Trophy, group: "learn" },
   { path: "/learn/emargement", label: "Émargement", icon: PenLine, group: "learn" },
   { path: "/learn/coffre", label: "Coffre", icon: Archive, group: "learn" },
+  // Liste F5 : payeurs et contrôle. Le formateur n'y est pas — il délivre, il ne facture pas.
+  { path: "/learn/factures", label: "Factures", icon: Receipt, group: "learn", roles: ["super_admin", "admin", "auditeur", "entreprise", "apprenant"] },
   { path: "/learn/comptes", label: "Comptes", icon: Users, group: "learn" },
   { path: "/learn/demandes", label: "Demandes", icon: ClipboardList, group: "learn", roles: ["super_admin", "admin", "auditeur"] },
   { path: "/accueil", label: "À faire", icon: Inbox, group: "learn" },

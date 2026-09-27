@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@nous-research/ui/ui/components/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/components/card";
@@ -82,6 +83,9 @@ export default function SocietesPage() {
                   </span>
                 </CardTitle>
                 {s.siret && <p className="text-xs text-text-secondary">SIRET {s.siret}</p>}
+                <Link to={`/learn/factures?societe=${s.id}`} className="w-fit text-xs underline opacity-80 hover:opacity-100">
+                  Factures de cette société
+                </Link>
               </CardHeader>
 
               <CardContent className="flex flex-1 flex-col gap-4 text-sm">

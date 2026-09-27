@@ -4,6 +4,7 @@ import { Button } from "@nous-research/ui/ui/components/button";
 import { vigil, type FinanceTxn, type FinanceSummary, type FinanceConnectStatus } from "@/lib/vigil";
 import { GatewayError } from "@/lib/ww";
 import { expliquerCourt } from "@/lib/refus";
+import { FacturesApercu } from "@/components/FacturesApercu";
 
 const money = (n: number, ccy = "USD") =>
   new Intl.NumberFormat(undefined, { style: "currency", currency: ccy, maximumFractionDigits: 2 }).format(n);
@@ -78,6 +79,9 @@ export default function FinancePage() {
         <h1 className="text-xl font-bold tracking-tight">Finance</h1>
         <p className="text-sm text-text-secondary">Capture → classify → reconcile. The books the CFO suite reasons over.</p>
       </header>
+
+      {/* Liste F5 : ce que Stripe a émis pour les formations, en tête des livres. */}
+      <FacturesApercu />
 
       {authError && <Card><CardContent className="py-4 text-sm" style={{ color: "var(--color-warning)" }}>{authError}</CardContent></Card>}
 

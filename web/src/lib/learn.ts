@@ -533,6 +533,60 @@ export async function uploadVault(
   return call<VaultObject>("POST", "/vault", fd);
 }
 
+// ------------------------------------------------------------------ factures (liste F5)
+
+/** Les états de Stripe, repris tels quels (0062) : on ne maintient pas de vocabulaire parallèle. */
+export type StatutFacture = "draft" | "open" | "paid" | "uncollectible" | "void";
+
+/** Une facture reflétée depuis Stripe. Montants en centimes, comme chez Stripe. */
+export interface Facture {
+  id: string;
+  numero: string | null;
+  statut: StatutFacture;
+  montant_ht: number;
+  montant_tva: number;
+  montant_ttc: number;
+  devise: string;
+  company_id: string | null;
+  societe: string | null;
+  profile_id: string | null;
+  personne: string | null;
+  /** Ni société ni personne LEARN ne la porte encore : rattachée d'elle-même plus tard (0064). */
+  a_rattacher: boolean;
+  destinataire_nom: string | null;
+  destinataire_email: string;
+  session_code: string | null;
+  formation: string | null;
+  piece_au_coffre: boolean;
+  emise_le: string | null;
+  payee_le: string | null;
+  envoyee_le: string | null;
+}
+
+export interface Factures {
+  items: Facture[];
+  totaux: { encaisse: number; en_attente: number; irrecouvrable: number; devise: string };
+  anomalies: { payees_non_envoyees: number; a_rattacher: number };
+  tronque: boolean;
+}
+
+/** Les factures que l'on a le droit de voir — c'est la base qui en décide, pas l'écran. */
+export const getFactures = (f: { statut?: StatutFacture; company_id?: string; a_rattacher?: boolean } = {}) => {
+  const q = new URLSearchParams();
+  if (f.statut) q.set("statut", f.statut);
+  if (f.company_id) q.set("company_id", f.company_id);
+  if (f.a_rattacher !== undefined) q.set("a_rattacher", String(f.a_rattacher));
+  const s = q.toString();
+  return call<Factures>("GET", `/factures${s ? `?${s}` : ""}`);
+};
+
+/** La copie de la facture au coffre (URL de deux minutes) — ou la page Stripe, faute de copie. */
+export const getFacturePdf = (id: string) =>
+  call<{ url: string; source: "coffre" | "stripe"; expires_in: number | null; filename?: string }>(
+    "GET",
+    `/factures/${encodeURIComponent(id)}/pdf`,
+  );
+
 /** L'URL signée d'une pièce — valable deux minutes, redemandée à chaque clic. */
 export const getVaultUrl = (objectId: string) =>
   call<{ url: string; expires_in: number; filename: string }>(
