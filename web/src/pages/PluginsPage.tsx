@@ -20,6 +20,7 @@ import { useI18n } from "@/i18n";
 import { PluginSlot } from "@/plugins";
 import { cn } from "@/lib/utils";
 import { usePageHeader } from "@/contexts/usePageHeader";
+import { expliquerCourt } from "@/lib/refus";
 
 /** Select value for built-in memory (`config` uses empty string). Never use `""` — UI Select maps empty value to an empty label. */
 const MEMORY_PROVIDER_BUILTIN = "__hermes_memory_builtin__";
@@ -94,7 +95,7 @@ export default function PluginsPage() {
       setInstallId("");
       await loadHub();
     } catch (e) {
-      showToast(e instanceof Error ? e.message : "Installation impossible", "error");
+      showToast(expliquerCourt(e), "error");
     } finally {
       setInstallBusy(false);
     }
@@ -110,7 +111,7 @@ export default function PluginsPage() {
       );
       await loadHub();
     } catch (e) {
-      showToast(e instanceof Error ? e.message : "Nouvelle analyse impossible", "error");
+      showToast(expliquerCourt(e), "error");
     } finally {
       setRescanBusy(false);
     }
@@ -127,7 +128,7 @@ export default function PluginsPage() {
       showToast(t.pluginsPage.savedProviders, "success");
       await loadHub();
     } catch (e) {
-      showToast(e instanceof Error ? e.message : "Enregistrement impossible", "error");
+      showToast(expliquerCourt(e), "error");
     } finally {
       setProviderBusy(false);
     }
@@ -139,7 +140,7 @@ export default function PluginsPage() {
       await fn();
       await loadHub();
     } catch (e) {
-      showToast(e instanceof Error ? e.message : "Failed", "error");
+      showToast(expliquerCourt(e), "error");
     } finally {
       setRowBusy(null);
     }

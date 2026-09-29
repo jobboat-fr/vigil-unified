@@ -11,6 +11,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { cn, themedBody } from "@/lib/utils";
 import { fuzzyRank } from "@/lib/fuzzy";
+import { expliquerCourt } from "@/lib/refus";
 
 /**
  * Two-stage model picker modal.
@@ -141,7 +142,7 @@ export function ModelPickerDialog(props: Props) {
       })
       .catch((e) => {
         if (closedRef.current) return;
-        setError(e instanceof Error ? e.message : String(e));
+        setError(expliquerCourt(e));
         setLoading(false);
       });
 
@@ -235,7 +236,7 @@ export function ModelPickerDialog(props: Props) {
         }
         onClose();
       } catch (e) {
-        setError(e instanceof Error ? e.message : String(e));
+        setError(expliquerCourt(e));
       } finally {
         setApplying(false);
       }
@@ -263,7 +264,7 @@ export function ModelPickerDialog(props: Props) {
         }
         onClose();
       } catch (e) {
-        setError(e instanceof Error ? e.message : String(e));
+        setError(expliquerCourt(e));
       } finally {
         setApplying(false);
       }

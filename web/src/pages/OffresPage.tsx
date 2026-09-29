@@ -47,7 +47,9 @@ export default function OffresPage() {
   }, []);
 
   const lignes: { quoi: string; gratuit: React.ReactNode; payant: React.ReactNode }[] = [
-    { quoi: "Formations, planning, émargement, documents", gratuit: <Case oui />, payant: <Case oui /> },
+    { quoi: "Sessions de formation en cours ou à venir", gratuit: <Case oui texte={plafonds?.sessions != null ? `${plafonds.sessions} au plus` : "limitées"} />, payant: <Case oui texte="sans limite" /> },
+    { quoi: "Comptes (formateurs, apprenants, entreprises)", gratuit: <Case oui texte={plafonds?.comptes != null ? `${plafonds.comptes} au plus` : "limités"} />, payant: <Case oui texte="sans limite" /> },
+    { quoi: "Planning, émargement, documents", gratuit: <Case oui />, payant: <Case oui /> },
     { quoi: "Salle de réunion vidéo", gratuit: <Case oui />, payant: <Case oui /> },
     { quoi: "Projets du Studio", gratuit: <Case oui texte={plafonds?.projets != null ? `${plafonds.projets} au plus` : "limités"} />, payant: <Case oui texte="sans limite" /> },
     { quoi: "Documents du Studio", gratuit: <Case oui texte={plafonds?.artefacts != null ? `${plafonds.artefacts} au plus` : "limités"} />, payant: <Case oui texte="sans limite" /> },

@@ -248,7 +248,7 @@ function UseAsMenu({
       onAssigned();
       setOpen(false);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(expliquerCourt(e));
     } finally {
       setBusy(false);
     }

@@ -7,6 +7,7 @@ import {
   SystemActionsContext,
   type SystemAction,
 } from "./system-actions-context";
+import { expliquerCourt } from "@/lib/refus";
 
 const ACTION_NAMES: Record<SystemAction, string> = {
   restart: "gateway-restart",
@@ -94,7 +95,7 @@ export function SystemActionsProvider({
           setActiveAction(action);
         }
       } catch (err) {
-        const detail = err instanceof Error ? err.message : String(err);
+        const detail = expliquerCourt(err);
         setToast({
           type: "error",
           message: `${t.status.actionFailed}: ${detail}`,

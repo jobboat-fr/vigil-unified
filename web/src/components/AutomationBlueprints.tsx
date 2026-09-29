@@ -12,6 +12,7 @@ import { Toast } from "@nous-research/ui/ui/components/toast";
 import { api } from "@/lib/api";
 import type { AutomationBlueprint, AutomationBlueprintField } from "@/lib/api";
 import { cn, themedBody } from "@/lib/utils";
+import { expliquerCourt } from "@/lib/refus";
 
 interface AutomationBlueprintsProps {
   profile: string;
@@ -94,7 +95,7 @@ function BlueprintCard({
       onCreated?.();
     } catch (e) {
       // 422 from the API carries the slot-level validation message.
-      const msg = e instanceof Error ? e.message : String(e);
+      const msg = expliquerCourt(e);
       setError(msg.replace(/^\d+:\s*/, ""));
     } finally {
       setSubmitting(false);
@@ -180,7 +181,7 @@ export function AutomationBlueprints({ profile, onCreated }: AutomationBlueprint
         if (!cancelled) setBlueprints(r.blueprints);
       })
       .catch((e) => {
-        if (!cancelled) setLoadError(e instanceof Error ? e.message : String(e));
+        if (!cancelled) setLoadError(expliquerCourt(e));
       });
     return () => {
       cancelled = true;

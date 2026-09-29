@@ -16,6 +16,7 @@ import { Switch } from "@nous-research/ui/ui/components/switch";
 import { Spinner } from "@nous-research/ui/ui/components/spinner";
 import { Toast } from "@nous-research/ui/ui/components/toast";
 import { cn, themedBody } from "@/lib/utils";
+import { expliquerCourt } from "@/lib/refus";
 
 interface Props {
   /** The toolset whose backends are being configured. */
@@ -147,7 +148,7 @@ export function ToolsetConfigDrawer({ toolset, profile, onClose, onChanged }: Pr
       onChanged();
     } catch (e) {
       showToast(
-        e instanceof Error ? e.message : "Sélection du fournisseur impossible",
+        expliquerCourt(e),
         "error",
       );
     } finally {
@@ -184,7 +185,7 @@ export function ToolsetConfigDrawer({ toolset, profile, onClose, onChanged }: Pr
       onChanged();
     } catch (e) {
       showToast(
-        e instanceof Error ? e.message : "Enregistrement des clés impossible",
+        expliquerCourt(e),
         "error",
       );
     } finally {
@@ -204,7 +205,7 @@ export function ToolsetConfigDrawer({ toolset, profile, onClose, onChanged }: Pr
     } catch (e) {
       setPostSetupRunning(false);
       showToast(
-        e instanceof Error ? e.message : "Démarrage de la post-configuration impossible",
+        expliquerCourt(e),
         "error",
       );
     }

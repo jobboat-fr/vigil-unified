@@ -61,7 +61,7 @@ export function AuthWidget({ className }: AuthWidgetProps) {
         // we fall back to the product identity below, not an error.
         const msg = err instanceof Error ? err.message : String(err);
         if (!(msg.startsWith("401:") || msg.startsWith("403:"))) {
-          setError("auth status unavailable");
+          setError("État de la connexion indisponible pour le moment.");
         }
       });
     return () => {

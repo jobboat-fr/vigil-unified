@@ -74,7 +74,10 @@ SLUG_CONTRAT = "hbs"
 FORMULES = ("super_admin", "contrat_hbs", "payant", "gratuit")
 
 #: Seule l'offre gratuite est plafonnée : toute formule payante ouvre la plateforme entière.
-PLAFONDS_GRATUITS: dict[str, int] = {"projets": 1, "artefacts": 5}
+#: `projets` et `artefacts` sont appliqués ici ; `sessions` et `comptes` le sont par LEARN
+#: (hbs-backend, `app/learn/offre.py`) et recopiés ici pour la page « Nos offres » — les
+#: changer là-bas, c'est les changer ici aussi.
+PLAFONDS_GRATUITS: dict[str, int] = {"projets": 1, "artefacts": 5, "sessions": 1, "comptes": 10}
 _NOMS_RESSOURCES = {"projets": ("projet", "projets"), "artefacts": ("document du Studio", "documents du Studio")}
 
 

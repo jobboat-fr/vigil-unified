@@ -1,6 +1,7 @@
 // Accueil des comptes, documents à signer, actions requises, e-mails de l'organisme.
 // Backend : hbs-backend app/learn/routes/{accueil,actions,emails}.py (migrations 0040-0042).
 import { BASE, call, LearnError } from "./learn";
+import { expliquerCourt } from "./refus";
 
 /** Appel sans session : pages publiques à jeton (activation, désinscription, mot de passe). */
 async function publicCall<T>(method: string, path: string, body?: unknown): Promise<T> {
@@ -297,7 +298,10 @@ const MESSAGES: Record<string, string> = {
 /** Message français pour les codes d'erreur de l'accueil. */
 export function messageAccueil(e: unknown): string {
   const code = e instanceof LearnError ? (e.code ?? e.message) : "";
-  return MESSAGES[code] ?? (e instanceof Error ? e.message : "Une erreur est survenue.");
+  // Hors des messages propres à l'accueil : l'explication commune, jamais `e.message` — pour
+  // LEARN, c'est le CODE (« plafond_offre_gratuite ») qui s'affichait tel quel (audit du 29/09).
+  // Un refus d'offre ouvre aussi, par là, la fenêtre de l'offre d'entrée.
+  return MESSAGES[code] ?? expliquerCourt(e);
 }
 
 // ----------------------------------------------------------------- composer un message
