@@ -5,6 +5,9 @@ import { vigil, type FinanceTxn, type FinanceSummary, type FinanceConnectStatus 
 import { GatewayError } from "@/lib/ww";
 import { expliquerCourt } from "@/lib/refus";
 import { FacturesApercu } from "@/components/FacturesApercu";
+import { statutLiaison, statutOperation } from "@/lib/mots";
+
+const pluriel = (n: number, un: string, plusieurs: string) => (n > 1 ? plusieurs : un);
 
 const money = (n: number, ccy = "USD") =>
   new Intl.NumberFormat(undefined, { style: "currency", currency: ccy, maximumFractionDigits: 2 }).format(n);
@@ -77,7 +80,7 @@ export default function FinancePage() {
     <div className="flex flex-col gap-6 p-4 md:p-6">
       <header className="flex flex-col gap-1">
         <h1 className="text-xl font-bold tracking-tight">Finance</h1>
-        <p className="text-sm text-text-secondary">Capture → classify → reconcile. The books the CFO suite reasons over.</p>
+        <p className="text-sm text-text-secondary">Saisir → classer → rapprocher. Les comptes sur lesquels travaille le pôle Finance.</p>
       </header>
 
       {/* Liste F5 : ce que Stripe a émis pour les formations, en tête des livres. */}
@@ -87,9 +90,9 @@ export default function FinancePage() {
 
       {summary && (
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          <Stat label="Income" value={money(summary.income)} color="var(--color-success)" />
-          <Stat label="Expense" value={money(summary.expense)} color="var(--color-destructive)" />
-          <Stat label="Net" value={money(summary.net)} color={summary.net >= 0 ? "var(--color-success)" : "var(--color-destructive)"} />
+          <Stat label="Recettes" value={money(summary.income)} color="var(--color-success)" />
+          <Stat label="Dépenses" value={money(summary.expense)} color="var(--color-destructive)" />
+          <Stat label="Solde" value={money(summary.net)} color={summary.net >= 0 ? "var(--color-success)" : "var(--color-destructive)"} />
           <Stat label="Rapproché" value={`${Math.round(summary.reconcile_progress * 100)}%`} sub={`${summary.reconciled_count}/${summary.transaction_count}`} />
         </div>
       )}
@@ -102,10 +105,10 @@ export default function FinancePage() {
             <CardHeader><CardTitle>Saisir une opération</CardTitle></CardHeader>
             <CardContent className="flex flex-col gap-3">
               <div className="flex gap-2">
-                <button type="button" onClick={() => setSign(-1)} className="flex-1 rounded-md px-3 py-2 text-sm" style={{ border: "1px solid currentColor", opacity: sign === -1 ? 1 : 0.4 }}>− Expense</button>
-                <button type="button" onClick={() => setSign(1)} className="flex-1 rounded-md px-3 py-2 text-sm" style={{ border: "1px solid currentColor", opacity: sign === 1 ? 1 : 0.4 }}>+ Income</button>
+                <button type="button" onClick={() => setSign(-1)} className="flex-1 rounded-md px-3 py-2 text-sm" style={{ border: "1px solid currentColor", opacity: sign === -1 ? 1 : 0.4 }}>− Dépense</button>
+                <button type="button" onClick={() => setSign(1)} className="flex-1 rounded-md px-3 py-2 text-sm" style={{ border: "1px solid currentColor", opacity: sign === 1 ? 1 : 0.4 }}>+ Recette</button>
               </div>
-              <input className={inputCls} type="number" inputMode="decimal" placeholder="Amount" value={amount} onChange={(e) => setAmount(e.target.value)} />
+              <input className={inputCls} type="number" inputMode="decimal" placeholder="Montant" value={amount} onChange={(e) => setAmount(e.target.value)} />
               <input className={inputCls} placeholder="Description" value={desc} onChange={(e) => setDesc(e.target.value)} />
               <input className={inputCls} placeholder="Catégorie (facultatif)" value={category} onChange={(e) => setCategory(e.target.value)} />
               <Button onClick={() => void capture()} disabled={busy || !amount} className="w-full">{busy ? "…" : "Ajouter à l'écriture"}</Button>
@@ -129,21 +132,21 @@ export default function FinancePage() {
         </div>
 
         <Card>
-          <CardHeader><CardTitle>Ledger</CardTitle></CardHeader>
+          <CardHeader><CardTitle>Journal</CardTitle></CardHeader>
           <CardContent className="flex flex-col gap-1">
             {txns.length === 0 && <p className="text-sm text-text-secondary">Aucune opération.</p>}
             {txns.map((t) => (
               <div key={t.id} className="flex items-center gap-3 rounded-md border border-current/10 px-3 py-2">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="truncate text-sm font-medium">{t.description || "(no description)"}</span>
+                    <span className="truncate text-sm font-medium">{t.description || "(sans description)"}</span>
                     {t.category && <span className="rounded px-1.5 py-0.5 text-[10px] capitalize text-text-secondary" style={{ border: "1px solid currentColor" }}>{t.category}</span>}
                   </div>
                   <span className="text-xs text-text-secondary">{t.txn_date}</span>
                 </div>
-                <button type="button" onClick={() => void cycleStatus(t)} className="rounded px-2 py-0.5 text-[10px] uppercase" style={{ color: statusColor[t.status] || "#888", border: `1px solid ${statusColor[t.status] || "#888"}` }} title="Basculer le rapprochement">{t.status}</button>
+                <button type="button" onClick={() => void cycleStatus(t)} className="rounded px-2 py-0.5 text-[10px] uppercase" style={{ color: statusColor[t.status] || "#888", border: `1px solid ${statusColor[t.status] || "#888"}` }} title="Basculer le rapprochement">{statutOperation(t.status)}</button>
                 <span className="w-24 text-right text-sm tabular-nums" style={{ color: t.amount >= 0 ? "var(--color-success)" : "var(--color-destructive)" }}>{money(t.amount, t.currency)}</span>
-                <button type="button" onClick={() => void remove(t.id)} className="text-xs text-text-secondary hover:text-foreground">✕</button>
+                <button type="button" onClick={() => void remove(t.id)} className="text-xs text-text-secondary hover:text-foreground" title="Supprimer l'opération" aria-label="Supprimer l'opération">✕</button>
               </div>
             ))}
           </CardContent>
@@ -184,11 +187,11 @@ function ConnectPanel({ onSynced }: { onSynced: () => void }) {
 
   return (
     <Card>
-      <CardHeader><CardTitle>Bank &amp; accounting</CardTitle></CardHeader>
+      <CardHeader><CardTitle>Banque et comptabilité</CardTitle></CardHeader>
       <CardContent className="flex flex-col gap-3">
         <p className="text-sm text-text-secondary">
-          Connect a bank (Plaid) or accounting platform to sync transactions into the ledger. The Finance
-          department reconciles whatever lands here.
+          Reliez une banque (Plaid) ou un logiciel comptable pour importer les opérations dans le journal.
+          Le pôle Finance rapproche tout ce qui arrive ici.
         </p>
 
         {/* Providers + their platform keys (keys management) */}
@@ -198,12 +201,12 @@ function ConnectPanel({ onSynced }: { onSynced: () => void }) {
               <div className="flex items-center justify-between gap-2">
                 <span className="text-sm font-medium">{p.name}</span>
                 <span className="rounded px-2 py-0.5 text-[10px] uppercase" style={{ color: p.configured ? "var(--color-success)" : "var(--color-warning)", border: "1px solid currentColor" }}>
-                  {p.configured ? "configured" : p.implemented ? "keys needed" : "coming soon"}
+                  {p.configured ? "configuré" : p.implemented ? "clés à saisir" : "bientôt"}
                 </span>
               </div>
               <div className="mt-1 flex flex-wrap gap-1.5">
                 {p.required_keys.map((k) => (
-                  <span key={k.name} className="rounded px-1.5 py-0.5 text-[10px] font-mono" style={{ color: k.set ? "var(--color-success)" : "var(--color-muted-foreground)", border: "1px solid currentColor" }} title={k.set ? "set" : "not set"}>
+                  <span key={k.name} className="rounded px-1.5 py-0.5 text-[10px] font-mono" style={{ color: k.set ? "var(--color-success)" : "var(--color-muted-foreground)", border: "1px solid currentColor" }} title={k.set ? "renseignée" : "non renseignée"}>
                     {k.set ? "✓ " : "○ "}{k.name}
                   </span>
                 ))}
@@ -225,15 +228,15 @@ function ConnectPanel({ onSynced }: { onSynced: () => void }) {
                     defaultValue=""
                     onChange={(e) => setKeyVals((v) => ({ ...v, [k.name]: e.target.value }))}
                   >
-                    <option value="" disabled>{k.name} (environment)</option>
-                    <option value="sandbox">sandbox</option>
-                    <option value="production">production</option>
+                    <option value="" disabled>{k.name} (environnement)</option>
+                    <option value="sandbox">Bac à sable (sandbox)</option>
+                    <option value="production">Production</option>
                   </select>
                 ) : (
                   <input
                     key={k.name}
                     type={k.name.includes("SECRET") ? "password" : "text"}
-                    placeholder={k.name + (k.set ? " (set — leave blank to keep)" : "")}
+                    placeholder={k.name + (k.set ? " (renseignée — laisser vide pour la garder)" : "")}
                     className="rounded-md border border-current/20 bg-transparent px-3 py-2 text-sm outline-none focus:border-current/50"
                     onChange={(e) => setKeyVals((v) => ({ ...v, [k.name]: e.target.value }))}
                   />
@@ -244,10 +247,10 @@ function ConnectPanel({ onSynced }: { onSynced: () => void }) {
                 onClick={() => void wrap("keys", async () => {
                   const r = await vigil.finance.connect.keys("plaid", keyVals);
                   setKeyVals({});
-                  return `Saved ${r.saved} key${r.saved === 1 ? "" : "s"}.`;
+                  return `${r.saved} ${pluriel(r.saved, "clé enregistrée", "clés enregistrées")}.`;
                 })}
               >
-                {busy === "keys" ? "Saving…" : "Enregistrer les clés"}
+                {busy === "keys" ? "Enregistrement…" : "Enregistrer les clés"}
               </Button>
             </div>
           </details>
@@ -258,9 +261,9 @@ function ConnectPanel({ onSynced }: { onSynced: () => void }) {
           <div className="flex flex-col gap-1.5">
             {status.connections.map((c) => (
               <div key={c.id} className="flex items-center gap-2 rounded-md border border-current/10 px-3 py-2 text-sm">
-                <span className="flex-1 truncate">{c.institution || c.provider} · <span className="text-text-secondary">{c.accounts_count} accts · {c.token_masked}</span></span>
-                <span className="text-[10px] uppercase" style={{ color: c.status === "active" ? "var(--color-success)" : "var(--color-destructive)" }}>{c.status}</span>
-                <button type="button" className="text-xs text-text-secondary hover:text-foreground" onClick={() => void wrap("dc" + c.id, async () => { await vigil.finance.connect.disconnect(c.id); return "Déconnecté."; })}>✕</button>
+                <span className="flex-1 truncate">{c.institution || c.provider} · <span className="text-text-secondary">{c.accounts_count} {pluriel(c.accounts_count, "compte", "comptes")} · {c.token_masked}</span></span>
+                <span className="text-[10px] uppercase" style={{ color: c.status === "active" ? "var(--color-success)" : "var(--color-destructive)" }}>{statutLiaison(c.status)}</span>
+                <button type="button" className="text-xs text-text-secondary hover:text-foreground" title="Déconnecter" aria-label="Déconnecter" onClick={() => void wrap("dc" + c.id, async () => { await vigil.finance.connect.disconnect(c.id); return "Déconnecté."; })}>✕</button>
               </div>
             ))}
           </div>
@@ -268,18 +271,18 @@ function ConnectPanel({ onSynced }: { onSynced: () => void }) {
 
         <div className="flex flex-wrap gap-2">
           {canSandbox && (
-            <Button disabled={!!busy} onClick={() => void wrap("sandbox", async () => { const r = await vigil.finance.connect.sandbox(); return `Connected ${r.connection.institution || "bank"}.`; })}>
-              {busy === "sandbox" ? "Connecting…" : "Relier une banque de test"}
+            <Button disabled={!!busy} onClick={() => void wrap("sandbox", async () => { const r = await vigil.finance.connect.sandbox(); return `Banque reliée : ${r.connection.institution || "banque de test"}.`; })}>
+              {busy === "sandbox" ? "Liaison…" : "Relier une banque de test"}
             </Button>
           )}
-          <Button ghost disabled={!!busy || !status?.connections.length} onClick={() => void wrap("sync", async () => { const r = await vigil.finance.connect.sync(); return `Synced ${r.transactions_added} transactions from ${r.connections} connection(s).`; })}>
-            {busy === "sync" ? "Syncing…" : "Sync now"}
+          <Button ghost disabled={!!busy || !status?.connections.length} onClick={() => void wrap("sync", async () => { const r = await vigil.finance.connect.sync(); return `${r.transactions_added} ${pluriel(r.transactions_added, "opération importée", "opérations importées")} depuis ${r.connections} ${pluriel(r.connections, "liaison", "liaisons")}.`; })}>
+            {busy === "sync" ? "Synchronisation…" : "Synchroniser"}
           </Button>
         </div>
 
         {plaid && !plaid.configured && (
           <p className="text-xs text-text-secondary">
-            Set <code>PLAID_CLIENT_ID</code>, <code>PLAID_SECRET</code> and <code>PLAID_ENV</code> on the gateway to enable bank connections.
+            Renseignez <code>PLAID_CLIENT_ID</code>, <code>PLAID_SECRET</code> et <code>PLAID_ENV</code> sur la passerelle pour activer les liaisons bancaires.
           </p>
         )}
         {msg && <p className="text-xs" style={{ color: "var(--color-success)" }}>{msg}</p>}

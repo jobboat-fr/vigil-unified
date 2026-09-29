@@ -5,6 +5,7 @@ import { Button } from "@nous-research/ui/ui/components/button";
 import { billing, type BillingInfo, type BillingTier } from "@/lib/vigil";
 import { GatewayError } from "@/lib/ww";
 import { expliquerCourt } from "@/lib/refus";
+import { statutAbonnement } from "@/lib/mots";
 
 // Billing — plan, usage, and self-serve upgrades. Checkout runs on Stripe
 // (gateway /v1/billing/checkout → redirect); the webhook provisions the org's
@@ -14,7 +15,7 @@ const GOLD = "var(--color-primary)";
 const EMER = "var(--color-success)";
 
 function eur(cents: number): string {
-  return cents === 0 ? "€0" : `€${(cents / 100).toFixed(0)}`;
+  return `${(cents / 100).toFixed(0)}\u00a0€`; // espace insécable : « 49 € » ne se coupe pas en fin de ligne
 }
 
 function TierCard({
@@ -39,16 +40,16 @@ function TierCard({
         <CardTitle className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-3 gap-y-1 text-base">
           <span className="truncate">{tier.name}</span>
           <span className="shrink-0 whitespace-nowrap" style={{ color: highlight ? GOLD : undefined }}>
-            {tier.contact_sales ? "Custom" : `${eur(tier.price_eur_cents)}/mo`}
+            {tier.contact_sales ? "Sur devis" : `${eur(tier.price_eur_cents)} / mois`}
           </span>
         </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-1 flex-col gap-1 text-sm">
         <ul className="flex-1 space-y-1 text-muted-foreground">
-          <li>{tier.ops_runs_per_day == null ? "Illimité" : tier.ops_runs_per_day} exécutions d'agent par jour</li>
-          <li>{tier.max_connectors == null ? "Illimité" : tier.max_connectors} connector{tier.max_connectors === 1 ? "" : "s"}</li>
+          <li>{tier.ops_runs_per_day == null ? "Exécutions d'agent illimitées" : `${tier.ops_runs_per_day} exécutions d'agent par jour`}</li>
+          <li>{tier.max_connectors == null ? "Connecteurs illimités" : `${tier.max_connectors} connecteur${tier.max_connectors > 1 ? "s" : ""}`}</li>
           <li>{tier.departments} pôles agentiques</li>
-          <li>{tier.write_actions ? "✓ Outbound write-actions" : "— Read-only connectors"}</li>
+          <li>{tier.write_actions ? "✓ Actions sortantes (envois, écritures)" : "— Connecteurs en lecture seule"}</li>
           <li>{tier.byok ? "✓ Vos propres clés" : "— Modèles gérés uniquement"}</li>
         </ul>
         {current ? (
@@ -72,7 +73,7 @@ function TierCard({
             onClick={() => onBuy(tier.id)}
             style={highlight ? { background: GOLD, color: "#0b2239" } : undefined}
           >
-            {busy ? "Redirecting…" : `Upgrade to ${tier.name}`}
+            {busy ? "Redirection…" : `Passer à ${tier.name}`}
           </Button>
         ) : tier.id === "free" ? null : (
           <div className="mt-3 text-center text-xs text-muted-foreground">Bientôt disponible</div>
@@ -162,7 +163,7 @@ export default function BillingPage() {
             <CardTitle className="text-base">
               Formule en cours : <span style={{ color: GOLD }}>{info.limits?.name as string}</span>
               {sub?.status && sub.status !== "active" && (
-                <span className="ml-2 text-xs text-muted-foreground">({sub.status})</span>
+                <span className="ml-2 text-xs text-muted-foreground">({statutAbonnement(sub.status)})</span>
               )}
             </CardTitle>
           </CardHeader>
@@ -180,12 +181,12 @@ export default function BillingPage() {
             )}
             {cancelPending && sub?.current_period_end && (
               <span className="text-muted-foreground">
-                Cancels {new Date(sub.current_period_end).toLocaleDateString()}
+                Prend fin le {new Date(sub.current_period_end).toLocaleDateString("fr-FR")}
               </span>
             )}
             {sub && (
               <Button outlined size="sm" disabled={portalBusy} onClick={() => void openPortal()}>
-                {portalBusy ? "Opening…" : "Gérer l'abonnement"}
+                {portalBusy ? "Ouverture…" : "Gérer l'abonnement"}
               </Button>
             )}
           </CardContent>

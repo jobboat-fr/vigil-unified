@@ -4,6 +4,7 @@ import { Button } from "@nous-research/ui/ui/components/button";
 import { vigil, type OutboundAction } from "@/lib/vigil";
 import { GatewayError } from "@/lib/ww";
 import { expliquerCourt } from "@/lib/refus";
+import { statutActionSortante } from "@/lib/mots";
 
 // Approvals — the human-in-the-loop gate for outbound write-actions. Departments
 // (and the UI) only ever PROPOSE; nothing leaves the system until it's approved here.
@@ -14,8 +15,8 @@ const STATUS_COLOR: Record<string, string> = {
 
 function summarize(a: OutboundAction): string {
   const p = a.params as Record<string, string>;
-  if (a.action === "send") return `Send email to ${p.to || "?"} — “${p.subject || ""}”`;
-  if (a.action === "create_issue") return `Open issue in ${p.repo || "?"}: “${p.title || ""}”`;
+  if (a.action === "send") return `Courriel à ${p.to || "?"} — « ${p.subject || ""} »`;
+  if (a.action === "create_issue") return `Ticket dans ${p.repo || "?"} : « ${p.title || ""} »`;
   return `${a.action} (${Object.keys(a.params).join(", ")})`;
 }
 
@@ -72,32 +73,32 @@ export default function ApprovalsPage() {
       <Card>
         <CardHeader><CardTitle>En attente · {pending.length}</CardTitle></CardHeader>
         <CardContent className="flex flex-col gap-2">
-          {pending.length === 0 && <p className="text-sm text-text-secondary">Nothing waiting. Clear.</p>}
+          {pending.length === 0 && <p className="text-sm text-text-secondary">Rien en attente.</p>}
           {pending.map((a) => (
             <div key={a.id} className="flex items-center gap-3 rounded-md border border-current/10 px-3 py-2">
               <span className="rounded px-1.5 py-0.5 text-[10px] uppercase" style={{ color: "#888", border: "1px solid currentColor" }}>{a.provider}</span>
               <span className="min-w-0 flex-1 truncate text-sm">{summarize(a)}</span>
               <span className="text-[10px] text-text-secondary">{a.requested_by}</span>
               <Button disabled={!!busy} onClick={() => void decide(a, "approve")} style={{ color: "var(--color-success)", borderColor: "var(--color-success)" }}>
-                {busy === a.id + "approve" ? "…" : "Approve"}
+                {busy === a.id + "approve" ? "…" : "Valider"}
               </Button>
-              <button type="button" disabled={!!busy} className="text-xs text-text-secondary hover:text-foreground" onClick={() => void decide(a, "reject")}>Reject</button>
+              <button type="button" disabled={!!busy} className="text-xs text-text-secondary hover:text-foreground" onClick={() => void decide(a, "reject")}>Refuser</button>
             </div>
           ))}
         </CardContent>
       </Card>
 
       <Card>
-        <CardHeader><CardTitle>Recent</CardTitle></CardHeader>
+        <CardHeader><CardTitle>Récemment</CardTitle></CardHeader>
         <CardContent className="flex flex-col gap-1.5">
           {recent.length === 0 && <p className="text-sm text-text-secondary">Aucun historique.</p>}
           {recent.map((a) => (
             <div key={a.id} className="flex items-center gap-2 text-sm">
-              <span className="text-[10px] uppercase w-16" style={{ color: STATUS_COLOR[a.status] }}>{a.status}</span>
+              <span className="text-[10px] uppercase w-20 shrink-0" style={{ color: STATUS_COLOR[a.status] }}>{statutActionSortante(a.status)}</span>
               <span className="min-w-0 flex-1 truncate">{summarize(a)}</span>
               {a.error && <span className="truncate text-xs" style={{ color: "var(--color-destructive)" }}>{a.error}</span>}
               {a.result && typeof (a.result as { issue_url?: string }).issue_url === "string" && (
-                <a href={(a.result as { issue_url: string }).issue_url} className="text-xs underline" style={{ color: "var(--color-text-info)" }}>view</a>
+                <a href={(a.result as { issue_url: string }).issue_url} className="text-xs underline" style={{ color: "var(--color-text-info)" }}>voir</a>
               )}
             </div>
           ))}
