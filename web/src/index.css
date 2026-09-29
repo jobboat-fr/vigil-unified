@@ -217,10 +217,6 @@ code { font-size: 0.875rem; }
   --color-muted-foreground: var(--color-text-secondary);
   --color-accent: color-mix(in srgb, var(--midground-base) 10%, var(--background-base));
   --color-accent-foreground: var(--midground);
-  --color-destructive: #fb2c36;
-  --color-destructive-foreground: #ffffff;
-  --color-success: #4ade80;
-  --color-warning: #ffbd38;
   --color-border: color-mix(in srgb, var(--midground-base) 15%, transparent);
   --color-input: color-mix(in srgb, var(--midground-base) 15%, transparent);
   --color-ring: var(--midground);
@@ -231,6 +227,19 @@ code { font-size: 0.875rem; }
   --radius-md: calc(var(--theme-radius) - 2px);
   --radius-lg: var(--theme-radius);
   --radius-xl: calc(var(--theme-radius) + 4px);
+}
+
+/* Les couleurs d'état, HORS de `@theme inline`, et c'est tout le correctif.
+   Dans un bloc `inline`, Tailwind recopie la valeur littérale dans la classe : `text-success`
+   valait `#4ade80` en dur, quel que soit le thème — les surcharges de chaque charte
+   (`colorOverrides`, et les valeurs de la charte claire plus bas dans `:root`) n'avaient
+   aucun effet. Mesuré le 29/09 : 1,5:1 sur fond clair, « Abonnement actif » illisible.
+   Ici, la classe renvoie à `var(--color-success)`, que chaque thème peut enfin changer. */
+@theme {
+  --color-destructive: #fb2c36;
+  --color-destructive-foreground: #ffffff;
+  --color-success: #4ade80;
+  --color-warning: #ffbd38;
 }
 
 /* ------------------------------------------------------------------ */
@@ -411,10 +420,10 @@ code { font-size: 0.875rem; }
 
   /* Status colours that survive a black-and-white print of an audit file:
      each is paired with a word in the UI, never used alone. */
-  --color-destructive: #c0392b;
+  --color-destructive: #b42318;
   --color-destructive-foreground: #ffffff;
-  --color-success: #1f7a4c;
-  --color-warning: #b4740b;
+  --color-success: #0f7a45;
+  --color-warning: #9a5700; /* #b4740b : 3,4:1 sur ce fond — mesure du 29/09 */
 
   /* --- le fond ------------------------------------------------------
      `Backdrop` peint quatre couches par-dessus la page, réglées pour un

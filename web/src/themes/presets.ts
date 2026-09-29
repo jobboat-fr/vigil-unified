@@ -52,7 +52,7 @@ export const defaultTheme: DashboardTheme = {
   colorOverrides: {
     success: "#2fd98f",
     warning: "#ffbd38",
-    destructive: "#ff6b5b",
+    destructive: "#ff8272",
     destructiveForeground: "#12040a",
   },
   typography: DEFAULT_TYPOGRAPHY,
@@ -115,7 +115,9 @@ export const emberTheme: DashboardTheme = {
   },
   colorOverrides: {
     success: "#5fd39b",
-    destructive: "#c92d0f",
+    // #c92d0f donnait 3,3:1 sur ce brun : les messages d'erreur se lisaient mal (mesure du 29/09).
+    destructive: "#ff6a4d",
+    destructiveForeground: "#1a0a06",
     warning: "#f97316",
   },
 };
@@ -176,6 +178,8 @@ export const cyberpunkTheme: DashboardTheme = {
     success: "#00ff88",
     warning: "#ffd700",
     destructive: "#ff0055",
+    // Blanc sur ce rose vif : 3,9:1. Encre sombre : lisible (mesure du 29/09).
+    destructiveForeground: "#12040a",
   },
 };
 
@@ -240,7 +244,9 @@ export const nousBlueTheme: DashboardTheme = {
   description: "Light mode — vivid Nous-blue accents on cream canvas",
   palette: {
     background: { hex: "#170d02", alpha: 1 },
-    midground: { hex: "#FFAC02", alpha: 1 },
+    // #FFAC02 s'inversait en un bleu trop clair : le texte secondaire (encre à 70–80 %)
+    // tombait à 3,6:1 (mesure du 29/09). Un cran plus profond après inversion : #003fbf.
+    midground: { hex: "#FFC040", alpha: 1 },
     foreground: { hex: "#FFFFFF", alpha: 1 },
     // Same warm-amber as nousnet-web's overlay glow; after the FG
     // inversion it reads as a cool ultraviolet vignette in the top-left.
@@ -274,11 +280,14 @@ export const nousBlueTheme: DashboardTheme = {
   // gets painted, and `255 - channel` flips it to #FB2C36 (red) on screen.
   // Without these, the default destructive/success/warning tokens would
   // appear as their unintuitive complements.
+  // Mesuré après inversion le 29/09 : #b5217f et #0042c7 devenaient un vert et un jaune pâles
+  // (1,5:1 sur ce canevas clair). Les valeurs ci-dessous s'inversent en #0f7a45, #9a5700 et
+  // #b42318 — les mêmes que la charte claire VTLVS, lisibles à plus de 4,5:1.
   colorOverrides: {
-    destructive: "#04d3c9",
+    destructive: "#4bdce7",
     destructiveForeground: "#000000",
-    success: "#b5217f",
-    warning: "#0042c7",
+    success: "#f085ba",
+    warning: "#65a8ff",
   },
   // Pre-inverted data-series accents for the Analytics/Models token
   // charts. The defaults (#ffe6cb cream + #34d399 emerald) would render
@@ -316,7 +325,7 @@ export const defaultLargeTheme: DashboardTheme = {
   colorOverrides: {
     success: "#2fd98f",
     warning: "#ffbd38",
-    destructive: "#ff6b5b",
+    destructive: "#ff8272",
     destructiveForeground: "#12040a",
   },
   typography: {
@@ -362,6 +371,15 @@ export const vtlvsTheme: DashboardTheme = {
     foreground: { hex: "#ffffff", alpha: 0 },
     warmGlow: "rgba(29, 63, 174, 0.14)",
     noiseOpacity: 0,
+  },
+  // Sans ces jetons, la charte claire héritait des couleurs d'état pensées pour les canevas
+  // sombres : un vert et un jaune pâles, mesurés à 1,5:1 sur ce fond — « Abonnement actif »
+  // et les cadenas étaient illisibles (audit de contraste du 29/09). Chacun passe 4,5:1.
+  colorOverrides: {
+    success: "#0f7a45",
+    warning: "#9a5700",
+    destructive: "#b42318",
+    destructiveForeground: "#ffffff",
   },
   typography: {
     fontSans: 'Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',

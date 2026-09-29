@@ -56,16 +56,16 @@ function Ligne({ a, onOuvrir }: { a: Artifact; onOuvrir: () => void }) {
       >
         <span className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
           <span className="min-w-0 break-words font-medium">{a.title || "Sans titre"}</span>
-          <span className="shrink-0 text-xs text-midground/60">{quand(a.updated_at)}</span>
+          <span className="shrink-0 text-xs text-text-secondary">{quand(a.updated_at)}</span>
         </span>
-        <span className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-midground/70">
+        <span className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-text-secondary">
           <span>{TYPE[a.kind] ?? "Document"}</span>
           {a.revisions > 1 && <span>{a.revisions} versions</span>}
           {a.owner_name && <span>de {a.owner_name}</span>}
           {a.access === "view" && <span>lecture seule</span>}
           {a.stub && <span className="text-warning">brouillon — l'assistant était indisponible</span>}
         </span>
-        {a.brief && <span className="line-clamp-2 text-sm text-midground/75">{a.brief}</span>}
+        {a.brief && <span className="line-clamp-2 text-sm text-text-secondary">{a.brief}</span>}
       </button>
     </li>
   );
@@ -127,7 +127,7 @@ export default function VaultPage() {
   return (
     <div className="flex w-full min-w-0 flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="max-w-prose text-sm text-midground/75">
+        <p className="max-w-prose text-sm text-text-secondary">
           Ce qui a été produit : documents du Studio, synthèses de réunion, travaux des agents dans vos projets.
         </p>
         <div className="flex flex-wrap gap-2">
@@ -144,16 +144,16 @@ export default function VaultPage() {
             type="button"
             aria-selected={onglet === o.id}
             onClick={() => setOnglet(o.id)}
-            className={`-mb-px border-b-2 px-3 py-2 text-sm font-medium transition-colors ${onglet === o.id ? "border-midground text-midground" : "border-transparent text-midground/60 hover:text-midground"}`}
+            className={`-mb-px border-b-2 px-3 py-2 text-sm font-medium transition-colors ${onglet === o.id ? "border-midground text-midground" : "border-transparent text-text-secondary hover:text-midground"}`}
           >
-            {o.libelle}{o.n !== null && <span className="ml-1.5 text-midground/50">{o.n}</span>}
+            {o.libelle}{o.n !== null && <span className="ml-1.5 text-text-secondary">{o.n}</span>}
           </button>
         ))}
       </div>
 
       <label className="relative block">
         <span className="sr-only">Chercher un artéfact</span>
-        <Search aria-hidden className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-midground/50" />
+        <Search aria-hidden className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-text-secondary" />
         <input
           value={filtre}
           onChange={(e) => setFiltre(e.target.value)}
@@ -165,11 +165,11 @@ export default function VaultPage() {
       {erreur != null ? (
         <Refus erreur={erreur} quoi="les artéfacts" onReessayer={() => void charger()} />
       ) : !charge ? (
-        <p className="py-8 text-center text-sm text-midground/60">Chargement…</p>
+        <p className="py-8 text-center text-sm text-text-secondary">Chargement…</p>
       ) : visibles.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
-            <p className="max-w-md text-sm text-midground/75">
+            <p className="max-w-md text-sm text-text-secondary">
               {filtre
                 ? "Aucun artéfact ne correspond à cette recherche."
                 : onglet === "partages"
@@ -197,8 +197,8 @@ export default function VaultPage() {
             {docs.map((d, i) => (
               <li key={d.id ?? i} className="rounded-lg border border-midground/15 p-3">
                 <span className="break-words font-medium">{d.title || d.filename || "Sans titre"}</span>
-                {d.category && <span className="ml-2 text-xs text-midground/60">{d.category}</span>}
-                {d.summary && <p className="mt-1 line-clamp-2 text-xs text-midground/70">{d.summary}</p>}
+                {d.category && <span className="ml-2 text-xs text-text-secondary">{d.category}</span>}
+                {d.summary && <p className="mt-1 line-clamp-2 text-xs text-text-secondary">{d.summary}</p>}
               </li>
             ))}
           </ul>

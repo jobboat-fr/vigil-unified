@@ -7,6 +7,7 @@ import { LiveRoom } from "@/components/LiveRoom";
 import { EcartsEmargement } from "@/components/EcartsEmargement";
 import { expliquer, expliquerCourt } from "@/lib/refus";
 import { Refus } from "@/components/Refus";
+import { Markdown } from "@/components/Markdown";
 
 // Les identifiants partent au serveur tels quels ; seul leur libellé est traduit.
 const LIBELLE_PERSONA: Record<string, string> = {
@@ -685,7 +686,11 @@ export default function MeetingRoomPage() {
                       )}
                     </div>
                     {active.kind === "formation" && <EcartsEmargement roomId={active.id} />}
-                    {summary.summary_markdown && <pre className="max-h-48 overflow-auto whitespace-pre-wrap rounded bg-current/5 p-2 text-xs leading-relaxed">{summary.summary_markdown}</pre>}
+                    {summary.summary_markdown && (
+                      <div className="max-h-80 overflow-auto rounded-lg border border-current/10 p-3">
+                        <Markdown content={summary.summary_markdown} />
+                      </div>
+                    )}
                     {summary.commitments.length > 0 && (
                       <div className="text-xs"><span className="text-text-secondary">Décisions à suivre :</span><ul className="list-disc pl-4">{summary.commitments.map((c, i) => <li key={i}>{c.text}{c.owner ? ` — ${c.owner}` : ""}</li>)}</ul></div>
                     )}
@@ -734,12 +739,20 @@ export default function MeetingRoomPage() {
                   maturité {verdict.readiness_score} · {verdict.consensus_reached ? "consensus" : "arbitrage"}
                 </span>
               </div>
-              {fi.intervention_text && <p className="text-sm text-foreground/90">{fi.intervention_text}</p>}
-              {fi.category && <p className="text-xs text-text-secondary">Catégorie : {fi.category} · confiance {fi.confidence ?? "—"}</p>}
-              {fi.reasoning && <p className="text-xs text-text-secondary italic">{fi.reasoning}</p>}
-              <p className="text-[10px] text-text-secondary font-mono">
-                {record.totals.n_llm_calls} appels · {record.totals.latency_ms_total} ms · {record.totals.cost_usd} $
-              </p>
+              {fi.intervention_text && <Markdown content={fi.intervention_text} />}
+              {fi.reasoning && (
+                <details className="text-xs text-text-secondary">
+                  <summary className="cursor-pointer">Comment le conseil est arrivé à cet avis</summary>
+                  <div className="mt-2"><Markdown content={fi.reasoning} /></div>
+                </details>
+              )}
+              <details className="text-[11px] text-text-secondary">
+                <summary className="cursor-pointer">Détail technique</summary>
+                <p className="mt-1 font-mono">
+                  {fi.category ? `catégorie ${fi.category} · confiance ${fi.confidence ?? "—"} · ` : ""}
+                  {record.totals.n_llm_calls} appels · {record.totals.latency_ms_total} ms
+                </p>
+              </details>
             </div>
           )}
         </CardContent>

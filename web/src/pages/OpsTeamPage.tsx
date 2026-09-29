@@ -9,6 +9,7 @@ import { vigil, type Department, type OpsEvent, type OpsTask, type OpsUsage } fr
 import AgentsMarques from "@/components/AgentsMarques";
 import { useLearnRole } from "@/lib/supabase";
 import { Refus } from "@/components/Refus";
+import { Markdown } from "@/components/Markdown";
 import { AGENTS, useAbonnementAgents } from "@/lib/agentique";
 import { mandatPole, nomFormule, nomPole, nomTravail, regardPole, statutPole, statutTachePole } from "@/lib/mots";
 
@@ -22,11 +23,13 @@ const STATUS_COLOR: Record<string, string> = {
   provisioning: "var(--color-muted-foreground)",
 };
 
-function healthLine(d: Department): string {
+// Le coût par exécution est notre coût de modèle : il regarde l'exploitation VTLVS, pas le client.
+function healthLine(d: Department, exploitation: boolean): string {
   const h = d.health as { success_rate?: number | null; avg_cost_usd?: number; runs?: number; p50_ms?: number };
   if (!h || !h.runs) return "aucune exécution — lancez l'autotest pour le vérifier";
   const sr = h.success_rate == null ? "—" : `${Math.round(h.success_rate * 100)}%`;
-  return `réussite ${sr} · ${(h.avg_cost_usd ?? 0).toFixed(3)} $ par exécution · ${h.p50_ms ?? 0} ms · ${h.runs} exécution${h.runs > 1 ? "s" : ""}`;
+  const cout = exploitation ? ` · ${(h.avg_cost_usd ?? 0).toFixed(3)} $ par exécution` : "";
+  return `réussite ${sr}${cout} · ${h.p50_ms ?? 0} ms · ${h.runs} exécution${h.runs > 1 ? "s" : ""}`;
 }
 
 export default function OpsTeamPage() {
@@ -179,7 +182,7 @@ export default function OpsTeamPage() {
                     )}
                   </p>
                 )}
-                <p className="text-[11px] text-text-secondary font-mono">{healthLine(d)}</p>
+                <p className="text-[11px] text-text-secondary font-mono">{healthLine(d, role === "super_admin")}</p>
                 {r && (
                   <div
                     className="rounded-md px-2.5 py-2 text-xs"
@@ -190,10 +193,10 @@ export default function OpsTeamPage() {
                   >
                     <div className="flex items-center justify-between gap-2 font-semibold" style={{ color: r.accepted ? "#16a34a" : "#dc2626" }}>
                       <span>{r.accepted ? "✓" : "✕"} {nomTravail(r.job)} — {statutTachePole(r.status)}</span>
-                      <span className="font-mono text-[10px] font-normal text-text-secondary">{Number(r.cost_usd).toFixed(3)} $ · {r.wall_ms} ms</span>
+                      <span className="font-mono text-[10px] font-normal text-text-secondary">{role === "super_admin" ? `${Number(r.cost_usd).toFixed(3)} $ · ` : ""}{r.wall_ms} ms</span>
                     </div>
                     {(r.summary || r.reason) && (
-                      <p className="mt-1 leading-snug text-foreground/80">{r.summary || r.reason}</p>
+                      <div className="mt-2"><Markdown content={r.summary || r.reason || ""} /></div>
                     )}
                     {r.output_artifact_id && (
                       <button
