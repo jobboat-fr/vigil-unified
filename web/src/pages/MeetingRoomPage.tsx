@@ -9,14 +9,19 @@ import { expliquer, expliquerCourt } from "@/lib/refus";
 import { Refus } from "@/components/Refus";
 
 const PERSONAS = ["CFO", "CTO", "COO", "CRM", "CRO", "advisor"] as const;
+// Les identifiants partent au serveur tels quels ; seul leur libellé est traduit.
+const LIBELLE_PERSONA: Record<string, string> = {
+  CFO: "Finances", CTO: "Technique", COO: "Opérations", CRM: "Relation client", CRO: "Commercial", advisor: "Conseil",
+};
+const libellePersona = (p: string) => LIBELLE_PERSONA[p] ?? p;
 import { METAL } from "@/lib/brand";
 
 // The 4 council lenses, aligned with the Deal Board advisor templates.
 const LENSES = [
-  { key: "cfo_review", member: "cfo", label: "CFO", color: "var(--color-primary)" },
-  { key: "tech_review", member: "cto", label: "CTO", color: "#7C3AED" },
-  { key: "legal_review", member: "legal", label: "Legal", color: "var(--color-success)" },
-  { key: "product_review", member: "product", label: "Product", color: "#DB2777" },
+  { key: "cfo_review", member: "cfo", label: "Finances", color: "var(--color-primary)" },
+  { key: "tech_review", member: "cto", label: "Technique", color: "#7C3AED" },
+  { key: "legal_review", member: "legal", label: "Juridique", color: "var(--color-success)" },
+  { key: "product_review", member: "product", label: "Produit", color: "#DB2777" },
 ] as const;
 
 const STAGE_LABEL: Record<string, string> = {
@@ -27,7 +32,7 @@ const STAGE_LABEL: Record<string, string> = {
   chairman_done: "Synthèse rendue",
   behavioral_done: "Profil de comportement",
   complete: "Avis disponible",
-  error: "Error",
+  error: "Erreur",
 };
 
 /**
@@ -47,7 +52,7 @@ export default function MeetingRoomPage() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [active, setActive] = useState<Room | null>(null);
   const [authError, setAuthError] = useState<unknown>(null);
-  const [speaker, setSpeaker] = useState("You");
+  const [speaker, setSpeaker] = useState("Moi");
   const [text, setText] = useState("");
   const [convening, setConvening] = useState(false);
   const [events, setEvents] = useState<SseEvent[]>([]);
@@ -208,7 +213,7 @@ export default function MeetingRoomPage() {
 
   const sendMessage = async () => {
     if (!active || !text.trim()) return;
-    await vigil.rooms.postMessage(active.id, text.trim(), speaker.trim() || "You");
+    await vigil.rooms.postMessage(active.id, text.trim(), speaker.trim() || "Moi");
     setText("");
     await reloadActive(active.id);
   };
@@ -367,8 +372,8 @@ export default function MeetingRoomPage() {
   if (liveJoin) {
     return (
       <div role="dialog" aria-modal="true" aria-label={active?.title ? `Réunion en cours: ${active.title}` : "Réunion en cours"} className="fixed inset-0 z-50 flex flex-col" style={{ background: "#07080d" }}>
-        <div className="flex items-center justify-between px-3 py-2" style={{ borderBottom: "1px solid #ffffff14", color: "#e7e9f3" }}>
-          <span className="text-sm font-semibold">
+        <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2" style={{ borderBottom: "1px solid #ffffff14", color: "#e7e9f3" }}>
+          <span className="min-w-0 break-words text-sm font-semibold">
             {active?.title || "Réunion en cours"}
             {/* En pleine réunion, l'erreur doit se voir ici : le panneau du tableau de bord est masqué. */}
             {liveErr != null && (
@@ -383,7 +388,7 @@ export default function MeetingRoomPage() {
               </span>
             )}
           </span>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => void bringAgentIn()}
               disabled={agentBusy || agentIn}
@@ -406,38 +411,39 @@ export default function MeetingRoomPage() {
                 Copier le lien d'invitation
               </button>
             )}
-            <button onClick={() => setLiveJoin(null)} className="rounded px-2 py-1 text-xs" style={{ color: "#e7e9f3", border: "1px solid #ffffff33" }}>Minimize</button>
+            <button onClick={() => setLiveJoin(null)} className="rounded px-2 py-1 text-xs" style={{ color: "#e7e9f3", border: "1px solid #ffffff33" }}>Réduire</button>
             <button onClick={() => void closeMeeting()} disabled={summarizing} className="rounded px-2 py-1 text-xs font-semibold" style={{ color: "#fff", background: "var(--color-destructive)" }}>
-              {summarizing ? "Closing…" : "⏹ Terminer la réunion"}
+              {summarizing ? "Clôture…" : "⏹ Terminer la réunion"}
             </button>
           </div>
         </div>
-        <div className="flex min-h-0 flex-1">
+        {/* Téléphone : la vidéo en haut, le panneau dessous (40 % au plus). Tablette et plus : côte à côte. */}
+        <div className="flex min-h-0 flex-1 flex-col md:flex-row">
           <div className="flex min-h-0 flex-1 flex-col md:flex-row">
             <div className="min-h-0 flex-1"><LiveRoom token={liveJoin.token} url={liveJoin.url} onLeave={() => setLiveJoin(null)} /></div>
             {avatarSession && (
               <div className="relative min-h-0 flex-1" style={{ borderLeft: "1px solid #ffffff14", background: "#000" }}>
                 <div className="absolute left-2 top-2 z-10 flex items-center gap-2 rounded-full px-2 py-1 text-[10px] font-semibold" style={{ background: "#0b2239cc", color: "var(--color-success)" }}>
-                  <span className="vigil-breathe">●</span> AI {persona} · {avatarSession.provider === "tavus" ? "Tavus" : "Beyond Presence"}
+                  <span className="vigil-breathe">●</span> {libellePersona(persona)} (IA) · {avatarSession.provider === "tavus" ? "Tavus" : "Beyond Presence"}
                   <button onClick={() => void dismissAvatar()} className="ml-1 opacity-70 hover:opacity-100" title="Retirer l'avatar">✕</button>
                 </div>
                 {avatarSession.conversation_url ? (
                   <iframe
-                    title={`AI ${persona} avatar`}
+                    title={`Avatar : ${libellePersona(persona)}`}
                     src={avatarSession.conversation_url}
                     className="h-full w-full border-0"
                     allow="camera; microphone; autoplay; display-capture; fullscreen"
                   />
                 ) : (
                   <div className="flex h-full items-center justify-center p-4 text-center text-xs" style={{ color: "#e7e9f3aa" }}>
-                    Avatar is live on {avatarSession.provider} but returned no embeddable URL.
+                    L'avatar est lancé chez {avatarSession.provider}, mais n'a pas renvoyé d'adresse intégrable.
                   </div>
                 )}
               </div>
             )}
           </div>
           {/* In-meeting controls — transcription + listening live HERE, not on the dashboard */}
-          <div className="flex w-80 min-w-0 flex-col" style={{ borderLeft: "1px solid #ffffff14", color: "#e7e9f3" }}>
+          <div className="flex max-h-[40%] w-full min-w-0 flex-col border-t border-white/10 md:max-h-none md:w-80 md:border-l md:border-t-0" style={{ color: "#e7e9f3" }}>
             <div className="flex items-center justify-between px-3 py-2" style={{ borderBottom: "1px solid #ffffff14" }}>
               <span className="text-[10px] font-mono uppercase tracking-wide" style={{ opacity: 0.7 }}>Avis en direct</span>
               <button
@@ -445,18 +451,18 @@ export default function MeetingRoomPage() {
                 className="text-xs px-2.5 py-1 rounded-full border"
                 style={{ borderColor: liveAdvisor ? "#00ff8866" : "#ffffff33", color: liveAdvisor ? "#00ff88" : "#e7e9f3", background: liveAdvisor ? "#00ff881a" : "transparent" }}
               >
-                {liveAdvisor ? "● Listening" : "○ Listen off"}
+                {liveAdvisor ? "● À l'écoute" : "○ Écoute coupée"}
               </button>
             </div>
             {suggestion?.speak && (
               <div className="m-3 overflow-hidden rounded-lg border p-2.5 space-y-2" style={{ borderColor: "rgba(122,162,255,0.38)", background: "rgba(122,162,255,0.08)" }}>
                 <div className="flex items-center gap-2"><span aria-hidden className="h-3 w-[2px] rounded-full" style={{ background: METAL.accentSombre }} /><span className="text-[10px] font-mono uppercase" style={{ color: METAL.accentSombre }}>Un avis demande la parole</span></div>
                 <p className="text-sm">{suggestion.message}</p>
-                <div className="flex gap-2"><Button size="sm" onClick={() => void acceptSuggestion()}>Add</Button><button className="text-xs" style={{ opacity: 0.7 }} onClick={() => setSuggestion(null)}>Dismiss</button></div>
+                <div className="flex gap-2"><Button size="sm" onClick={() => void acceptSuggestion()}>Ajouter</Button><button className="text-xs" style={{ opacity: 0.7 }} onClick={() => setSuggestion(null)}>Ignorer</button></div>
               </div>
             )}
             <div className="min-h-0 flex-1 overflow-y-auto px-3 py-2">
-              <div className="text-[10px] font-mono uppercase tracking-wide mb-1.5" style={{ opacity: 0.7 }}>Transcript · {active?.transcript.length ?? 0}</div>
+              <div className="text-[10px] font-mono uppercase tracking-wide mb-1.5" style={{ opacity: 0.7 }}>Transcription · {active?.transcript.length ?? 0}</div>
               <ul className="space-y-1">
                 {(active?.transcript ?? []).map((m, i) => (
                   <li key={i} className="text-sm leading-snug"><span className="font-mono" style={{ opacity: 0.9 }}>{m.speaker}:</span> <span style={{ opacity: 0.8 }}>{m.text}</span></li>
@@ -465,8 +471,8 @@ export default function MeetingRoomPage() {
               </ul>
             </div>
             <div className="flex gap-2 px-3 py-2" style={{ borderTop: "1px solid #ffffff14" }}>
-              <input value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") void sendMessage(); }} aria-label="Note de réunion" placeholder="Note what was said…" className="flex-1 rounded border bg-transparent px-2 py-1 text-sm" style={{ borderColor: "#ffffff33", color: "#e7e9f3" }} />
-              <Button size="sm" onClick={() => void sendMessage()} disabled={!text.trim()}>Add</Button>
+              <input value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") void sendMessage(); }} aria-label="Note de réunion" placeholder="Noter ce qui a été dit…" className="flex-1 rounded border bg-transparent px-2 py-1 text-sm" style={{ borderColor: "#ffffff33", color: "#e7e9f3" }} />
+              <Button size="sm" onClick={() => void sendMessage()} disabled={!text.trim()}>Ajouter</Button>
             </div>
           </div>
         </div>
@@ -482,8 +488,8 @@ export default function MeetingRoomPage() {
       {/* Rooms */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Rooms · {rooms.length}</CardTitle>
-          <Button size="sm" onClick={() => void createRoom()}>New</Button>
+          <CardTitle>Salles · {rooms.length}</CardTitle>
+          <Button size="sm" onClick={() => void createRoom()}>Nouvelle</Button>
         </CardHeader>
         <CardContent>
           {rooms.length === 0 ? (
@@ -497,7 +503,7 @@ export default function MeetingRoomPage() {
                     className={`w-full text-left rounded px-2 py-1.5 text-sm ${active?.id === r.id ? "bg-current/10 font-medium" : "hover:bg-current/5"}`}
                   >
                     <span className="block truncate text-foreground/90">{r.title}</span>
-                    <span className="block text-[10px] text-text-secondary">{r.members.length} advisors · {r.transcript.length} msgs</span>
+                    <span className="block text-[10px] text-text-secondary">{r.members.length} point{r.members.length > 1 ? "s" : ""} de vue · {r.transcript.length} message{r.transcript.length > 1 ? "s" : ""}</span>
                   </button>
                 </li>
               ))}
@@ -539,7 +545,7 @@ export default function MeetingRoomPage() {
                   })}
                 </div>
                 {active.members.length > 0 && (
-                  <p className="text-text-secondary text-[11px] mt-2">{active.members.length} advisor{active.members.length > 1 ? "s" : ""} on the board.</p>
+                  <p className="text-text-secondary text-[11px] mt-2">{active.members.length} point{active.members.length > 1 ? "s" : ""} de vue retenu{active.members.length > 1 ? "s" : ""}.</p>
                 )}
               </section>
 
@@ -547,7 +553,7 @@ export default function MeetingRoomPage() {
               <section>
                 <StepHeader n={2} title="Comment souhaitez-vous vous réunir ?" hint="Choisissez une option — sa configuration apparaît en dessous." />
                 <div className="grid gap-2 sm:grid-cols-3">
-                  <ModeTile emoji="🎥" title="Salle vidéo intégrée" desc="AI advisor avatar + invite humans" active={setupMode === "live"} onClick={() => setSetupMode("live")} />
+                  <ModeTile emoji="🎥" title="Salle vidéo intégrée" desc="L'assistant en avatar, et vos invités" active={setupMode === "live"} onClick={() => setSetupMode("live")} />
                   <ModeTile emoji="🔗" title="Google Meet" desc="Envoyer l'assistant dans votre réunion Meet" active={setupMode === "meet"} onClick={() => setSetupMode("meet")} />
                   <ModeTile emoji="🧠" title="Revue du conseil" desc="Le conseil délibère à partir de vos notes" active={setupMode === "council"} onClick={() => setSetupMode("council")} />
                 </div>
@@ -563,15 +569,15 @@ export default function MeetingRoomPage() {
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="text-xs text-text-secondary">Siège de l'assistant :</span>
                         {PERSONAS.map((p) => (
-                          <button key={p} onClick={() => setPersona(p)} className="text-xs px-2.5 py-1 rounded-full border" style={{ borderColor: "currentColor", opacity: persona === p ? 1 : 0.4 }}>{p}</button>
+                          <button key={p} onClick={() => setPersona(p)} className="text-xs px-2.5 py-1 rounded-full border" style={{ borderColor: "currentColor", opacity: persona === p ? 1 : 0.4 }}>{libellePersona(p)}</button>
                         ))}
                       </div>
-                      <Button disabled={liveBusy} onClick={() => void startLiveMeeting()}>{liveBusy ? "Starting…" : "🎥 Start live meeting"}</Button>
-                      <p className="text-text-secondary text-[11px]">Opens a shared video room. Share the invite link with people; then use "Bring in AI {persona}" inside the room to add the avatar (Tavus, Beyond Presence fallback).</p>
+                      <Button disabled={liveBusy} onClick={() => void startLiveMeeting()}>{liveBusy ? "Ouverture…" : "🎥 Ouvrir la salle vidéo"}</Button>
+                      <p className="text-text-secondary text-[11px]">Ouvre une salle vidéo partagée. Envoyez le lien d'invitation aux participants ; dans la salle, « Faire entrer AZZMIN » ajoute l'assistant.</p>
                       {inviteLink && (
                         <div className="flex items-center gap-2 text-xs">
                           <input aria-label="Lien d'invitation" readOnly value={inviteLink} className="flex-1 rounded border border-current/20 bg-transparent px-2 py-1 font-mono" onFocus={(e) => e.currentTarget.select()} />
-                          <button className="text-text-secondary hover:text-foreground" onClick={() => void navigator.clipboard?.writeText(inviteLink)}>Copy</button>
+                          <button className="text-text-secondary hover:text-foreground" onClick={() => void navigator.clipboard?.writeText(inviteLink)}>Copier</button>
                         </div>
                       )}
                       {liveErr != null && <Refus erreur={liveErr} quoi="la visioconférence" compact className="mt-2" />}
@@ -584,9 +590,9 @@ export default function MeetingRoomPage() {
                       <input value={meetUrl} onChange={(e) => setMeetUrl(e.target.value)} aria-label="Lien Google Meet" placeholder="https://meet.google.com/abc-defg-hij" className="w-full rounded border border-current/20 bg-transparent px-2 py-1.5 text-xs font-mono" />
                       <div className="flex flex-wrap items-center gap-3">
                         <div className="flex items-center gap-2">
-                          <span className="text-xs text-text-secondary">Seat:</span>
+                          <span className="text-xs text-text-secondary">Siège :</span>
                           {PERSONAS.slice(0, 4).map((p) => (
-                            <button key={p} onClick={() => setPersona(p)} className="text-xs px-2 py-0.5 rounded-full border" style={{ borderColor: "currentColor", opacity: persona === p ? 1 : 0.4 }}>{p}</button>
+                            <button key={p} onClick={() => setPersona(p)} className="text-xs px-2 py-0.5 rounded-full border" style={{ borderColor: "currentColor", opacity: persona === p ? 1 : 0.4 }}>{libellePersona(p)}</button>
                           ))}
                         </div>
                         <label className="flex items-center gap-1.5 text-xs text-text-secondary">
@@ -594,21 +600,21 @@ export default function MeetingRoomPage() {
                           Le laisser parler (voix ElevenLabs)
                         </label>
                       </div>
-                      <Button disabled={meetBusy || !meetUrl.trim()} onClick={() => void sendToMeet()}>{meetBusy ? "Sending…" : `Send ${persona} to Meet`}</Button>
-                      <p className="text-text-secondary text-[11px]">A VIGIL bot joins as a guest — admit it from the lobby. {meetMode === "realtime" ? "Il écoute et prend la parole pendant la réunion." : "Il retranscrit la réunion dans cette salle."}</p>
+                      <Button disabled={meetBusy || !meetUrl.trim()} onClick={() => void sendToMeet()}>{meetBusy ? "Envoi…" : "Envoyer l'assistant dans Meet"}</Button>
+                      <p className="text-text-secondary text-[11px]">L'assistant rejoint la réunion comme invité : admettez-le depuis la salle d'attente. {meetMode === "realtime" ? "Il écoute et prend la parole pendant la réunion." : "Il retranscrit la réunion dans cette salle."}</p>
                       {meetStatus && (
                         <div className="rounded-lg border border-current/10 p-2 space-y-2">
                           <div className="flex flex-wrap items-center gap-2 text-xs">
-                            <span className="rounded-full px-2 py-0.5" style={{ background: "#1f7a4c22", color: "var(--color-success)" }}>{meetStatus.state || (meetStatus.ok ? "in call" : meetStatus.reason || "—")}</span>
-                            <button className="text-text-secondary hover:text-foreground" onClick={() => void refreshMeetStatus()}>Refresh</button>
+                            <span className="rounded-full px-2 py-0.5" style={{ background: "#1f7a4c22", color: "var(--color-success)" }}>{meetStatus.state || (meetStatus.ok ? "en réunion" : meetStatus.reason || "—")}</span>
+                            <button className="text-text-secondary hover:text-foreground" onClick={() => void refreshMeetStatus()}>Actualiser</button>
                             <button className="text-text-secondary hover:text-foreground" disabled={meetBusy} onClick={() => void pullMeetNow()}>Récupérer la transcription</button>
-                            <button className="text-text-secondary hover:text-foreground" onClick={() => void leaveMeet()}>Leave</button>
-                            {meetImported !== null && <span className="text-text-secondary">+{meetImported} lines → room</span>}
+                            <button className="text-text-secondary hover:text-foreground" onClick={() => void leaveMeet()}>Retirer l'assistant</button>
+                            {meetImported !== null && <span className="text-text-secondary">+{meetImported} ligne{meetImported > 1 ? "s" : ""} ajoutée{meetImported > 1 ? "s" : ""} à la salle</span>}
                           </div>
                           {meetMode === "realtime" && (
                             <div className="flex items-center gap-2 text-xs">
-                              <input value={sayText} onChange={(e) => setSayText(e.target.value)} aria-label="Parler au nom de l'assistant" placeholder={`Make ${persona} say…`} onKeyDown={(e) => { if (e.key === "Enter") void sayInMeet(); }} className="flex-1 rounded border border-current/20 bg-transparent px-2 py-1" />
-                              <button className="text-text-secondary hover:text-foreground" onClick={() => void sayInMeet()}>Say</button>
+                              <input value={sayText} onChange={(e) => setSayText(e.target.value)} aria-label="Parler au nom de l'assistant" placeholder="Faire dire à l'assistant…" onKeyDown={(e) => { if (e.key === "Enter") void sayInMeet(); }} className="flex-1 rounded border border-current/20 bg-transparent px-2 py-1" />
+                              <button className="text-text-secondary hover:text-foreground" onClick={() => void sayInMeet()}>Dire</button>
                             </div>
                           )}
                         </div>
@@ -622,12 +628,12 @@ export default function MeetingRoomPage() {
                       <p className="text-text-secondary text-[11px]">Notez les points à trancher ci-dessous, puis convoquez un point de vue. Le conseil délibère en arrière-plan et rend son avis à droite.</p>
                       <div className="flex flex-wrap gap-2">
                         {LENSES.map((l) => (
-                          <Button key={l.key} size="sm" disabled={convening} onClick={() => void convene(l.key)}>{l.label} review</Button>
+                          <Button key={l.key} size="sm" disabled={convening} onClick={() => void convene(l.key)}>Avis {l.label.toLowerCase()}</Button>
                         ))}
                       </div>
                       <label className="flex items-center gap-2 text-xs text-text-secondary pt-1">
                         <button onClick={() => { setLiveAdvisor((v) => !v); setSuggestion(null); }} className="text-xs px-2.5 py-1 rounded-full border" style={{ borderColor: liveAdvisor ? "#1f7a4c66" : "currentColor", color: liveAdvisor ? "var(--color-success)" : undefined, background: liveAdvisor ? "#1f7a4c14" : "transparent" }}>
-                          {liveAdvisor ? "● Avis en direct listening" : "○ Avis en direct off"}
+                          {liveAdvisor ? "● Avis en direct : à l'écoute" : "○ Avis en direct : coupé"}
                         </button>
                         <span>Lève la main lorsqu'il a quelque chose à dire.</span>
                       </label>
@@ -635,7 +641,7 @@ export default function MeetingRoomPage() {
                         <div className="overflow-hidden rounded-lg border p-3 space-y-2" style={{ borderColor: "rgba(122,162,255,0.38)", background: "rgba(122,162,255,0.08)" }}>
                           <div className="flex items-center gap-2"><span aria-hidden className="h-3 w-[2px] rounded-full" style={{ background: METAL.accentSombre }} /><span className="text-[10px] font-mono uppercase tracking-wide" style={{ color: METAL.accentSombre }}>Un avis demande la parole</span></div>
                           <p className="text-sm text-foreground/90">{suggestion.message}</p>
-                          <div className="flex gap-2"><Button size="sm" onClick={() => void acceptSuggestion()}>Ajouter aux notes</Button><button className="text-xs text-text-secondary hover:text-foreground" onClick={() => setSuggestion(null)}>Dismiss</button></div>
+                          <div className="flex gap-2"><Button size="sm" onClick={() => void acceptSuggestion()}>Ajouter aux notes</Button><button className="text-xs text-text-secondary hover:text-foreground" onClick={() => setSuggestion(null)}>Ignorer</button></div>
                         </div>
                       )}
                     </div>
@@ -645,7 +651,7 @@ export default function MeetingRoomPage() {
 
               {/* Notes & transcript — supporting, always available */}
               <section>
-                <div className="text-xs font-semibold text-text-secondary mb-2">Notes &amp; transcript · {active.transcript.length}</div>
+                <div className="text-xs font-semibold text-text-secondary mb-2">Notes et transcription · {active.transcript.length}</div>
                 <ul className="space-y-1 max-h-[26vh] overflow-y-auto pr-1 mb-2">
                   {active.transcript.map((m, i) => (
                     <li key={i} className="text-sm leading-snug"><span className="font-mono text-foreground/90">{m.speaker}:</span> <span className="text-foreground/80">{m.text}</span></li>
@@ -653,18 +659,18 @@ export default function MeetingRoomPage() {
                   {active.transcript.length === 0 && <li className="text-text-secondary text-sm">Vide — notez ce qui se dit, ou laissez l'assistant Meet le remplir.</li>}
                 </ul>
                 <div className="flex gap-2">
-                  <input value={speaker} onChange={(e) => setSpeaker(e.target.value)} className="w-24 rounded border border-current/20 bg-transparent px-2 py-1.5 text-sm" aria-label="Nom de l'intervenant" placeholder="Speaker" />
-                  <input value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") void sendMessage(); }} className="flex-1 rounded border border-current/20 bg-transparent px-2 py-1.5 text-sm" aria-label="Ligne de transcription" placeholder="What was said…" />
-                  <Button size="sm" onClick={() => void sendMessage()} disabled={!text.trim()}>Add</Button>
+                  <input value={speaker} onChange={(e) => setSpeaker(e.target.value)} className="w-24 rounded border border-current/20 bg-transparent px-2 py-1.5 text-sm" aria-label="Nom de l'intervenant" placeholder="Qui parle" />
+                  <input value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") void sendMessage(); }} className="flex-1 rounded border border-current/20 bg-transparent px-2 py-1.5 text-sm" aria-label="Ligne de transcription" placeholder="Ce qui a été dit…" />
+                  <Button size="sm" onClick={() => void sendMessage()} disabled={!text.trim()}>Ajouter</Button>
                 </div>
               </section>
 
               {/* Close & summarize — the finish line */}
               <section className="border-t border-current/10 pt-4">
                 <Button disabled={summarizing || (active.transcript.length === 0 && !meetStatus)} onClick={() => void summarizeMeeting()}>
-                  {summarizing ? "Summarizing…" : "✓ Summarize & close meeting"}
+                  {summarizing ? "Synthèse en cours…" : "✓ Synthétiser et clore la réunion"}
                 </Button>
-                <p className="text-text-secondary text-[11px] mt-1.5">Pulls in the Google Meet captions (if any), writes a summary + action items to Studio, and files guests into CRM.</p>
+                <p className="text-text-secondary text-[11px] mt-1.5">Récupère la transcription de Meet s'il y en a une, rédige la synthèse et les décisions à suivre dans le Studio, et range les invités dans le CRM.</p>
                 {summary && (
                   <div className="mt-3 rounded-lg border border-current/15 p-3 space-y-2 text-sm">
                     <div className="flex flex-wrap gap-3 text-xs text-text-secondary">
@@ -692,7 +698,7 @@ export default function MeetingRoomPage() {
 
       {/* Council stream + verdict */}
       <Card>
-        <CardHeader><CardTitle>{convening ? "Council in session…" : "Council"}</CardTitle></CardHeader>
+        <CardHeader><CardTitle>{convening ? "Le conseil délibère…" : "Conseil"}</CardTitle></CardHeader>
         <CardContent className="space-y-3">
           {events.length === 0 && !record ? (
             <p className="text-text-secondary text-sm py-6 text-center">Convoquez un conseil pour voir les avis.</p>
@@ -716,7 +722,7 @@ export default function MeetingRoomPage() {
           {verdict && fi && (
             <div className="rounded-lg border border-current/15 p-3 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-mono uppercase tracking-wide text-text-secondary">Verdict</span>
+                <span className="text-[10px] font-mono uppercase tracking-wide text-text-secondary">Avis</span>
                 <span
                   className="text-xs font-mono px-2 py-0.5 rounded"
                   style={{
@@ -724,14 +730,14 @@ export default function MeetingRoomPage() {
                     background: verdict.readiness_pass ? "#00ff881a" : "#f59e0b1a",
                   }}
                 >
-                  readiness {verdict.readiness_score} · {verdict.consensus_reached ? "consensus" : "chairman"}
+                  maturité {verdict.readiness_score} · {verdict.consensus_reached ? "consensus" : "arbitrage"}
                 </span>
               </div>
               {fi.intervention_text && <p className="text-sm text-foreground/90">{fi.intervention_text}</p>}
-              {fi.category && <p className="text-xs text-text-secondary">Category: {fi.category} · confidence {fi.confidence ?? "—"}</p>}
+              {fi.category && <p className="text-xs text-text-secondary">Catégorie : {fi.category} · confiance {fi.confidence ?? "—"}</p>}
               {fi.reasoning && <p className="text-xs text-text-secondary italic">{fi.reasoning}</p>}
               <p className="text-[10px] text-text-secondary font-mono">
-                {record.totals.n_llm_calls} calls · {record.totals.latency_ms_total}ms · ${record.totals.cost_usd}
+                {record.totals.n_llm_calls} appels · {record.totals.latency_ms_total} ms · {record.totals.cost_usd} $
               </p>
             </div>
           )}

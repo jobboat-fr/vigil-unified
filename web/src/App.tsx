@@ -388,7 +388,8 @@ const BUILTIN_NAV_REST: NavItem[] = [
   { path: "/meeting-room", label: "Salle de réunion", icon: Video, group: "workspace", roles: ["super_admin", "admin", "formateur", "entreprise", "apprenant", "auditeur"], capability: ["room", "read"] },
   { path: "/studio", label: "Studio", icon: PenLine, group: "workspace", roles: ["super_admin", "admin", "formateur", "entreprise", "apprenant", "auditeur"], capability: ["studio", "read"] },
   { path: "/studio/projets", label: "Projets", icon: FolderKanban, group: "workspace", roles: ["super_admin", "admin", "formateur", "entreprise", "apprenant", "auditeur"], capability: ["studio", "read"] },
-  { path: "/vault", label: "Artéfacts", icon: Lock, group: "workspace", roles: ["super_admin", "admin"], capability: ["legal", "read"] },
+  // Les artéfacts de chacun (Studio, synthèses, travaux d'agent) : mêmes droits que le Studio (29/09).
+  { path: "/vault", label: "Artéfacts", icon: Lock, group: "workspace", roles: ["super_admin", "admin", "formateur", "entreprise", "apprenant", "auditeur"], capability: ["studio", "read"] },
   // ── Company ──
   { path: "/learn", label: "Tableau de bord", icon: GraduationCap, group: "learn" },
   { path: "/learn/calendar", label: "Calendrier", icon: CalendarDays, group: "learn" },
