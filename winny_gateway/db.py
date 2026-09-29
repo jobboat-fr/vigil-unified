@@ -120,7 +120,6 @@ _USER_SCOPED_TABLES = frozenset({
     "trade_history",
     "portfolio_snapshots",
     "user_preferences",
-    "auto_trade_config",
     "broker_credentials",
     "audit_events",
     "vault_documents",

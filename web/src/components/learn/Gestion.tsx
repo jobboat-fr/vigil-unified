@@ -141,7 +141,7 @@ export function FormulaireCompte({ roles, onCree }: { roles: string[]; onCree: (
 // ── Programmes ───────────────────────────────────────────────────────────────────────
 
 export function FormulaireProgramme({ onCree }: { onCree: () => void }) {
-  const vide = { title: "", code: "", duration_hours: "21", modality: "distanciel", objectives: "", prerequisites: "", published: true, theme_declare: "" };
+  const vide = { title: "", code: "", duration_hours: "21", modality: "presentiel", objectives: "", prerequisites: "", published: true, theme_declare: "" };
   const [f, setF] = useState(vide);
   const { busy, message, run } = useEnvoi();
   return (
@@ -175,7 +175,7 @@ export function FormulaireProgramme({ onCree }: { onCree: () => void }) {
       <select className={champ} value={f.modality} onChange={(e) => setF({ ...f, modality: e.target.value })} aria-label="Modalité">
         <option value="distanciel">Distanciel</option>
         <option value="presentiel">Présentiel</option>
-        <option value="mixte">Mixte</option>
+        <option value="mixte">Mixte — en salle, à distance sur demande</option>
       </select>
       <textarea className={`${champ} sm:col-span-2`} rows={2} placeholder="Objectifs" value={f.objectives} onChange={(e) => setF({ ...f, objectives: e.target.value })} />
       <textarea className={`${champ} sm:col-span-2`} rows={2} placeholder="Prérequis" value={f.prerequisites} onChange={(e) => setF({ ...f, prerequisites: e.target.value })} />
@@ -214,7 +214,7 @@ export function FormulaireProgramme({ onCree }: { onCree: () => void }) {
 // ── Sessions ─────────────────────────────────────────────────────────────────────────
 
 export function FormulaireSession({ programId, modalite, onCree }: { programId: string; modalite?: string; onCree: () => void }) {
-  const vide = { starts_on: "", ends_on: "", code: "", capacity: "12", modality: modalite ?? "distanciel", place: "", effectif_minimum: "0" };
+  const vide = { starts_on: "", ends_on: "", code: "", capacity: "12", modality: modalite ?? "presentiel", place: "", effectif_minimum: "0" };
   const [f, setF] = useState(vide);
   const { busy, message, run } = useEnvoi();
   return (
@@ -250,7 +250,7 @@ export function FormulaireSession({ programId, modalite, onCree }: { programId: 
       <select className={champ} value={f.modality} onChange={(e) => setF({ ...f, modality: e.target.value })} aria-label="Modalité">
         <option value="distanciel">Distanciel</option>
         <option value="presentiel">Présentiel</option>
-        <option value="mixte">Mixte</option>
+        <option value="mixte">Mixte — en salle, à distance sur demande</option>
       </select>
       <input className={champ} placeholder="Lieu (facultatif)" value={f.place} onChange={(e) => setF({ ...f, place: e.target.value })} />
       <div className="flex items-center gap-3 sm:col-span-3">

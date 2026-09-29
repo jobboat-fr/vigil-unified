@@ -40,7 +40,6 @@ _USER_DATA_TABLES = [
     "approval_requests",
     "trade_history",
     "portfolio_snapshots",
-    "auto_trade_config",
     "support_tickets",
 ]
 
