@@ -33,6 +33,7 @@ import type {
 import { useModalBehavior } from "@/hooks/useModalBehavior";
 import { usePageHeader } from "@/contexts/usePageHeader";
 import { cn, themedBody } from "@/lib/utils";
+import { expliquerCourt } from "@/lib/refus";
 
 // State → badge mapping. The backend emits a small, fixed vocabulary plus
 // whatever the live gateway runtime reports (connected/disconnected/fatal).
@@ -566,7 +567,7 @@ function TelegramOnboardingPanel({
       setPhase("waiting");
     } catch (startError) {
       setPhase("idle");
-      setError(String(startError));
+      setError(expliquerCourt(startError));
     }
   };
 
@@ -654,7 +655,7 @@ function TelegramOnboardingPanel({
       await onChanged();
     } catch (applyError) {
       setPhase("ready");
-      setError(String(applyError));
+      setError(expliquerCourt(applyError));
     }
   };
 

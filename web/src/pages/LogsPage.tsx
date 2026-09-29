@@ -17,6 +17,7 @@ import { Label } from "@nous-research/ui/ui/components/label";
 import { useI18n } from "@/i18n";
 import { usePageHeader } from "@/contexts/usePageHeader";
 import { PluginSlot } from "@/plugins";
+import { expliquerCourt } from "@/lib/refus";
 
 const FILES = ["agent", "errors", "gateway"] as const;
 const LEVELS = ["ALL", "DEBUG", "INFO", "WARNING", "ERROR"] as const;
@@ -81,7 +82,7 @@ export default function LogsPage() {
           }
         }, 50);
       })
-      .catch((err) => setError(String(err)))
+      .catch((err) => setError(expliquerCourt(err)))
       .finally(() => setLoading(false));
   }, [file, lineCount, level, component]);
 

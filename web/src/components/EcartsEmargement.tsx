@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { vigil, type AttendanceCheck } from "@/lib/vigil";
+import { expliquerCourt } from "@/lib/refus";
 
 const LIBELLE: Record<string, string> = {
   present_non_signe: "présent en visio, n'a pas émargé",
@@ -21,7 +22,7 @@ export function EcartsEmargement({ roomId }: { roomId: string }) {
     vigil.rooms
       .attendanceCheck(roomId)
       .then((d) => alive && setData(d))
-      .catch((e: Error) => alive && setErreur(e.message));
+      .catch((e: Error) => alive && setErreur(expliquerCourt(e)));
     return () => {
       alive = false;
     };

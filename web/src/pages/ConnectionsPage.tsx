@@ -99,6 +99,9 @@ export default function ConnectionsPage() {
       await vigil.connect.disconnect(c.id);
       note(c.provider, "Déconnecté.");
       await refresh();
+    } catch (e) {
+      // Sans ce `catch`, un refus laissait croire que rien ne s'était passé (audit du 29/09).
+      note(c.provider, "", expliquerCourt(e));
     } finally {
       setBusy("");
     }

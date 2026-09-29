@@ -493,5 +493,29 @@ function phrasePrete(e: ErreurConnue): string | null {
 /** Une ligne, pour les endroits trop étroits pour un bloc — un toast, une cellule. */
 export function expliquerCourt(erreur: unknown, quoi?: string): string {
   const x = expliquer(erreur, quoi);
+  if (x.offre) annoncerOffre(x);
   return x.detail ? `${x.titre} — ${x.detail}` : x.titre;
+}
+
+/**
+ * Un refus d'offre lu en une ligne (toast, cellule, message sous un bouton) ne peut pas porter
+ * l'offre d'entrée : seul le bloc <Refus> la montre. Soixante-trois écrans passent par ici
+ * (audit du 29/09) ; plutôt que de les reprendre un à un, la ligne annonce le refus à la
+ * fenêtre d'offre de l'application (<FenetreOffre>), qui fait le reste — la même explication,
+ * « D'accord », puis l'offre, partout.
+ *
+ * Annoncé après le rendu (certains écrans appellent cette fonction en rendant), et une seule
+ * fois par refus : un même refus relu au rendu suivant ne rouvre pas une fenêtre fermée.
+ */
+export const EVENEMENT_OFFRE = "vtlvs:offre";
+const DEJA_ANNONCES = new Map<string, number>();
+const RELANCE_MS = 5 * 60_000;
+
+function annoncerOffre(x: Explication): void {
+  if (typeof window === "undefined" || !x.offre) return;
+  const cle = `${x.titre}|${x.offre.agent ?? ""}|${x.offre.ressource ?? ""}`;
+  const dernier = DEJA_ANNONCES.get(cle) ?? 0;
+  if (Date.now() - dernier < RELANCE_MS) return;
+  DEJA_ANNONCES.set(cle, Date.now());
+  queueMicrotask(() => window.dispatchEvent(new CustomEvent(EVENEMENT_OFFRE, { detail: x })));
 }

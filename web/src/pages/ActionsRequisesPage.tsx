@@ -57,9 +57,12 @@ export default function ActionsRequisesPage() {
   }, [filtre]);
   useEffect(() => void charger(), [charger]);
   useEffect(() => {
-    getPolitique().then(setPol).catch(() => undefined);
-    getProfiles().then((r) => setPersonnes(r.items)).catch(() => undefined);
-    getSessions().then((r) => setSessions((r as { items: Session[] }).items ?? [])).catch(() => undefined);
+    // Si une liste ne se charge pas, le sélecteur resterait vide sans raison : on le dit.
+    const signaler = (quoi: string) => (e: unknown) =>
+      setMsg({ ok: false, texte: `${quoi} n'a pas pu être chargée. ${messageAccueil(e)}` });
+    getPolitique().then(setPol).catch(signaler("La politique de rappel"));
+    getProfiles().then((r) => setPersonnes(r.items)).catch(signaler("La liste des personnes"));
+    getSessions().then((r) => setSessions((r as { items: Session[] }).items ?? [])).catch(signaler("La liste des sessions"));
   }, []);
 
   const agir = async (fn: () => Promise<unknown>, ok: string) => {

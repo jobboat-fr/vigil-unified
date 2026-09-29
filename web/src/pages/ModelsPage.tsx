@@ -32,6 +32,7 @@ import { usePageHeader } from "@/contexts/usePageHeader";
 import { useI18n } from "@/i18n";
 import { PluginSlot } from "@/plugins";
 import { ModelPickerDialog } from "@/components/ModelPickerDialog";
+import { expliquerCourt } from "@/lib/refus";
 
 const PERIODS = [
   { label: "7d", days: 7 },
@@ -546,12 +547,14 @@ function AuxiliaryTasksModal({
 }) {
   const [picker, setPicker] = useState<PickerTarget | null>(null);
   const [resetBusy, setResetBusy] = useState(false);
+  const [resetErreur, setResetErreur] = useState<string | null>(null);
   const [confirmReset, setConfirmReset] = useState(false);
   const modalRef = useModalBehavior({ open: true, onClose });
 
   const resetAllAux = async () => {
     setConfirmReset(false);
     setResetBusy(true);
+    setResetErreur(null);
     try {
       await api.setModelAssignment({
         scope: "auxiliary",
@@ -560,6 +563,8 @@ function AuxiliaryTasksModal({
         model: "",
       });
       onSaved();
+    } catch (e) {
+      setResetErreur(expliquerCourt(e));
     } finally {
       setResetBusy(false);
     }
@@ -603,6 +608,7 @@ function AuxiliaryTasksModal({
             >
               Tout remettre sur auto
             </Button>
+            {resetErreur && <span role="alert" className="text-xs text-destructive">{resetErreur}</span>}
           </div>
           <p className="text-xs text-text-secondary mt-2">
             Tâches auxiliaires handle side-jobs like vision, session search, and
@@ -866,7 +872,7 @@ export default function ModelsPage() {
         setData(models);
         setAux(auxData);
       })
-      .catch((err) => setError(String(err)))
+      .catch((err) => setError(expliquerCourt(err)))
       .finally(() => setLoading(false));
   }, [days]);
 

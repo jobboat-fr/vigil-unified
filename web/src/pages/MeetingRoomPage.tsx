@@ -204,7 +204,8 @@ export default function MeetingRoomPage() {
   const [searchParams] = useSearchParams();
   const salleDemandee = searchParams.get("salle");
   useEffect(() => {
-    if (salleDemandee) reloadActive(salleDemandee).catch(() => undefined);
+    // Une salle introuvable ou qui n'est pas la vôtre : on le dit, plutôt qu'un écran inchangé.
+    if (salleDemandee) reloadActive(salleDemandee).catch((e) => setAuthError(e));
   }, [salleDemandee, reloadActive]);
 
   const createRoom = async () => {

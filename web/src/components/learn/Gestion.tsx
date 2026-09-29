@@ -64,9 +64,10 @@ export function FormulaireCompte({ roles, onCree }: { roles: string[]; onCree: (
   // Le formulaire proposait le rôle sans jamais demander la société : la création
   // échouait à tous les coups, sur un « invalid_value » que personne ne pouvait lire.
   const [societes, setSocietes] = useState<{ id: string; name: string }[]>([]);
+  const [societesErreur, setSocietesErreur] = useState(false);
   useEffect(() => {
     if (f.role !== "entreprise" || societes.length) return;
-    void listCompanies().then((r) => setSocietes(r.items)).catch(() => undefined);
+    void listCompanies().then((r) => setSocietes(r.items)).catch(() => setSocietesErreur(true));
   }, [f.role, societes.length]);
   const { busy, message, run } = useEnvoi();
   useEffect(() => {
@@ -122,6 +123,9 @@ export function FormulaireCompte({ roles, onCree }: { roles: string[]; onCree: (
           {/* Choisir une société existante ou en nommer une nouvelle : le serveur
               rattache à celle qui porte ce nom, et ne la crée que si elle manque —
               sans quoi deux collègues finiraient dans deux sociétés homonymes. */}
+          {societesErreur && (
+            <span className="text-xs text-text-secondary">La liste des sociétés n'a pas pu être chargée : saisissez le nom en entier.</span>
+          )}
           <datalist id="societes-clientes">
             {societes.map((s) => <option key={s.id} value={s.name} />)}
           </datalist>

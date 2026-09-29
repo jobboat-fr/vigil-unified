@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { expliquer } from "./refus";
 
 // Un refus d'offre (402) s'explique, puis porte de quoi montrer l'offre d'entrée (Azer, 29/09).
@@ -36,5 +36,26 @@ describe("refus d'offre → offre d'entrée", () => {
   it("le créneau de l'assistant reste un cas à part, sans offre", () => {
     const x = expliquer(refus402({ error: "assistant_hors_formation" }));
     expect(x.offre).toBeUndefined();
+  });
+});
+
+describe("refus d'offre lu en une ligne → fenêtre d'offre", () => {
+  it("annonce une fois, pas à chaque rendu ; rien pour une erreur ordinaire", async () => {
+    const { expliquerCourt, EVENEMENT_OFFRE } = await import("./refus");
+    const recus: unknown[] = [];
+    const cible = new EventTarget();
+    cible.addEventListener(EVENEMENT_OFFRE, (ev) => recus.push((ev as CustomEvent).detail));
+    vi.stubGlobal("window", cible);
+    try {
+      const e = refus402({ error: "abonnement_requis", agent: "azzcom", role: "admin" });
+      expliquerCourt(e, "la relance");
+      expliquerCourt(e, "la relance"); // re-rendu : même refus
+      expliquerCourt({ status: 500 }, "la liste");
+      await Promise.resolve();
+      expect(recus).toHaveLength(1);
+      expect((recus[0] as { offre: unknown }).offre).toEqual({ agent: "azzcom", peutSouscrire: true });
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });

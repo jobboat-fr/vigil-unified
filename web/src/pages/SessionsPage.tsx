@@ -59,6 +59,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@nous-research/ui/ui/components/dialog";
+import { expliquerCourt } from "@/lib/refus";
 import { useSystemActions } from "@/contexts/useSystemActions";
 import { useToast } from "@nous-research/ui/hooks/use-toast";
 import { useI18n } from "@/i18n";
@@ -391,6 +392,7 @@ function SessionRow({
   const [renaming, setRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(session.title ?? "");
   const [renameSaving, setRenameSaving] = useState(false);
+  const [renameErreur, setRenameErreur] = useState<string | null>(null);
   const { t } = useI18n();
   const navigate = useNavigate();
 
@@ -400,7 +402,7 @@ function SessionRow({
       api
         .getSessionMessages(session.id)
         .then((resp) => setMessages(resp.messages))
-        .catch((err) => setError(String(err)))
+        .catch((err) => setError(expliquerCourt(err)))
         .finally(() => setLoading(false));
     }
   }, [isExpanded, session.id, messages, loading]);
@@ -418,9 +420,12 @@ function SessionRow({
       return;
     }
     setRenameSaving(true);
+    setRenameErreur(null);
     try {
       await onRename(session.id, value);
       setRenaming(false);
+    } catch (e) {
+      setRenameErreur(expliquerCourt(e));
     } finally {
       setRenameSaving(false);
     }
@@ -584,6 +589,7 @@ function SessionRow({
                     >
                       <X />
                     </Button>
+                    {renameErreur && <span role="alert" className="text-xs text-destructive">{renameErreur}</span>}
                   </div>
                 ) : (
                   <span

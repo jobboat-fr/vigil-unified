@@ -96,6 +96,7 @@ import { FrontiereErreur } from "@/components/ErreurEcran";
 import { MarqueVtlvs, MOT } from "@/components/MarqueVtlvs";
 import { BandeauReseau } from "@/components/BandeauReseau";
 import { BandeauVersion } from "@/components/BandeauVersion";
+import { FenetreOffre } from "@/components/FenetreOffre";
 import { PageHeaderProvider } from "@/contexts/PageHeaderProvider";
 import { ProfileProvider } from "@/contexts/ProfileProvider";
 import { useProfileScope } from "@/contexts/useProfileScope";
@@ -1139,6 +1140,7 @@ export default function App() {
               >
                 <BandeauReseau />
                 <BandeauVersion />
+                <FenetreOffre />
                 {/* Sur une page métier, dire quel agent la couvre — et rien ailleurs. */}
                 <AgentDeLaPage />
                 <AssistantIndisponible />

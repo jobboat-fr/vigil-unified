@@ -35,6 +35,7 @@ import { HERMES_BASE_PATH, buildWsAuthParam } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { AlertCircle, ChevronDown, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { expliquerCourt } from "@/lib/refus";
 
 interface SessionInfo {
   cwd?: string;
@@ -134,7 +135,7 @@ export function ChatSidebar({ channel, className }: ChatSidebarProps) {
       })
       .catch((e: Error) => {
         if (!cancelled) {
-          setError(e.message);
+          setError(expliquerCourt(e));
         }
       });
 
