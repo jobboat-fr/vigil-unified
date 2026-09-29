@@ -13,6 +13,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
 
+from winny_gateway import droits_agents
 from winny_gateway.auth import get_current_user
 from winny_gateway.db import db_insert, db_select, db_update
 from winny_gateway.logging import get_logger
@@ -31,6 +32,22 @@ logger = get_logger(__name__)
 router = APIRouter(prefix="/v1/ops", tags=["ops"])
 
 _TABLE = "departments"
+
+# Chaque pôle est porté par l'un des trois agents, selon sa mission (Azer, 29/09 : « rattacher
+# les pôles aux trois agents »). Les pôles venaient de WinnyWoo et ne passaient que par
+# l'ancien quota de formule : un organisme sans abonnement les faisait tourner quand même.
+# Désormais chaque exécution — autotest compris, il appelle aussi un modèle — passe par le
+# verrou d'abonnement de SON agent.
+AGENT_DU_POLE: dict[str, str] = {
+    "finance": "azzco",      # factures, rapprochements, échéances
+    "legal": "azzco",        # obligations légales
+    "cos": "azzco",          # coordination : aiguiller, préparer les points
+    "support": "azzcom",     # relation client : trier, répondre
+    "revenue": "azzcom",     # relances commerciales
+    "marketing": "azzcom",   # campagnes
+    "growth": "azzcom",      # prospection
+    "operations": "azzmin",  # supervision de la plateforme
+}
 
 
 def _uid(user: dict[str, Any]) -> str:
@@ -55,6 +72,7 @@ def _public(row: dict[str, Any]) -> dict[str, Any]:
         "guardrails": row.get("guardrails") or {},
         "health": row.get("health") or {},
         "jobs": jobs,
+        "agent": AGENT_DU_POLE.get(row.get("slug") or ""),
         "primary_job": primary_job(spec) if spec else None,
         "created_at": row.get("created_at"),
         "updated_at": row.get("updated_at"),
@@ -109,6 +127,11 @@ class RunBody(BaseModel):
 
 
 async def _dispatch(uid: str, dept: dict[str, Any], job: str, inp: dict[str, Any], trigger: str) -> dict[str, Any]:
+    # Abonnement d'abord : un pôle sans agent connu est refusé plutôt qu'ouvert par défaut.
+    agent = AGENT_DU_POLE.get(dept.get("slug") or "")
+    if agent is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail={"error": "pole_inconnu"})
+    await droits_agents.verifier(uid, agent)
     # Plan quota gate (commercial model) — refuse over the plan's daily run cap.
     allowed, usage = await billing.check_run_quota(uid)
     if not allowed:

@@ -11,6 +11,7 @@ import { AuthProvider } from "./context/AuthContext";
 import { AuthGate } from "./components/AuthGate";
 import { FrontiereErreur } from "./components/ErreurEcran";
 import { initNativeShell } from "./lib/native";
+import { installerRepriseDeVersion } from "./lib/nouvelleVersion";
 import GuestMeetingPage from "./pages/GuestMeetingPage";
 import PartageArtefactPage from "./pages/PartageArtefactPage";
 import ActiverComptePage from "./pages/ActiverComptePage";
@@ -21,6 +22,9 @@ import NouveauMotDePassePage from "./pages/NouveauMotDePassePage";
 // Expose the plugin SDK before rendering so plugins loaded via <script>
 // can access React, components, etc. immediately.
 exposePluginSDK();
+
+// Un onglet plus vieux que le dernier déploiement se recharge au lieu de casser.
+installerRepriseDeVersion();
 
 // Capacitor mobile shell (Android back button, status bar) — no-op in browsers.
 void initNativeShell();

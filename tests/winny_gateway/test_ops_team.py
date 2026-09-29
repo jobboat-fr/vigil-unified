@@ -197,3 +197,38 @@ def test_department_is_user_scoped(client):
     did = _support_id(client)
     client.app.dependency_overrides[get_current_user] = lambda: {"sub": "user-2", "email": "b@x.com"}
     assert client.get(f"/v1/ops/departments/{did}").status_code == 404
+
+
+# ── Chaque pôle passe par le verrou d'abonnement de son agent (29/09) ─────────
+def _abonner(client, abonnements: list[str]) -> None:
+    from winny_gateway import droits_agents
+    client.db.tables["learn_profiles"] = [{"id": "user-1", "role": "admin", "tenant_id": "t1"}]
+    client.db.tables["learn_tenants"] = [{"id": "t1", "abonnements": abonnements}]
+    client.monkeypatch.setattr(droits_agents, "db_select", client.db.select)
+    client.monkeypatch.setenv("AGENTS_ABONNEMENT_MODE", "enforce")
+
+
+def test_chaque_pole_est_porte_par_un_agent(client):
+    from winny_gateway.ops.engine import DEPARTMENTS
+    depts = _data(client.get("/v1/ops/departments"))["departments"]
+    assert {d["slug"] for d in depts} == set(DEPARTMENTS)
+    assert all(d["agent"] in ("azzmin", "azzco", "azzcom") for d in depts)
+
+
+def test_pole_refuse_sans_l_abonnement_de_son_agent(client):
+    _abonner(client, ["azzco"])  # AZZCO seulement : le Support est porté par AZZCOM
+    did = _support_id(client)
+    _seed_inbox(client.db, "user-1", 2)
+    for chemin in (f"/v1/ops/departments/{did}/run", f"/v1/ops/departments/{did}/selftest"):
+        r = client.post(chemin, json={})
+        assert r.status_code == 402, r.text
+        assert r.json()["detail"]["agent"] == "azzcom"
+    assert not any(m.get("triaged") for m in client.db.tables["mail_messages"])  # rien n'a tourné
+    assert client.db.tables.get("ops_tasks", []) == []
+
+
+def test_pole_ouvert_avec_l_abonnement_de_son_agent(client):
+    _abonner(client, ["azzcom"])
+    did = _support_id(client)
+    _seed_inbox(client.db, "user-1", 1)
+    assert _data(client.post(f"/v1/ops/departments/{did}/run", json={}))["task"]["status"] == "done"

@@ -494,6 +494,8 @@ export interface Department {
   id: string;
   slug: string;
   name: string;
+  /** L'agent qui porte ce pôle : son abonnement ouvre ou ferme les exécutions. */
+  agent?: "azzmin" | "azzco" | "azzcom" | null;
   head_lens: string | null;
   mandate: string;
   kpis: { key: string; label: string; target: string }[];

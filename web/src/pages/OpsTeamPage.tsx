@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useState } from "react";
 import { SkeletonRows } from "@/components/EmptyState";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { Lock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { EnTetePage } from "@/components/EnTetePage";
 import { vigil, type Department, type OpsEvent, type OpsTask, type OpsUsage } from "@/lib/vigil";
-import { GatewayError } from "@/lib/ww";
 import AgentsMarques from "@/components/AgentsMarques";
 import { useLearnRole } from "@/lib/supabase";
-import { expliquerCourt } from "@/lib/refus";
+import { Refus } from "@/components/Refus";
+import { AGENTS, useAbonnementAgents } from "@/lib/agentique";
 import { mandatPole, nomFormule, nomPole, nomTravail, regardPole, statutPole, statutTachePole } from "@/lib/mots";
 
 // Ops Team — the agentic company. Departments are on-demand agent units; each
@@ -33,7 +34,11 @@ export default function OpsTeamPage() {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [events, setEvents] = useState<OpsEvent[]>([]);
   const [usage, setUsage] = useState<OpsUsage | null>(null);
-  const [authError, setAuthError] = useState<string | null>(null);
+  const [authError, setAuthError] = useState<unknown>(null);
+  // L'erreur d'un pôle s'affiche DANS sa carte : un refus d'abonnement du Support n'a rien à
+  // faire en haut de page, loin du bouton qui l'a provoqué.
+  const [erreurs, setErreurs] = useState<Record<string, unknown>>({});
+  const { estAbonne } = useAbonnementAgents();
   const [busy, setBusy] = useState<Record<string, string>>({});
   const [result, setResult] = useState<Record<string, OpsTask>>({});
   const [pausing, setPausing] = useState(false);
@@ -49,8 +54,7 @@ export default function OpsTeamPage() {
       setUsage(usage);
       setAuthError(null);
     } catch (e) {
-      if (e instanceof GatewayError && e.code === "NO_SESSION") setAuthError("Connectez-vous pour ouvrir l'équipe agentique.");
-      else setAuthError(expliquerCourt(e));
+      setAuthError(e);
     }
   }, []);
 
@@ -61,12 +65,13 @@ export default function OpsTeamPage() {
 
   const act = async (d: Department, action: string) => {
     setBusy((b) => ({ ...b, [d.id]: action }));
+    setErreurs((x) => ({ ...x, [d.id]: null }));
     try {
       const { task } = action === "selftest" ? await vigil.ops.selftest(d.id) : await vigil.ops.run(d.id, action);
       setResult((r) => ({ ...r, [d.id]: task }));
       await refresh();
     } catch (e) {
-      setAuthError(expliquerCourt(e));
+      setErreurs((x) => ({ ...x, [d.id]: e }));
     } finally {
       setBusy((b) => ({ ...b, [d.id]: "" }));
     }
@@ -79,6 +84,9 @@ export default function OpsTeamPage() {
       if (anyPaused) await vigil.ops.resumeAll();
       else await vigil.ops.pauseAll();
       await refresh();
+    } catch (e) {
+      // Sans ce `catch`, un refus laissait le bouton sans réponse (audit du 29/09).
+      setAuthError(e);
     } finally {
       setPausing(false);
     }
@@ -110,9 +118,7 @@ export default function OpsTeamPage() {
       {/* Les agents d'AZZ&CO Labs passent avant les pôles : c'est ce que le client achète. */}
       <AgentsMarques role={role as never} />
 
-      {authError && (
-        <Card><CardContent className="py-4 text-sm" style={{ color: "var(--color-warning)" }}>{authError}</CardContent></Card>
-      )}
+      {authError != null && <Refus erreur={authError} quoi="l'équipe agentique" onReessayer={() => void refresh()} />}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-md p-3" style={{ background: "var(--color-background-secondary, rgba(127,127,127,0.06))" }}>
@@ -142,6 +148,8 @@ export default function OpsTeamPage() {
         {departments.map((d) => {
           const r = result[d.id];
           const b = busy[d.id];
+          const porteur = AGENTS.find((a) => a.id === d.agent);
+          const ouvert = !d.agent || estAbonne(d.agent);
           return (
             <Card key={d.id}>
               <CardHeader>
@@ -157,6 +165,20 @@ export default function OpsTeamPage() {
               </CardHeader>
               <CardContent className="flex flex-col gap-3">
                 <p className="text-sm text-text-secondary leading-snug">{mandatPole(d.slug, d.mandate)}</p>
+                {porteur && (
+                  <p className="text-xs">
+                    Porté par <span className="font-semibold">{porteur.nom}</span>
+                    {!ouvert && (
+                      <span className="mt-1 flex items-start gap-1.5 text-text-secondary">
+                        <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+                        <span>
+                          Réservé aux organismes abonnés à {porteur.nom}.{" "}
+                          <Link to="/abonnement" className="font-medium text-foreground underline">Voir l'abonnement</Link>
+                        </span>
+                      </span>
+                    )}
+                  </p>
+                )}
                 <p className="text-[11px] text-text-secondary font-mono">{healthLine(d)}</p>
                 {r && (
                   <div
@@ -184,13 +206,14 @@ export default function OpsTeamPage() {
                     )}
                   </div>
                 )}
+                {erreurs[d.id] != null && <Refus erreur={erreurs[d.id]} quoi={`le pôle ${nomPole(d.slug, d.name)}`} compact />}
                 <div className="flex flex-wrap gap-2">
                   {(d.jobs.length ? d.jobs : ["run"]).map((job) => (
-                    <Button key={job} onClick={() => void act(d, job)} disabled={!!b || d.paused}>
+                    <Button key={job} onClick={() => void act(d, job)} disabled={!!b || d.paused || !ouvert}>
                       {b === job ? "En cours…" : nomTravail(job)}
                     </Button>
                   ))}
-                  <Button ghost onClick={() => void act(d, "selftest")} disabled={!!b || d.paused}>
+                  <Button ghost onClick={() => void act(d, "selftest")} disabled={!!b || d.paused || !ouvert}>
                     {b === "selftest" ? "Test en cours…" : "Autotest"}
                   </Button>
                 </div>
@@ -198,7 +221,7 @@ export default function OpsTeamPage() {
             </Card>
           );
         })}
-        {departments.length === 0 && !authError && (
+        {departments.length === 0 && authError == null && (
           <Card><CardContent className="py-6"><SkeletonRows rows={4} /></CardContent></Card>
         )}
       </div>

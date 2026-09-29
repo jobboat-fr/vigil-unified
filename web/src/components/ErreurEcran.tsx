@@ -1,6 +1,7 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { estEchecDeModule, rechargerPourNouvelleVersion } from "@/lib/nouvelleVersion";
 import { derniereReference, referenceCourte } from "@/lib/reference";
 
 /**
@@ -88,15 +89,21 @@ export function EcranErreur({
  */
 export class FrontiereErreur extends Component<
   { children: ReactNode; titre?: string; cle?: string },
-  { erreur: Error | null; reference?: string }
+  { erreur: Error | null; reference?: string; recharge?: boolean }
 > {
-  state: { erreur: Error | null; reference?: string } = { erreur: null };
+  state: { erreur: Error | null; reference?: string; recharge?: boolean } = { erreur: null };
 
   static getDerivedStateFromError(erreur: Error) {
     return { erreur, reference: derniereReference() };
   }
 
   componentDidCatch(erreur: Error, info: ErrorInfo) {
+    // Un onglet plus vieux que le déploiement : on prend la version en ligne, sans écran
+    // d'incident — ce n'en est pas un (voir lib/nouvelleVersion).
+    if (estEchecDeModule(erreur) && rechargerPourNouvelleVersion()) {
+      this.setState({ recharge: true });
+      return;
+    }
     // La console reste la source pour le développement ; en production, l'important est
     // que la personne ait une sortie, pas qu'on remonte une pile au serveur.
     console.error("[frontière] écran interrompu", erreur, info.componentStack);
@@ -110,6 +117,24 @@ export class FrontiereErreur extends Component<
 
   render() {
     if (!this.state.erreur) return this.props.children;
+    if (this.state.recharge) {
+      return (
+        <div role="status" className="flex min-h-0 flex-1 items-center justify-center px-4 py-10 text-sm text-text-secondary">
+          Une nouvelle version est en ligne — chargement…
+        </div>
+      );
+    }
+    if (estEchecDeModule(this.state.erreur)) {
+      // Le rechargement a déjà été tenté : le fichier manque vraiment, ou le réseau est coupé.
+      return (
+        <EcranErreur
+          titre="Cet écran n'a pas pu se charger"
+          cause="La page n'a pas pu être téléchargée : la connexion est peut-être coupée, ou une mise à jour est en cours."
+          reference={this.state.reference}
+          onReessayer={() => window.location.reload()}
+        />
+      );
+    }
     return (
       <EcranErreur
         titre={this.props.titre}

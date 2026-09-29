@@ -8,12 +8,22 @@ import { EcartsEmargement } from "@/components/EcartsEmargement";
 import { expliquer, expliquerCourt } from "@/lib/refus";
 import { Refus } from "@/components/Refus";
 
-const PERSONAS = ["CFO", "CTO", "COO", "CRM", "CRO", "advisor"] as const;
 // Les identifiants partent au serveur tels quels ; seul leur libellé est traduit.
 const LIBELLE_PERSONA: Record<string, string> = {
   CFO: "Finances", CTO: "Technique", COO: "Opérations", CRM: "Relation client", CRO: "Commercial", advisor: "Conseil",
 };
 const libellePersona = (p: string) => LIBELLE_PERSONA[p] ?? p;
+/**
+ * Le siège de l'assistant découle des points de vue retenus à l'étape 1.
+ *
+ * On le choisissait une seconde fois à l'étape 3, dans une autre liste (« Siège :
+ * CFO, CTO, COO… ») — deux choix pour la même idée (capture d'Azer, 29/09). Un seul point
+ * de vue qui a son siège → l'assistant parle depuis ce siège ; sinon il siège en « Conseil »
+ * et réunit les points de vue retenus.
+ */
+const SIEGE_DU_POINT_DE_VUE: Record<string, string> = { cfo: "CFO", cto: "CTO" };
+const siegeDe = (membres: { id: string }[] | undefined) =>
+  membres?.length === 1 ? (SIEGE_DU_POINT_DE_VUE[membres[0].id] ?? "advisor") : "advisor";
 import { METAL } from "@/lib/brand";
 
 // The 4 council lenses, aligned with the Deal Board advisor templates.
@@ -59,7 +69,6 @@ export default function MeetingRoomPage() {
   const [record, setRecord] = useState<CouncilRecord | null>(null);
   const [liveAdvisor, setLiveAdvisor] = useState(false);
   const [suggestion, setSuggestion] = useState<LiveIntervention | null>(null);
-  const [persona, setPersona] = useState<string>("CFO");
   // Which meeting mode the user is setting up: video room, Google Meet, or an
   // async council review. Null = they haven't chosen yet (the guided step).
   const [setupMode, setSetupMode] = useState<"live" | "meet" | "council" | null>(null);
@@ -81,6 +90,7 @@ export default function MeetingRoomPage() {
   const [meetImported, setMeetImported] = useState<number | null>(null);
   const [sayText, setSayText] = useState("");
 
+  const persona = siegeDe(active?.members);
   const sendToMeet = async () => {
     const url = meetUrl.trim();
     if (!/^https:\/\/meet\.google\.com\//.test(url)) {
@@ -566,12 +576,7 @@ export default function MeetingRoomPage() {
 
                   {setupMode === "live" && (
                     <div className="space-y-3 rounded-xl border border-current/10 p-4">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-xs text-text-secondary">Siège de l'assistant :</span>
-                        {PERSONAS.map((p) => (
-                          <button key={p} onClick={() => setPersona(p)} className="text-xs px-2.5 py-1 rounded-full border" style={{ borderColor: "currentColor", opacity: persona === p ? 1 : 0.4 }}>{libellePersona(p)}</button>
-                        ))}
-                      </div>
+                      <SiegeAssistant persona={persona} />
                       <Button disabled={liveBusy} onClick={() => void startLiveMeeting()}>{liveBusy ? "Ouverture…" : "🎥 Ouvrir la salle vidéo"}</Button>
                       <p className="text-text-secondary text-[11px]">Ouvre une salle vidéo partagée. Envoyez le lien d'invitation aux participants ; dans la salle, « Faire entrer AZZMIN » ajoute l'assistant.</p>
                       {inviteLink && (
@@ -589,12 +594,7 @@ export default function MeetingRoomPage() {
                       <label className="block text-xs text-text-secondary">Collez votre lien Google Meet</label>
                       <input value={meetUrl} onChange={(e) => setMeetUrl(e.target.value)} aria-label="Lien Google Meet" placeholder="https://meet.google.com/abc-defg-hij" className="w-full rounded border border-current/20 bg-transparent px-2 py-1.5 text-xs font-mono" />
                       <div className="flex flex-wrap items-center gap-3">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-text-secondary">Siège :</span>
-                          {PERSONAS.slice(0, 4).map((p) => (
-                            <button key={p} onClick={() => setPersona(p)} className="text-xs px-2 py-0.5 rounded-full border" style={{ borderColor: "currentColor", opacity: persona === p ? 1 : 0.4 }}>{libellePersona(p)}</button>
-                          ))}
-                        </div>
+                        <SiegeAssistant persona={persona} />
                         <label className="flex items-center gap-1.5 text-xs text-text-secondary">
                           <input type="checkbox" checked={meetMode === "realtime"} onChange={(e) => setMeetMode(e.target.checked ? "realtime" : "transcribe")} />
                           Le laisser parler (voix ElevenLabs)
@@ -793,5 +793,15 @@ function ModeTile({
       <span className="text-sm font-semibold">{title}</span>
       <span className="text-text-secondary text-[11px] leading-tight">{desc}</span>
     </button>
+  );
+}
+
+/** Le siège de l'assistant, dit — pas choisi : il vient des points de vue de l'étape 1. */
+function SiegeAssistant({ persona }: { persona: string }) {
+  return (
+    <p className="text-xs text-text-secondary">
+      L'assistant siège en <span className="font-semibold text-foreground">{libellePersona(persona)}</span>
+      {persona === "advisor" ? " : il réunit les points de vue retenus à l'étape 1." : ", le point de vue retenu à l'étape 1."}
+    </p>
   );
 }
