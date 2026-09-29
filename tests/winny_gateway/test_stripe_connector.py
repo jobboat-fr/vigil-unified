@@ -67,6 +67,8 @@ def _data(resp):
 
 
 def test_stripe_sync_imports_succeeded_charges_as_income(client):
+    # Stripe est réservé au super_admin (décision du 29/09) : u1 l'est ici.
+    client.db.tables.setdefault("learn_profiles", []).append({"id": "u1", "role": "super_admin"})
     conn = _data(client.post("/v1/connect/stripe/token", json={"token": "sk_test_x"}))["connection"]
     assert conn["external_account"] == "acct_123"
     first = _data(client.post("/v1/connect/stripe/sync", json={"connection_id": conn["id"]}))
@@ -75,3 +77,24 @@ def test_stripe_sync_imports_succeeded_charges_as_income(client):
     assert txn["amount"] == 120.0 and txn["source"] == "stripe" and txn["category"] == "revenue"
     # idempotent
     assert _data(client.post("/v1/connect/stripe/sync", json={"connection_id": conn["id"]}))["charges_added"] == 0
+
+
+def test_stripe_reserve_au_super_admin(client):
+    """29/09 : Gmail, Notion, HubSpot, GitHub pour tous ; Stripe pour le super_admin seul."""
+    client.db.tables.setdefault("learn_profiles", []).append({"id": "u1", "role": "admin"})
+    r = client.post("/v1/connect/stripe/token", json={"token": "sk_test_x"})
+    assert r.status_code == 403 and r.json()["detail"]["error"] == "connecteur_reserve"
+    assert client.db.tables.get(conn_mod._TABLE, []) == []  # rien n'a été enregistré
+    ids = [p["id"] for p in _data(client.get("/v1/connect/status"))["providers"]]
+    assert "stripe" not in ids and {"github", "gmail", "notion", "hubspot"} <= set(ids)
+
+
+def test_stripe_connexion_existante_inutilisable_sans_super_admin(client):
+    """Une connexion Stripe créée avant la règle ne se synchronise plus, mais se supprime."""
+    client.db.tables.setdefault("learn_profiles", []).append({"id": "u1", "role": "super_admin"})
+    conn = _data(client.post("/v1/connect/stripe/token", json={"token": "sk_test_x"}))["connection"]
+    client.db.tables["learn_profiles"][-1]["role"] = "admin"
+    r = client.post("/v1/connect/github/sync", json={"connection_id": conn["id"]})
+    assert r.status_code == 403  # le fournisseur de la CONNEXION compte, pas celui de l'URL
+    assert _data(client.get("/v1/connect/status"))["connections"] == []
+    assert client.delete(f"/v1/connect/connections/{conn['id']}").status_code == 200

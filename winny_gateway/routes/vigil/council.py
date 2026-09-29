@@ -26,6 +26,7 @@ from winny.council import (
     TASK_MATRIX,
     AIWorkerCollective,
 )
+from winny_gateway import droits_agents
 from winny_gateway.auth import get_current_user
 from winny_gateway.logging import get_logger
 
@@ -85,7 +86,7 @@ async def list_tasks(_user: dict = Depends(get_current_user)) -> dict[str, Any]:
 
 
 @router.post("/orchestrate")
-async def orchestrate(body: OrchestrateBody, _user: dict = Depends(get_current_user)) -> dict[str, Any]:
+async def orchestrate(body: OrchestrateBody, _user: dict = Depends(get_current_user), _abo: dict = Depends(droits_agents.exiger("conseil"))) -> dict[str, Any]:
     if body.task not in TASK_MATRIX:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -101,7 +102,7 @@ async def orchestrate(body: OrchestrateBody, _user: dict = Depends(get_current_u
 
 
 @router.post("/orchestrate/stream")
-async def orchestrate_stream(body: OrchestrateBody, _user: dict = Depends(get_current_user)) -> StreamingResponse:
+async def orchestrate_stream(body: OrchestrateBody, _user: dict = Depends(get_current_user), _abo: dict = Depends(droits_agents.exiger("conseil"))) -> StreamingResponse:
     if body.task not in TASK_MATRIX:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

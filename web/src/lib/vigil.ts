@@ -529,6 +529,12 @@ export interface ConnectStatus {
 }
 
 export const vigil = {
+  agents: {
+    /** Le verdict d'abonnement de la passerelle — seule source de ce qui est ouvert. */
+    abonnements: () =>
+      vigilCall<{ agents: Record<"azzmin" | "azzco" | "azzcom", boolean>; motif: string | null; mode: string }>(
+        "GET", "/v1/agents/abonnements"),
+  },
   connect: {
     status: () => vigilCall<ConnectStatus>("GET", "/v1/connect/status"),
     token: (provider: string, token: string, account?: string) =>

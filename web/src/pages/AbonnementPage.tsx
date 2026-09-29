@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/components/card";
 import { Button } from "@nous-research/ui/ui/components/button";
-import { AGENTS, useAbonnementAgents } from "@/lib/agentique";
+import { AGENTS, PRIX_PACK_AGENTS, useAbonnementAgents } from "@/lib/agentique";
 
 /**
  * L'abonnement aux agents.
@@ -10,9 +10,9 @@ import { AGENTS, useAbonnementAgents } from "@/lib/agentique";
  * seul endroit qui décide de ce qui est ouvert.
  */
 export default function AbonnementPage() {
-  const { abonne, enPreparation } = useAbonnementAgents();
+  const { estAbonne, enPreparation } = useAbonnementAgents();
   const total = AGENTS.reduce((n, a) => n + a.prix, 0);
-  const pack = Math.round(total * 0.8);
+  const pack = PRIX_PACK_AGENTS;
 
   return (
     <div className="space-y-6 p-6">
@@ -52,7 +52,7 @@ export default function AbonnementPage() {
                 {a.prix} €<span className="text-sm font-normal text-text-secondary"> / mois</span>
               </p>
               <Button className="mt-auto w-full" disabled>
-                {abonne ? "Abonnement actif" : "Bientôt"}
+                {estAbonne(a.id) ? "Abonnement actif" : "Bientôt"}
               </Button>
             </CardContent>
           </Card>

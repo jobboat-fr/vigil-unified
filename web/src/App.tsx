@@ -379,7 +379,8 @@ const BUILTIN_NAV_REST: NavItem[] = [
   // L'abonnement aux agents : visible pour ceux qui décident, pas pour les apprenants.
   { path: "/produits", label: "Nos produits", icon: Package, group: "company", roles: ["super_admin", "admin", "formateur", "auditeur"] },
   { path: "/abonnement", label: "Abonnement agents", icon: CreditCard, group: "company", roles: ["super_admin", "admin"] },
-  { path: "/connections", label: "Connexions", icon: Plug, group: "workspace", roles: ["super_admin", "admin"] },
+  // Ouverte à tous (29/09) : Gmail, Notion, HubSpot, GitHub pour chacun ; Stripe, la passerelle le réserve au super_admin.
+  { path: "/connections", label: "Connexions", icon: Plug, group: "workspace", roles: ["super_admin", "admin", "formateur", "entreprise", "auditeur", "apprenant"] },
   { path: "/approvals", label: "Validations", icon: ShieldCheck, group: "workspace", roles: ["super_admin", "admin"] },
   { path: "/meeting-room", label: "Salle de réunion", icon: Video, group: "workspace", roles: ["super_admin", "admin", "formateur", "entreprise", "apprenant", "auditeur"], capability: ["room", "read"] },
   { path: "/studio", label: "Studio", icon: PenLine, group: "workspace", roles: ["super_admin", "admin", "formateur", "entreprise", "apprenant", "auditeur"], capability: ["studio", "read"] },

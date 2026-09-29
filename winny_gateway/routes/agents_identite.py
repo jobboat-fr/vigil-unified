@@ -2,6 +2,7 @@
 
   POST /v1/agents/delegation   la personne connectée confie un agent pour 10 minutes
   GET  /v1/agents/contexte     pour qui l'appelant agit, avec quel rôle, et ce qu'il peut faire
+  GET  /v1/agents/abonnements les agents auxquels l'organisme de la personne est abonné
 
 Une délégation n'est émise que pour un humain authentifié (jamais pour un agent ni pour le
 jeton de service), et seulement pour un agent que son rôle peut utiliser. Elle est signée par la
@@ -18,6 +19,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field
 
 from winny_gateway import agent_identite as ai
+from winny_gateway import droits_agents
 from winny_gateway import permissions
 from winny_gateway.auth import get_current_user
 from winny_gateway.db import get_admin_client
@@ -73,6 +75,8 @@ async def emettre_delegation(body: DelegationBody, request: Request,
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail={
             "error": "agent_non_disponible_pour_ce_role",
             "detail": "Cet agent n'est pas proposé à votre rôle."})
+    # Confier un agent, c'est s'en servir : l'organisme doit y être abonné (402 en mode enforce).
+    await droits_agents.verifier(uid, body.agent)
     try:
         jeton = ai.signer_delegation(os.getenv("VTLVS_DELEGATION_SECRET", ""), sub=uid, agent=body.agent, role=role,
                                      tenant_id=(prof or {}).get("tenant_id"), page=body.page,
@@ -101,5 +105,16 @@ async def contexte(request: Request, user: dict = Depends(get_current_user)) -> 
         "lecture_seule": bool(actor.get("lecture_seule")) or actor.get("role") == "auditeur",
         "droits": permissions.GRANTS.for_role(actor.get("role") or ""),
         "delegation_signee": bool(cred.get("delegation_signee")),
+        # Les agents auxquels l'organisme de cette personne est abonné : un agent non abonné le
+        # dit et s'arrête, au lieu de découvrir le refus 402 au milieu d'une action.
+        "abonnements": (await droits_agents.etat(str(actor.get("user_id"))))["agents"] if actor.get("user_id") else {},
         "regles": REGLES,
     }}
+
+
+@router.get("/abonnements")
+async def abonnements(user: dict = Depends(get_current_user)) -> dict[str, Any]:
+    """Les agents ouverts à la personne connectée — ce que l'application affiche, décidé ici."""
+    uid = str(user.get("sub") or "")
+    e = await droits_agents.etat(uid)
+    return {"ok": True, "data": {"agents": e["agents"], "motif": e["motif"], "mode": droits_agents.mode()}}

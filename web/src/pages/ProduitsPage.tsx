@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/components/card";
 import { Button } from "@nous-research/ui/ui/components/button";
-import { AGENTS, useAbonnementAgents } from "@/lib/agentique";
+import { AGENTS, PRIX_PACK_AGENTS, useAbonnementAgents } from "@/lib/agentique";
 
 /**
  * Ce qu'AZZ&CO Labs propose aux organismes de formation.
@@ -44,8 +44,8 @@ const MODULES = [
 ] as const;
 
 export default function ProduitsPage() {
-  const { abonne } = useAbonnementAgents();
-  const total = AGENTS.reduce((n, a) => n + a.prix, 0);
+  const { estAbonne, tableauDeBord } = useAbonnementAgents();
+  const abonne = AGENTS.some((a) => estAbonne(a.id));
 
   return (
     <div className="space-y-8 p-6">
@@ -79,7 +79,7 @@ export default function ProduitsPage() {
         <div className="flex flex-wrap items-baseline justify-between gap-3">
           <h2 className="text-lg font-semibold">Les agents</h2>
           <p className="text-sm text-text-secondary">
-            {abonne ? "Votre abonnement est actif." : `À partir de ${Math.min(...AGENTS.map((a) => a.prix))} € par mois — les trois pour ${Math.round(total * 0.8)} €.`}
+            {abonne ? "Votre abonnement est actif." : `À partir de ${Math.min(...AGENTS.map((a) => a.prix))} € par mois — les trois pour ${PRIX_PACK_AGENTS} €.`}
           </p>
         </div>
 
@@ -109,13 +109,17 @@ export default function ProduitsPage() {
                   {a.prix} €<span className="text-sm font-normal text-text-secondary"> / mois</span>
                 </p>
                 <div className="mt-auto">
-                  {abonne ? (
-                    <Button
-                      className="w-full"
-                      onClick={() => window.open(a.tableauDeBord, "_blank", "noopener,noreferrer")}
-                    >
-                      Ouvrir le tableau de bord
-                    </Button>
+                  {estAbonne(a.id) ? (
+                    tableauDeBord ? (
+                      <Button
+                        className="w-full"
+                        onClick={() => window.open(a.tableauDeBord, "_blank", "noopener,noreferrer")}
+                      >
+                        Ouvrir le tableau de bord
+                      </Button>
+                    ) : (
+                      <p className="text-center text-sm text-success">✓ Actif pour votre organisme</p>
+                    )
                   ) : (
                     <Link to="/abonnement" className="block">
                       <Button ghost className="w-full">🔒 Voir l&apos;abonnement</Button>

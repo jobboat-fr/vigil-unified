@@ -32,6 +32,7 @@ from winny_gateway import avatar as avatar_mod
 from winny_gateway import breakouts as bk
 from winny_gateway import learn_api, learn_link, presence
 from winny_gateway import livekit as lk
+from winny_gateway import droits_agents
 from winny_gateway.auth import get_current_user, scoped_user
 from winny_gateway.db import DatabaseError, db_delete, db_insert, db_select, db_update
 from winny_gateway.logging import get_logger
@@ -271,6 +272,7 @@ async def convene_stream(
         "summary only) or 'transcript' (the full transcript).",
     ),
     user: dict = Depends(get_current_user),
+    _abo: dict = Depends(droits_agents.exiger("salle")),
 ) -> StreamingResponse:
     """Convene the council over the room and stream stage events (SSE).
 
@@ -309,7 +311,7 @@ class InterventionBody(BaseModel):
 
 
 @router.post("/{room_id}/intervention-check")
-async def intervention_check(room_id: str, body: InterventionBody, user: dict = Depends(scoped_user)) -> dict[str, Any]:
+async def intervention_check(room_id: str, body: InterventionBody, user: dict = Depends(scoped_user), _abo: dict = Depends(droits_agents.exiger("salle"))) -> dict[str, Any]:
     """Should the AI raise its hand right now? Runs the specialist fan-out → judge
     → behavioral-overlay pipeline over the room's recent transcript and logs the
     decision to ai_interventions. Poll this on a heartbeat while a meeting is live."""
@@ -382,7 +384,7 @@ async def avatar_status(_user: dict = Depends(get_current_user)) -> dict[str, An
 
 
 @router.post("/{room_id}/avatar-session")
-async def start_avatar(room_id: str, body: AvatarBody, user: dict = Depends(get_current_user)) -> dict[str, Any]:
+async def start_avatar(room_id: str, body: AvatarBody, user: dict = Depends(get_current_user), _abo: dict = Depends(droits_agents.exiger("salle"))) -> dict[str, Any]:
     """Spawn the AI avatar into the room as the chosen advisor persona, grounded
     in the supplied evidence. Returns the embeddable join URL (Tavus CVI /
     Beyond+LiveKit)."""
@@ -474,7 +476,6 @@ class BringAgentBody(BaseModel):
     evidence: str | None = Field(default=None, description="Vault/source text to ground the agent in.")
 
 
-@router.post("/{room_id}/bring-agent")
 def _delegation_salle(owner_id: str) -> str | None:
     import os
 
@@ -486,7 +487,12 @@ def _delegation_salle(owner_id: str) -> str | None:
     return ai.signer_delegation(secret, sub=str(owner_id), agent="azzmin", page="salle", duree_s=4 * 3600)
 
 
-async def bring_agent(room_id: str, body: BringAgentBody, user: dict = Depends(get_current_user)) -> dict[str, Any]:
+# Le décorateur était posé sur `_delegation_salle` au lieu de `bring_agent` (relevé le 29/09) :
+# la route répondait SANS authentification et rendait une délégation AZZMIN signée pour
+# n'importe quel `owner_id` passé en paramètre, et la vraie fonction n'était jamais servie.
+# Une aide ne se glisse jamais entre un décorateur de route et sa fonction.
+@router.post("/{room_id}/bring-agent")
+async def bring_agent(room_id: str, body: BringAgentBody, user: dict = Depends(get_current_user), _abo: dict = Depends(droits_agents.exiger("salle"))) -> dict[str, Any]:
     """Dispatch the VIGIL meeting agent (livekit-agents worker `vigil-advisor`)
     into the room's live call as the chosen persona, grounded in evidence. The
     agent then hears/sees the room and speaks via its avatar — a real participant."""
@@ -848,7 +854,7 @@ class SummarizeBody(BaseModel):
 
 
 @router.post("/{room_id}/summarize")
-async def summarize_room(room_id: str, body: SummarizeBody, user: dict = Depends(get_current_user)) -> dict[str, Any]:
+async def summarize_room(room_id: str, body: SummarizeBody, user: dict = Depends(get_current_user), _abo: dict = Depends(droits_agents.exiger("salle"))) -> dict[str, Any]:
     """Close the meeting: summarize the transcript → a Studio artifact, extract
     commitments (action items), and onboard guest follow-ups into the CRM."""
     uid = _uid(user)

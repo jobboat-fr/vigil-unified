@@ -10,6 +10,7 @@ from fastapi.testclient import TestClient
 
 from tests.winny_gateway.test_vigil_studio_rooms import FakeDB
 from winny_gateway import assistant_vtlvs as av
+from winny_gateway import droits_agents
 from winny_gateway.auth import get_current_user
 from winny_gateway.routes import assistant as route
 
@@ -33,6 +34,7 @@ def db(monkeypatch):
          "starts_at": (NOW + timedelta(days=2)).isoformat(), "ends_at": (NOW + timedelta(days=2, hours=3)).isoformat()},
     ]
     monkeypatch.setattr(av, "db_select", d.select)
+    monkeypatch.setattr(droits_agents, "db_select", d.select)
     return d
 
 

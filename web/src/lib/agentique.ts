@@ -7,7 +7,10 @@
  * isolé des autres.
  */
 
-export type RoleLearn = "super_admin" | "admin" | "formateur" | "auditeur" | "apprenant" | "entreprise";
+import { useEffect, useState } from "react";
+import { vigil } from "@/lib/vigil";
+
+export type RoleLearn ="super_admin" | "admin" | "formateur" | "auditeur" | "apprenant" | "entreprise";
 
 export type Agent = {
   id: "azzmin" | "azzco" | "azzcom";
@@ -123,6 +126,12 @@ export const AGENTS: Agent[] = [
   },
 ];
 
+/**
+ * Le pack des trois agents, prix fixé par Azer (301 € HT/mois). Écrit en clair et non calculé :
+ * « 20 % sur la somme » donnait 301,6 → 302 € affichés.
+ */
+export const PRIX_PACK_AGENTS = 301;
+
 export const agentsPourRole = (role: RoleLearn | null): Agent[] =>
   role ? AGENTS.filter((a) => a.roles.includes(role)) : [];
 
@@ -130,15 +139,58 @@ export const agentsPourPage = (chemin: string): Agent[] =>
   AGENTS.filter((a) => a.pages.some((p) => p.chemin === chemin));
 
 /**
- * L'abonnement aux agents.
+ * L'abonnement aux agents, tel que la passerelle le décide (`GET /v1/agents/abonnements`).
  *
- * Le paiement n'est pas encore ouvert : la fonction renvoie donc « non abonné » pour tout le
- * monde, et les cartes restent verrouillées. Quand la facturation sera branchée, c'est ici
- * qu'on lira l'état réel de l'abonnement de l'organisme — nulle part ailleurs, pour qu'un
- * seul endroit décide de ce qui est ouvert.
+ * Le verdict vient du serveur, qui refuse lui-même les surfaces non abonnées (402) : ce hook
+ * ne fait que l'afficher. Tant que la réponse n'est pas là, ou si elle échoue, tout reste
+ * verrouillé — une carte ne s'ouvre jamais par défaut. `enPreparation` : la souscription en
+ * ligne n'est pas encore ouverte (l'abonnement est posé par l'administration de VTLVS).
  */
-export type EtatAbonnement = { abonne: boolean; enPreparation: boolean };
+export type EtatAbonnement = {
+  /** Au moins un agent ouvert. */
+  abonne: boolean;
+  enPreparation: boolean;
+  agents: Record<Agent["id"], boolean>;
+  estAbonne: (id: Agent["id"]) => boolean;
+  /**
+   * Le tableau de bord d'un agent est l'outil d'exploitation de son runtime (réglages, clés,
+   * canaux) : réservé à l'exploitation de VTLVS (décision du 29/09). Un organisme abonné se
+   * sert de l'agent DANS ses pages VTLVS, jamais par ce tableau de bord.
+   */
+  tableauDeBord: boolean;
+  charge: boolean;
+};
+
+type Verdict = { agents: Record<Agent["id"], boolean>; exploitation: boolean };
+const FERME: Verdict = { agents: { azzmin: false, azzco: false, azzcom: false }, exploitation: false };
+let enCache: Verdict | null = null;
+let enCours: Promise<Verdict> | null = null;
+
+function chargerAbonnements(): Promise<Verdict> {
+  if (enCache) return Promise.resolve(enCache);
+  enCours ??= vigil.agents
+    .abonnements()
+    .then((d) => (enCache = { agents: { ...FERME.agents, ...d.agents }, exploitation: d.motif === "super_admin" }))
+    .catch(() => FERME)
+    .finally(() => { enCours = null; });
+  return enCours;
+}
 
 export function useAbonnementAgents(): EtatAbonnement {
-  return { abonne: false, enPreparation: true };
+  const [verdict, setVerdict] = useState<Verdict | null>(enCache);
+  useEffect(() => {
+    if (enCache) return;
+    let vivant = true;
+    chargerAbonnements().then((v) => { if (vivant) setVerdict(v); });
+    return () => { vivant = false; };
+  }, []);
+  const v = verdict ?? FERME;
+  return {
+    abonne: Object.values(v.agents).some(Boolean),
+    enPreparation: true,
+    agents: v.agents,
+    estAbonne: (id) => Boolean(v.agents[id]),
+    tableauDeBord: v.exploitation,
+    charge: verdict !== null,
+  };
 }

@@ -6,13 +6,13 @@ import { AGENTS, agentsPourRole, useAbonnementAgents, type Agent, type RoleLearn
 /**
  * Les trois agents d'AZZ&CO Labs, présentés par leur marque.
  *
- * Tant que l'abonnement n'est pas ouvert, les cartes sont verrouillées : on montre ce que
- * l'agent sait faire et ce qu'il ne fera pas, mais l'accès au tableau de bord attend.
+ * Chaque carte suit l'abonnement de l'organisme À CET AGENT (verdict de la passerelle) : non
+ * abonné, elle montre ce que l'agent sait faire et ce qu'il ne fera pas, verrouillée.
  * Montrer la limite sur la carte est délibéré — un agent dont on connaît les bornes inspire
  * plus confiance qu'un agent qui promet tout.
  */
 
-function CarteAgent({ agent, abonne }: { agent: Agent; abonne: boolean }) {
+function CarteAgent({ agent, abonne, tableauDeBord }: { agent: Agent; abonne: boolean; tableauDeBord: boolean }) {
   return (
     <Card className="flex min-w-0 flex-col" style={{ borderColor: abonne ? agent.accent : undefined }}>
       <CardHeader className="pb-2">
@@ -59,12 +59,20 @@ function CarteAgent({ agent, abonne }: { agent: Agent; abonne: boolean }) {
         <div className="mt-auto space-y-2 pt-2">
           {abonne ? (
             <>
-              <Button
-                className="w-full"
-                onClick={() => window.open(agent.tableauDeBord, "_blank", "noopener,noreferrer")}
-              >
-                Ouvrir le tableau de bord
-              </Button>
+              {/* Le tableau de bord règle le runtime (clés, canaux) : exploitation seulement.
+                  Un organisme abonné se sert de l'agent dans ses pages, listées dessous. */}
+              {tableauDeBord ? (
+                <Button
+                  className="w-full"
+                  onClick={() => window.open(agent.tableauDeBord, "_blank", "noopener,noreferrer")}
+                >
+                  Ouvrir le tableau de bord
+                </Button>
+              ) : (
+                <div className="rounded-md px-3 py-2 text-xs text-success" style={{ background: "var(--color-background-secondary, rgba(127,127,127,0.06))" }}>
+                  ✓ Actif pour votre organisme — {agent.nom} travaille dans ces pages :
+                </div>
+              )}
               <p className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-text-secondary">
                 {agent.pages.map((p) => (
                   <Link key={p.chemin} to={p.chemin} className="underline">
@@ -93,7 +101,7 @@ function CarteAgent({ agent, abonne }: { agent: Agent; abonne: boolean }) {
 }
 
 export default function AgentsMarques({ role }: { role: RoleLearn | null }) {
-  const { abonne } = useAbonnementAgents();
+  const { estAbonne, tableauDeBord } = useAbonnementAgents();
   // Sans rôle résolu, on montre les trois : la page est déjà réservée à l'exploitation.
   const agents = role ? agentsPourRole(role) : AGENTS;
   if (agents.length === 0) return null;
@@ -110,7 +118,7 @@ export default function AgentsMarques({ role }: { role: RoleLearn | null }) {
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {agents.map((a) => (
-          <CarteAgent key={a.id} agent={a} abonne={abonne} />
+          <CarteAgent key={a.id} agent={a} abonne={estAbonne(a.id)} tableauDeBord={tableauDeBord} />
         ))}
       </div>
     </section>

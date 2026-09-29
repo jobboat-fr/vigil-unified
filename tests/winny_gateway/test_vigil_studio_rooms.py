@@ -23,6 +23,7 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
+from winny_gateway import droits_agents
 from winny_gateway.auth import get_current_user
 from winny_gateway.routes.vigil import rooms as rooms_mod
 from winny_gateway.routes.vigil import studio as studio_mod
@@ -79,6 +80,8 @@ def client(monkeypatch):
         monkeypatch.setattr(mod, "db_select", db.select)
         monkeypatch.setattr(mod, "db_update", db.update)
         monkeypatch.setattr(mod, "db_delete", db.delete)
+    # Le verrou d'abonnement lit la même base (mode observe par défaut : il laisse passer).
+    monkeypatch.setattr(droits_agents, "db_select", db.select)
 
     app = FastAPI()
     app.include_router(studio_mod.router)

@@ -207,6 +207,18 @@ export function expliquer(erreur: unknown, quoi?: string): Explication {
         reference,
       };
     }
+    // Le verrou d'abonnement des agents (29/09) dit quel rôle il a refusé : seule
+    // l'administration de l'organisme ouvre /abonnement, les autres y trouveraient
+    // « accès réservé ». À eux, on dit à qui s'adresser plutôt que de montrer un bouton.
+    if (code === "abonnement_requis" && detail?.role !== "admin" && detail?.role !== "super_admin") {
+      return {
+        registre: "offre",
+        titre: `${sujet.charAt(0).toUpperCase()}${sujet.slice(1)} demande un abonnement`,
+        detail: `${phrasePrete(e) ?? "Cette fonction n'est pas comprise dans votre offre actuelle."} L'abonnement se souscrit par l'administration de votre organisme.`,
+        reessayable: false,
+        reference,
+      };
+    }
     return {
       registre: "offre",
       titre: `${sujet.charAt(0).toUpperCase()}${sujet.slice(1)} demande un abonnement`,

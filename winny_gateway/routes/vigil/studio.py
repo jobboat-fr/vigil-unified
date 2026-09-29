@@ -38,6 +38,7 @@ from winny.council.registry import worker_registry
 from winny.council.canvas_brainstorm import brainstorm_board
 from winny.council.structurer import diagram_from_prompt
 from winny.council.confiance import PourQui, contexte_identite, donnees
+from winny_gateway import droits_agents
 from winny_gateway.auth import scoped_user
 from winny_gateway.db import db_delete, db_insert, db_select, db_update
 from winny_gateway.logging import get_logger
@@ -238,7 +239,7 @@ _BRAINSTORM_SYSTEM = (
 
 
 @router.post("/brainstorm")
-async def brainstorm(body: BrainstormBody, user: dict = Depends(scoped_user)) -> dict[str, Any]:
+async def brainstorm(body: BrainstormBody, user: dict = Depends(scoped_user), _abo: dict = Depends(droits_agents.exiger("studio"))) -> dict[str, Any]:
     """Stage 1 — think before drafting. Returns approaches + a design, never an artifact."""
     if body.kind not in KINDS:
         raise HTTPException(
@@ -283,7 +284,7 @@ _DRAFT_SYSTEM = (
 
 
 @router.post("")
-async def create_artifact(body: CreateArtifactBody, user: dict = Depends(scoped_user)) -> dict[str, Any]:
+async def create_artifact(body: CreateArtifactBody, user: dict = Depends(scoped_user), _abo: dict = Depends(droits_agents.exiger("studio"))) -> dict[str, Any]:
     """Stage 2 — draft the artifact against an approved approach and store it."""
     if body.kind not in KINDS:
         raise HTTPException(
@@ -560,7 +561,7 @@ class CanvasBrainstormBody(BaseModel):
 
 
 @router.post("/canvas-brainstorm")
-async def canvas_brainstorm(body: CanvasBrainstormBody, user: dict = Depends(scoped_user)) -> dict[str, Any]:
+async def canvas_brainstorm(body: CanvasBrainstormBody, user: dict = Depends(scoped_user), _abo: dict = Depends(droits_agents.exiger("studio"))) -> dict[str, Any]:
     """Brainstorm on the canvas: the council returns blocks (ideas/risks/takes)
     to drop onto the tldraw board, given the board context + a prompt or lens."""
     res = await brainstorm_board(
@@ -597,7 +598,7 @@ class CanvasDiagramBody(BaseModel):
 
 
 @router.post("/canvas-diagram")
-async def canvas_diagram(body: CanvasDiagramBody, _user: dict = Depends(scoped_user)) -> dict[str, Any]:
+async def canvas_diagram(body: CanvasDiagramBody, _user: dict = Depends(scoped_user), _abo: dict = Depends(droits_agents.exiger("studio"))) -> dict[str, Any]:
     """Agent draws a diagram on demand: prompt -> auto-laid-out {nodes, edges}
     the user can drop onto the board and edit."""
     res = await diagram_from_prompt(prompt=body.prompt, context=body.board_text, topic=body.topic)
@@ -609,7 +610,7 @@ class RefineBody(BaseModel):
 
 
 @router.post("/{artifact_id}/refine")
-async def refine_artifact(artifact_id: str, body: RefineBody, user: dict = Depends(scoped_user)) -> dict[str, Any]:
+async def refine_artifact(artifact_id: str, body: RefineBody, user: dict = Depends(scoped_user), _abo: dict = Depends(droits_agents.exiger("studio"))) -> dict[str, Any]:
     """Iterate on an existing artifact with the agent (the Studio side-chat)."""
     uid = _uid(user)
     art = await _accessible_row(artifact_id, uid)
@@ -660,7 +661,7 @@ def _texte_tableau(graphe: dict[str, Any] | None, canvas: Any) -> str:
 
 
 @router.post("/{artifact_id}/agent")
-async def agent_in_artifact(artifact_id: str, body: AgentBody, user: dict = Depends(scoped_user)) -> dict[str, Any]:
+async def agent_in_artifact(artifact_id: str, body: AgentBody, user: dict = Depends(scoped_user), _abo: dict = Depends(droits_agents.exiger("studio"))) -> dict[str, Any]:
     """L'assistant travaille DANS le document ou le tableau, pour la personne qui le demande.
 
     Il ne touche qu'un artefact que cette personne peut modifier (le sien, ou partagé en

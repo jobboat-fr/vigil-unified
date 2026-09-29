@@ -6,13 +6,13 @@ import { agentsPourPage, useAbonnementAgents } from "@/lib/agentique";
  * L'encart qui dit, sur une page métier, quel agent la couvre.
  *
  * Monté une seule fois dans la mise en page : il se tait partout où aucun agent n'intervient.
- * Tant que l'abonnement n'est pas ouvert, il présente l'agent et renvoie vers la page
- * d'abonnement ; ensuite, il ouvrira son tableau de bord. Un bandeau discret, jamais un
- * bloc qui pousse la page vers le bas.
+ * Non abonné, il présente l'agent et renvoie vers la page d'abonnement ; abonné, il dit que
+ * l'agent est actif ici. Le tableau de bord (réglages du runtime) n'est proposé qu'à
+ * l'exploitation. Un bandeau discret, jamais un bloc qui pousse la page vers le bas.
  */
 export default function AgentDeLaPage() {
   const { pathname } = useLocation();
-  const { abonne } = useAbonnementAgents();
+  const { estAbonne, tableauDeBord } = useAbonnementAgents();
   const agents = agentsPourPage(pathname);
   if (agents.length === 0) return null;
 
@@ -25,15 +25,14 @@ export default function AgentDeLaPage() {
             <b style={{ color: a.accent }}>{a.nom}</b>
             <span className="text-text-secondary"> — {a.accroche.toLowerCase()}</span>
           </span>
-          {abonne ? (
-            <a
-              href={a.tableauDeBord}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline"
-            >
-              ouvrir
-            </a>
+          {estAbonne(a.id) ? (
+            tableauDeBord ? (
+              <a href={a.tableauDeBord} target="_blank" rel="noopener noreferrer" className="underline">
+                ouvrir
+              </a>
+            ) : (
+              <span className="text-success">actif</span>
+            )
           ) : (
             // Un cadenas dessiné, pas l'émoji 🔒 : celui-ci change de forme d'un système
             // à l'autre, n'hérite ni de la couleur ni de la graisse du texte, et se lit

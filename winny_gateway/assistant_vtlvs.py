@@ -4,12 +4,15 @@ Pourquoi ce module : l'assistant relayait vers l'ancien serveur d'agent (HERMES_
 la page avait été coupée. Il répond désormais ici, sans serveur intermédiaire, et suit trois
 règles déterministes, décidées avant tout appel au modèle :
 
-1. **Qui peut l'utiliser**
-   * super_admin, admin, formateur, entreprise, auditeur : toujours ;
-   * apprenant : **pendant ses créneaux de formation** (du quart d'heure avant le début au quart
-     d'heure après la fin d'un créneau d'une session où il est inscrit) ; **hors formation,
-     sous abonnement** (abonnement actif de son organisation) ;
+1. **Qui peut l'utiliser** — sous abonnement, depuis le 29/09 (décision d'Azer : « tout sous
+   abonnement, y compris l'apprenant pendant ses créneaux ») :
+   * super_admin : toujours ;
+   * admin, formateur, entreprise, auditeur, apprenant : si leur **organisme est abonné** à l'un
+     des agents (voir `droits_agents`, surface « assistant ») ;
    * prospect ou rôle inconnu : non.
+   Tant que `AGENTS_ABONNEMENT_MODE` vaut `observe`, l'ancienne règle s'applique encore (rôles
+   toujours ouverts, apprenant pendant ses créneaux) et chaque accès qui serait refusé demain est
+   journalisé : on recense avant de couper.
 2. **Ce qu'il sait** : les données sont lues avec le jeton de la personne elle-même (API LEARN,
    RLS) — son agenda des 14 prochains jours et ses actions requises. Il ne peut rien voir de plus
    que ce que la personne voit dans l'application.
@@ -29,6 +32,7 @@ import httpx
 
 from winny.council import guard
 from winny.council.confiance import PourQui, contexte_identite, donnees
+from winny_gateway import droits_agents
 from winny_gateway.db import db_select
 from winny_gateway.logging import get_logger
 
@@ -106,10 +110,24 @@ async def verifier_acces(user_id: str, maintenant: datetime | None = None) -> di
     now = maintenant or datetime.now(UTC)
     p = await profil(user_id)
     role = p.get("role")
+    if role == "super_admin":
+        return {"profil": p, "motif": "role"}
+    if role not in ROLES_TOUJOURS and role != "apprenant":
+        raise AccesRefuse(403, "assistant_non_disponible", "L'assistant n'est pas disponible pour votre compte.")
+    # La règle du 29/09 : l'organisme doit être abonné à un agent.
+    droits = await droits_agents.etat(user_id)
+    if any(droits["agents"].values()):
+        return {"profil": p, "motif": "abonnement"}
+    if droits_agents.mode() == "enforce":
+        raise AccesRefuse(402, "abonnement_requis",
+                          "L'assistant est réservé aux organismes abonnés à l'un des agents AZZMIN, AZZCO ou AZZCOM.",
+                          {"surface": "assistant"})
+    # Mode observe : l'ancienne règle décide encore ; on note ce qui serait refusé demain.
+    logger.warning("Assistant ouvert SANS abonnement d'agent — mode observe.",
+                   extra={"evenement": "agents.abonnement_manquant", "surface": "assistant",
+                          "utilisateur": user_id, "role": role, "mode": "observe"})
     if role in ROLES_TOUJOURS:
         return {"profil": p, "motif": "role"}
-    if role != "apprenant":
-        raise AccesRefuse(403, "assistant_non_disponible", "L'assistant n'est pas disponible pour votre compte.")
     creneaux = await creneaux_apprenant(user_id)
     for c in creneaux:
         debut, fin = _ts(c.get("starts_at")), _ts(c.get("ends_at"))
