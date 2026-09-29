@@ -524,11 +524,64 @@ class Travail(_Strict):
     consigne: str = Field(min_length=3, max_length=2000)
 
 
-def _contexte_projet(row: dict[str, Any]) -> str:
+_EXTRAIT_ARTEFACT = 1200
+_LIGNES_SALLE = 12
+_TRAVAUX_RAPPELES = 3
+
+
+async def _contexte_projet(row: dict[str, Any], uid: str) -> str:
+    """Ce que l'agent sait du projet : ses étapes ET ce qui est posé sur son canevas.
+
+    Jusqu'au 29/09 seules les étapes partaient : l'agent ignorait les artefacts, les salles, le
+    coffre et ses propres travaux précédents, et rendait un texte générique (« pas piloté par
+    le projet », Azer). Chaque carte est relue avec les droits de la personne, comme sur le
+    canevas : un artefact qu'elle ne peut plus ouvrir, une salle qui n'est pas la sienne,
+    n'entrent pas dans le contexte.
+    """
     lignes = [f"Projet : {row.get('title') or 'Projet sans titre'}"]
     for e in _etapes_ordonnees(row.get("etapes")):
         if e["complete"]:
             lignes.append(f"- {e['titre']} : {e['donnees']}")
+
+    cartes = await db_select(_CARTES, filters={"project_id": row["id"]}, order_by="created_at", limit=60)
+    if cartes:
+        lignes.append("\nSur le canevas du projet :")
+    for c in cartes:
+        kind, ref = c.get("kind"), str(c.get("ref_id") or "")
+        if kind == "artefact":
+            try:
+                art = await studio_mod._accessible_row(ref, uid)
+            except HTTPException:
+                continue
+            corps = (art.get("text_dump") or "").strip()
+            lignes.append(f"\n### Artefact : {art.get('title') or 'sans titre'} ({art.get('kind') or 'document'})")
+            if corps:
+                lignes.append(_couper(corps, _EXTRAIT_ARTEFACT))
+        elif kind == "salle":
+            salles = (await db_select("rooms", filters={"id": ref, "user_id": uid}, limit=1)
+                      if studio_mod._valid_uuid(ref) else [])
+            if not salles:
+                continue
+            s = salles[0]
+            etat = "close" if s.get("status") == "closed" else "ouverte"
+            lignes.append(f"\n### Salle de réunion : {s.get('title') or 'sans titre'} ({etat})")
+            for m in list(s.get("transcript") or [])[-_LIGNES_SALLE:]:
+                if isinstance(m, dict) and m.get("text"):
+                    lignes.append(f"- {m.get('speaker') or '?'} : {str(m['text'])[:300]}")
+        elif kind == "agent":
+            lignes.append(f"- Agent de l'équipe : {droits_agents.NOMS.get(ref, ref.upper())}")
+        elif kind == "coffre":
+            lignes.append(f"- Coffre ({c.get('sous_type') or 'élément'}) : {c.get('libelle') or 'sans libellé'}")
+
+    # Les derniers travaux d'agent : pour enchaîner plutôt que tout reprendre de zéro.
+    precedents = await db_select(_TRAVAUX, filters={"project_id": row["id"], "user_id": uid},
+                                 order_by="-created_at", limit=_TRAVAUX_RAPPELES)
+    if precedents:
+        lignes.append("\nTravaux d'agent déjà rendus sur ce projet (du plus récent au plus ancien) :")
+    for r in precedents:
+        nom = droits_agents.NOMS.get(str(r.get("agent")), str(r.get("agent")).upper())
+        lignes.append(f"- {nom}, sur « {_couper(str(r.get('brief') or ''), 200)} » : "
+                      f"{premier_paragraphe(str(r.get('sortie_complete') or ''))}")
     return "\n".join(lignes)
 
 
@@ -543,7 +596,8 @@ async def travail_agent(projet_id: str, agent: AgentId, body: Travail,
     uid = _uid(user)
     row = await _projet(projet_id, uid)
     prompt = (
-        "Contexte du projet :\n" + donnees("projet", _contexte_projet(row), surface="studio.projet", longueur_max=6000)
+        "Contexte du projet :\n" + donnees("projet", await _contexte_projet(row, uid), surface="studio.projet",
+                                           longueur_max=9000)
         + "\n\nDemande de la personne :\n" + donnees("consigne", body.consigne, surface="studio.projet", longueur_max=2000)
     )
     systeme = await studio_mod._systeme(user, _MISSIONS[agent] + "\n\n" + _FORME)

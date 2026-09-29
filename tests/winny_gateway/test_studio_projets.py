@@ -309,6 +309,53 @@ def test_abonnement_illisible_ferme(c, monkeypatch):
     assert data(r)["verrouille"] is True and SECRET_1 not in r.text
 
 
+# ── Ce que l'agent reçoit : le projet entier, dans les droits de la personne ─
+def test_l_agent_recoit_le_canevas_et_ses_travaux_precedents(c):
+    pid = projet(c)["id"]
+    h = as_("alice")
+    data(c.patch(f"/v1/projets/{pid}/etapes/nom_objectif",
+                 json={"nom": "Rentrée 2026", "objectif": "Ouvrir deux sessions"}, headers=h))
+    art = data(c.post("/v1/artifacts/blank-canvas", json={"title": "Devis salle Rouen"}, headers=h))
+    next(x for x in c.db.tables["artifacts"] if x["id"] == art["id"])["text_dump"] = "Location : 900 euros la journée."
+    rid = "66666666-6666-6666-6666-666666666666"
+    c.db.tables.setdefault("rooms", []).append({"id": rid, "user_id": "alice", "title": "Point direction",
+                                                "transcript": [{"speaker": "Hugo", "text": "On vise le 12 octobre."}]})
+    for corps in ({"kind": "artefact", "ref_id": art["id"]}, {"kind": "salle", "ref_id": rid},
+                  {"kind": "agent", "ref_id": "azzco"},
+                  {"kind": "coffre", "ref_id": "d1", "sous_type": "document", "libelle": "Convention HBS"}):
+        data(c.post(f"/v1/projets/{pid}/cartes", json=corps, headers=h))
+
+    data(c.post(f"/v1/projets/{pid}/agents/azzco/travail", json={"consigne": "Chiffre la session"}, headers=h))
+    data(c.post(f"/v1/projets/{pid}/agents/azzco/travail", json={"consigne": "Et le planning ?"}, headers=h))
+    premier, second = c.appels[0]["prompt"], c.appels[1]["prompt"]
+    for attendu in ("Ouvrir deux sessions", "Devis salle Rouen", "900 euros", "Point direction",
+                    "Hugo : On vise le 12 octobre.", "Agent de l'équipe : AZZCO", "Convention HBS"):
+        assert attendu in premier, attendu
+    assert "Travaux d'agent déjà rendus" not in premier
+    assert "Chiffre la session" in second and PREMIER in second
+    assert SECRET_1 not in second  # seul le premier paragraphe d'un travail précédent est rappelé
+
+
+def test_le_contexte_ne_reprend_pas_ce_qui_n_est_plus_accessible(c):
+    """Un artefact dont le partage est retiré, une salle qui n'est pas à soi : hors contexte."""
+    art = data(c.post("/v1/artifacts/blank-canvas", json={"title": "Note de Bruno"}, headers=as_("bruno")))
+    ligne = next(x for x in c.db.tables["artifacts"] if x["id"] == art["id"])
+    ligne.update(tenant_id=T1, text_dump="Chiffre confidentiel de Bruno.")
+    c.db.tables.setdefault("artifact_shares", []).append(
+        {"id": "s2", "artifact_id": art["id"], "grantee_id": "alice", "access": "view"})
+    pid = projet(c)["id"]
+    data(c.post(f"/v1/projets/{pid}/cartes", json={"kind": "artefact", "ref_id": art["id"]}, headers=as_("alice")))
+    c.db.tables["artifact_shares"].clear()
+    rid = "77777777-7777-7777-7777-777777777777"
+    c.db.tables.setdefault("rooms", []).append({"id": rid, "user_id": "bruno", "title": "Salle de Bruno",
+                                                "transcript": [{"speaker": "Bruno", "text": "Propos privés."}]})
+    c.db.tables["studio_project_cards"].append({"id": "k-intrus", "project_id": pid, "kind": "salle", "ref_id": rid})
+    data(c.post(f"/v1/projets/{pid}/agents/azzco/travail", json={"consigne": "Synthèse"}, headers=as_("alice")))
+    prompt = c.appels[0]["prompt"]
+    for fuite in ("Note de Bruno", "Chiffre confidentiel", "Salle de Bruno", "Propos privés"):
+        assert fuite not in prompt, fuite
+
+
 def test_agent_inconnu_422(c):
     pid = projet(c)["id"]
     assert c.post(f"/v1/projets/{pid}/agents/gpt/travail", json={"consigne": "x" * 10}, headers=as_("alice")).status_code == 422
