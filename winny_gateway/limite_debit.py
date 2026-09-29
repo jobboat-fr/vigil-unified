@@ -38,7 +38,7 @@ journal = logging.getLogger("winny_gw.securite")
 PALIERS = {"ia": (30, 60.0), "ecriture": (120, 60.0), "lecture": (600, 60.0)}
 
 MOTIFS_IA = re.compile(
-    r"/(brainstorm|refine|agent|canvas-brainstorm|canvas-diagram|summarize|triage|council|deliberate|ask)(/|$)"
+    r"/(brainstorm|refine|agent|canvas-brainstorm|canvas-diagram|summarize|triage|council|deliberate|ask|travail)(/|$)"
 )
 LIBRES = re.compile(r"^/health$|/webhooks?(/|$)|/livekit/webhook$")
 

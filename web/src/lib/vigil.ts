@@ -256,6 +256,74 @@ export interface Artifact {
   owner_name?: string;
 }
 
+// ── Projets du Studio (winny_gateway/routes/vigil/projets.py) ───────────────
+export type AgentProjet = "azzmin" | "azzco" | "azzcom";
+export type CleEtape =
+  | "nom_objectif"
+  | "perimetre_livrables"
+  | "equipe"
+  | "jalons"
+  | "ressources"
+  | "validation";
+
+export interface EtapeProjet {
+  cle: CleEtape;
+  numero: number;
+  titre: string;
+  donnees: Record<string, unknown> | null;
+  complete: boolean;
+}
+
+export interface ProjetResume {
+  id: string;
+  titre: string;
+  etapes_completes: number;
+  etapes_total: number;
+  statut: "brouillon" | "en_validation" | "valide";
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CarteProjet {
+  id: string;
+  kind: "salle" | "artefact" | "agent" | "coffre";
+  ref_id: string;
+  x: number;
+  y: number;
+  titre: string;
+  /** La cible a disparu, ou n'est plus accessible à la personne. */
+  manquant?: boolean;
+  lien?: string;
+  statut?: string;
+  version?: number;
+  maj?: string;
+  salle_source?: { id: string; titre: string | null; lien: string } | null;
+  agent_source?: AgentProjet | null;
+  agent?: AgentProjet;
+  abonne?: boolean;
+  sous_type?: "document" | "session" | "personne";
+}
+
+export interface ProjetComplet extends ProjetResume {
+  etapes: EtapeProjet[];
+  cartes: CarteProjet[];
+  liens: { de: string; vers: string; nature: "salle_source" | "agent_source" }[];
+  abonnements: Record<AgentProjet, boolean>;
+}
+
+/** Un travail d'agent. Verrouillé : seulement l'aperçu — la suite n'a jamais quitté le serveur. */
+export type TravailAgent = {
+  id: string;
+  agent: AgentProjet;
+  brief: string;
+  stub: boolean;
+  created_at: string;
+  points: string[];
+} & (
+  | { verrouille: false; sortie: string }
+  | { verrouille: true; apercu: string; message: string }
+);
+
 export interface ArtifactShare {
   id: string;
   access: "view" | "edit";
@@ -660,6 +728,27 @@ export const vigil = {
         "/v1/artifacts/canvas-diagram",
         input,
       ),
+  },
+  projets: {
+    list: () => vigilCall<{ projets: ProjetResume[] }>("GET", "/v1/projets"),
+    create: (titre?: string) =>
+      vigilCall<ProjetResume & { etapes: EtapeProjet[] }>("POST", "/v1/projets", titre ? { titre } : {}),
+    get: (id: string) => vigilCall<ProjetComplet>("GET", `/v1/projets/${id}`),
+    remove: (id: string) => vigilCall<{ supprime: string }>("DELETE", `/v1/projets/${id}`),
+    /** Enregistre UNE étape ; la passerelle valide sa forme (422 sinon). */
+    saveEtape: (id: string, cle: CleEtape, donnees: Record<string, unknown>) =>
+      vigilCall<ProjetResume & { etapes: EtapeProjet[] }>("PATCH", `/v1/projets/${id}/etapes/${cle}`, donnees),
+    addCarte: (
+      id: string,
+      carte: { kind: CarteProjet["kind"]; ref_id: string; x?: number; y?: number; sous_type?: CarteProjet["sous_type"]; libelle?: string },
+    ) => vigilCall<CarteProjet>("POST", `/v1/projets/${id}/cartes`, carte),
+    moveCarte: (id: string, carteId: string, x: number, y: number) =>
+      vigilCall<{ id: string; x: number; y: number }>("PATCH", `/v1/projets/${id}/cartes/${carteId}`, { x, y }),
+    removeCarte: (id: string, carteId: string) =>
+      vigilCall<{ retire: string }>("DELETE", `/v1/projets/${id}/cartes/${carteId}`),
+    travail: (id: string, agent: AgentProjet, consigne: string) =>
+      vigilCall<TravailAgent>("POST", `/v1/projets/${id}/agents/${agent}/travail`, { consigne }),
+    travaux: (id: string) => vigilCall<{ travaux: TravailAgent[] }>("GET", `/v1/projets/${id}/runs`),
   },
   finance: {
     accounts: () => vigilCall<{ accounts: FinanceAccount[] }>("GET", "/v1/finance/accounts"),
