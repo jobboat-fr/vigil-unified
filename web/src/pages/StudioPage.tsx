@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState, lazy, Suspense } from "react";
 import { usePageHeader } from "@/contexts/usePageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/components/card";
 import { Button } from "@nous-research/ui/ui/components/button";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { vigil, type Artifact, type BrainstormPlan } from "@/lib/vigil";
 import { useLearnRole } from "@/lib/supabase";
 import { ACCESS_LABELS, KINDS, KIND_LABELS, dateRelative } from "@/lib/studio";
@@ -178,7 +178,10 @@ export default function StudioPage() {
             Vos documents et vos tableaux de réflexion, rédigés avec l'assistant. Ils sont à vous ; vous choisissez avec qui les partager.
           </p>
         </div>
-        {peutCreer && <Button onClick={() => void newBoard()}>+ Nouveau tableau</Button>}
+        <div className="flex flex-wrap gap-2">
+          <Link to="/studio/projets"><Button ghost>Projets →</Button></Link>
+          {peutCreer && <Button onClick={() => void newBoard()}>+ Nouveau tableau</Button>}
+        </div>
       </header>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">

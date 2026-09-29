@@ -76,6 +76,7 @@ import {
   Send,
   FileSignature,
   Inbox,
+  FolderKanban,
 } from "lucide-react";
 import { Button } from "@nous-research/ui/ui/components/button";
 import { SelectionSwitcher } from "@nous-research/ui/ui/components/selection-switcher";
@@ -155,6 +156,7 @@ const SystemPage = lazy(() => import("@/pages/SystemPage"));
 const ChatPage = lazy(() => import("@/pages/ChatPage"));
 const MeetingRoomPage = lazy(() => import("@/pages/MeetingRoomPage"));
 const StudioPage = lazy(() => import("@/pages/StudioPage"));
+const StudioProjetsPage = lazy(() => import("@/pages/StudioProjetsPage"));
 const OpsTeamPage = lazy(() => import("@/pages/OpsTeamPage"));
 const ConnectionsPage = lazy(() => import("@/pages/ConnectionsPage"));
 const ApprovalsPage = lazy(() => import("@/pages/ApprovalsPage"));
@@ -296,6 +298,7 @@ const BUILTIN_ROUTES_CORE: Record<string, ComponentType> = {
   "/approvals": ApprovalsPage,
   "/meeting-room": MeetingRoomPage,
   "/studio": StudioPage,
+  "/studio/projets": StudioProjetsPage,
   "/vault": VaultPage,
   "/finance": FinancePage,
   "/crm": CrmPage,
@@ -384,6 +387,7 @@ const BUILTIN_NAV_REST: NavItem[] = [
   { path: "/approvals", label: "Validations", icon: ShieldCheck, group: "workspace", roles: ["super_admin", "admin"] },
   { path: "/meeting-room", label: "Salle de réunion", icon: Video, group: "workspace", roles: ["super_admin", "admin", "formateur", "entreprise", "apprenant", "auditeur"], capability: ["room", "read"] },
   { path: "/studio", label: "Studio", icon: PenLine, group: "workspace", roles: ["super_admin", "admin", "formateur", "entreprise", "apprenant", "auditeur"], capability: ["studio", "read"] },
+  { path: "/studio/projets", label: "Projets", icon: FolderKanban, group: "workspace", roles: ["super_admin", "admin", "formateur", "entreprise", "apprenant", "auditeur"], capability: ["studio", "read"] },
   { path: "/vault", label: "Artéfacts", icon: Lock, group: "workspace", roles: ["super_admin", "admin"], capability: ["legal", "read"] },
   // ── Company ──
   { path: "/learn", label: "Tableau de bord", icon: GraduationCap, group: "learn" },

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/components/card";
 import { Button } from "@nous-research/ui/ui/components/button";
 import { vigil, googleMeet, streamRoomCouncil, type Room, type CouncilRecord, type SseEvent, type LiveIntervention, type MeetingSummary, type MeetBotStatus, type AvatarSession } from "@/lib/vigil";
@@ -183,6 +183,14 @@ export default function MeetingRoomPage() {
   const reloadActive = useCallback(async (id: string) => {
     setActive(await vigil.rooms.get(id));
   }, []);
+
+  // `?salle=<id>` : ouverte depuis une carte de projet du Studio. Une salle introuvable
+  // laisse simplement la liste affichée.
+  const [searchParams] = useSearchParams();
+  const salleDemandee = searchParams.get("salle");
+  useEffect(() => {
+    if (salleDemandee) reloadActive(salleDemandee).catch(() => undefined);
+  }, [salleDemandee, reloadActive]);
 
   const createRoom = async () => {
     const room = await vigil.rooms.create(`Advisory Session ${new Date().toLocaleString()}`, "cfo_review");

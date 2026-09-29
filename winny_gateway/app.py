@@ -32,6 +32,7 @@ from winny_gateway.routes import (
 from winny_gateway.routes.vigil import council as vigil_council
 from winny_gateway.routes.vigil import rooms as vigil_rooms
 from winny_gateway.routes.vigil import studio as vigil_studio
+from winny_gateway.routes.vigil import projets as vigil_projets
 from winny_gateway.routes.vigil import finance as vigil_finance
 from winny_gateway.routes.vigil import crm as vigil_crm
 from winny_gateway.routes.vigil import mail as vigil_mail
@@ -160,6 +161,8 @@ def create_app(config: GatewayConfig | None = None) -> FastAPI:
     app.include_router(vigil_rooms.router, dependencies=[Depends(permissions.guard("room")), Depends(ai_guard.feature("meeting"))])
     # Studio — artifact drafting behind the brainstorm-first gate.
     app.include_router(vigil_studio.router, dependencies=[Depends(permissions.guard("studio")), Depends(ai_guard.feature("studio"))])
+    # Projets du Studio — le canevas qui relie salles, artefacts, agents et coffre ; mêmes droits que le Studio.
+    app.include_router(vigil_projets.router, dependencies=[Depends(permissions.guard("studio")), Depends(ai_guard.feature("studio"))])
     # Finance — the books/ledger backend the cfo-* skills route into.
     app.include_router(vigil_finance.router, dependencies=[Depends(permissions.guard("finance"))])
     # Finance connector — bank (Plaid) / accounting platform sync into the ledger.
