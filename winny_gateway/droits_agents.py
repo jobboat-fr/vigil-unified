@@ -10,9 +10,8 @@ Qui paie quoi
   `learn_tenants.abonnements` contient `azzmin`, `azzco` ou `azzcom`. C'est la colonne que
   la publication lit déjà ; le webhook Stripe l'alimentera quand le paiement des agents ouvrira.
 * `super_admin` : toujours ouvert — c'est l'opérateur de la plateforme.
-* Compte VIGIL (vigil-ai.xyz, aucune ligne `learn_profiles`) : sa règle d'avant, un abonnement
-  Stripe actif de son organisation (`subscriptions`). Sans ça, on couperait des clients payants
-  d'une autre application.
+* Compte sans ligne `learn_profiles` : rien. C'était la règle de vigil-ai.xyz (un abonnement
+  Stripe de son organisation) ; le site est éteint depuis le 29/09, la règle est retirée.
 
 Quelle surface relève de quel agent
 -----------------------------------
@@ -32,7 +31,6 @@ Un mode inconnu vaut `enforce` : une faute de frappe doit fermer, pas ouvrir.
 from __future__ import annotations
 
 import os
-from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import Depends, HTTPException
@@ -62,16 +60,6 @@ def mode() -> str:
     return m if m in ("observe", "enforce") else "enforce"
 
 
-def _ts(v: Any) -> datetime | None:
-    if not v:
-        return None
-    try:
-        d = datetime.fromisoformat(str(v).replace("Z", "+00:00"))
-        return d if d.tzinfo else d.replace(tzinfo=UTC)
-    except ValueError:
-        return None
-
-
 async def _profil(user_id: str) -> dict[str, Any] | None:
     rows = await db_select("learn_profiles", filters={"id": user_id},
                            columns="id,role,tenant_id", limit=1, allow_unscoped=True)
@@ -86,25 +74,11 @@ async def _abonnements_organisme(tenant_id: str | None) -> set[str]:
     return set((rows[0].get("abonnements") or []) if rows else [])
 
 
-async def _abonnement_vigil(user_id: str) -> bool:
-    """La règle de vigil-ai.xyz : un abonnement Stripe actif de l'une de ses organisations."""
-    for m in await db_select("org_members", filters={"user_id": user_id}, columns="org_id",
-                             limit=20, allow_unscoped=True):
-        for s in await db_select("subscriptions", filters={"org_id": m["org_id"]},
-                                 columns="status,current_period_end", limit=20, allow_unscoped=True):
-            fin = _ts(s.get("current_period_end"))
-            if s.get("status") in ("active", "trialing") and (fin is None or fin > datetime.now(UTC)):
-                return True
-    return False
-
-
 async def etat(user_id: str) -> dict[str, Any]:
     """Les agents ouverts à cette personne, et pourquoi. Aucun modèle, aucune supposition."""
     p = await _profil(user_id)
     if p is None:
-        vigil = await _abonnement_vigil(user_id)
-        return {"compte": "vigil", "role": None, "motif": "abonnement_vigil" if vigil else None,
-                "agents": {a: vigil for a in AGENTS}}
+        return {"compte": None, "role": None, "motif": None, "agents": {a: False for a in AGENTS}}
     if p.get("role") == "super_admin":
         return {"compte": "vtlvs", "role": "super_admin", "motif": "super_admin",
                 "agents": {a: True for a in AGENTS}}
