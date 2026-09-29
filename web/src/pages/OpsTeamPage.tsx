@@ -9,6 +9,7 @@ import { GatewayError } from "@/lib/ww";
 import AgentsMarques from "@/components/AgentsMarques";
 import { useLearnRole } from "@/lib/supabase";
 import { expliquerCourt } from "@/lib/refus";
+import { mandatPole, nomFormule, nomPole, nomTravail, regardPole, statutPole, statutTachePole } from "@/lib/mots";
 
 // Ops Team — the agentic company. Departments are on-demand agent units; each
 // only counts as "working" once its effectiveness selftest passes. P0 ships the
@@ -22,9 +23,9 @@ const STATUS_COLOR: Record<string, string> = {
 
 function healthLine(d: Department): string {
   const h = d.health as { success_rate?: number | null; avg_cost_usd?: number; runs?: number; p50_ms?: number };
-  if (!h || !h.runs) return "no runs yet — run the self-test to prove it works";
+  if (!h || !h.runs) return "aucune exécution — lancez l'autotest pour le vérifier";
   const sr = h.success_rate == null ? "—" : `${Math.round(h.success_rate * 100)}%`;
-  return `success ${sr} · $${(h.avg_cost_usd ?? 0).toFixed(3)}/run · ${h.p50_ms ?? 0}ms · ${h.runs} runs`;
+  return `réussite ${sr} · ${(h.avg_cost_usd ?? 0).toFixed(3)} $ par exécution · ${h.p50_ms ?? 0} ms · ${h.runs} exécution${h.runs > 1 ? "s" : ""}`;
 }
 
 export default function OpsTeamPage() {
@@ -120,8 +121,8 @@ export default function OpsTeamPage() {
         </div>
         <div className="rounded-md p-3" style={{ background: "var(--color-background-secondary, rgba(127,127,127,0.06))" }}>
           <div className="text-xs text-text-secondary">Formule · exécutions du jour</div>
-          <div className="text-2xl font-semibold capitalize">
-            {usage?.plan ?? "—"}
+          <div className="text-2xl font-semibold">
+            {usage?.plan ? nomFormule(usage.plan) : "—"}
             <span className="text-sm font-normal text-text-secondary">
               {" · "}{usage ? usage.runs_today : 0}{usage?.daily_cap != null ? ` / ${usage.daily_cap}` : ""}
             </span>
@@ -133,7 +134,7 @@ export default function OpsTeamPage() {
         </div>
         <div className="rounded-md p-3" style={{ background: "var(--color-background-secondary, rgba(127,127,127,0.06))" }}>
           <div className="text-xs text-text-secondary">Arrêt d'urgence</div>
-          <div className="text-2xl font-semibold" style={{ color: anyPaused ? "var(--color-destructive)" : "var(--color-success)" }}>{anyPaused ? "paused" : "armed"}</div>
+          <div className="text-2xl font-semibold" style={{ color: anyPaused ? "var(--color-destructive)" : "var(--color-success)" }}>{anyPaused ? "Enclenché" : "Prêt"}</div>
         </div>
       </div>
 
@@ -147,15 +148,15 @@ export default function OpsTeamPage() {
                 <CardTitle className="flex items-center justify-between gap-2">
                   <span className="flex items-center gap-2">
                     <span style={{ width: 9, height: 9, borderRadius: "50%", background: STATUS_COLOR[d.status] || "var(--color-muted-foreground)", display: "inline-block" }} />
-                    <span className="truncate">{d.name}</span>
+                    <span className="truncate">{nomPole(d.slug, d.name)}</span>
                   </span>
                   <span className="text-[10px] uppercase tracking-wide text-text-secondary">
-                    {d.paused ? "paused" : d.status}{d.head_lens ? ` · ${d.head_lens}` : ""}
+                    {d.paused ? "Suspendu" : statutPole(d.status)}{d.head_lens ? ` · ${regardPole(d.head_lens)}` : ""}
                   </span>
                 </CardTitle>
               </CardHeader>
               <CardContent className="flex flex-col gap-3">
-                <p className="text-sm text-text-secondary leading-snug">{d.mandate}</p>
+                <p className="text-sm text-text-secondary leading-snug">{mandatPole(d.slug, d.mandate)}</p>
                 <p className="text-[11px] text-text-secondary font-mono">{healthLine(d)}</p>
                 {r && (
                   <div
@@ -166,8 +167,8 @@ export default function OpsTeamPage() {
                     }}
                   >
                     <div className="flex items-center justify-between gap-2 font-semibold" style={{ color: r.accepted ? "#16a34a" : "#dc2626" }}>
-                      <span>{r.accepted ? "✓" : "✕"} {r.job} — {r.status}</span>
-                      <span className="font-mono text-[10px] font-normal text-text-secondary">${Number(r.cost_usd).toFixed(3)} · {r.wall_ms}ms</span>
+                      <span>{r.accepted ? "✓" : "✕"} {nomTravail(r.job)} — {statutTachePole(r.status)}</span>
+                      <span className="font-mono text-[10px] font-normal text-text-secondary">{Number(r.cost_usd).toFixed(3)} $ · {r.wall_ms} ms</span>
                     </div>
                     {(r.summary || r.reason) && (
                       <p className="mt-1 leading-snug text-foreground/80">{r.summary || r.reason}</p>
@@ -178,19 +179,19 @@ export default function OpsTeamPage() {
                         className="mt-1.5 inline-flex items-center gap-1 font-medium underline hover:text-foreground"
                         style={{ color: "var(--color-primary)" }}
                       >
-                        Open output →
+                        Ouvrir le résultat →
                       </button>
                     )}
                   </div>
                 )}
                 <div className="flex flex-wrap gap-2">
                   {(d.jobs.length ? d.jobs : ["run"]).map((job) => (
-                    <Button key={job} onClick={() => void act(d, job)} disabled={!!b || d.paused} className="capitalize">
-                      {b === job ? "Running…" : job.replace(/_/g, " ")}
+                    <Button key={job} onClick={() => void act(d, job)} disabled={!!b || d.paused}>
+                      {b === job ? "En cours…" : nomTravail(job)}
                     </Button>
                   ))}
                   <Button ghost onClick={() => void act(d, "selftest")} disabled={!!b || d.paused}>
-                    {b === "selftest" ? "Testing…" : "Autotest"}
+                    {b === "selftest" ? "Test en cours…" : "Autotest"}
                   </Button>
                 </div>
               </CardContent>
@@ -205,10 +206,10 @@ export default function OpsTeamPage() {
       <Card>
         <CardHeader><CardTitle>Activité</CardTitle></CardHeader>
         <CardContent className="flex flex-col gap-1.5">
-          {events.length === 0 && <p className="text-sm text-text-secondary">No activity yet. Run a department.</p>}
+          {events.length === 0 && <p className="text-sm text-text-secondary">Aucune activité pour l'instant. Lancez un pôle.</p>}
           {events.map((e) => (
             <div key={e.id} className="text-sm leading-snug">
-              <span className="text-text-secondary font-mono text-xs">{new Date(e.ts).toLocaleTimeString()}</span>{" "}
+              <span className="text-text-secondary font-mono text-xs">{new Date(e.ts).toLocaleTimeString("fr-FR")}</span>{" "}
               <span>{e.summary}</span>
             </div>
           ))}

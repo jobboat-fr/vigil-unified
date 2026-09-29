@@ -210,3 +210,144 @@ export function libelleTheme(t: ThemeFormation): string {
       return humaniser(t.code);
   }
 }
+
+// ----------------------------------------------------------------- la passerelle (pages opérateur)
+//
+// Les pages héritées de VIGIL affichaient les valeurs de la passerelle telles quelles :
+// `pending`, `reconciled`, `live`… Mêmes principes qu'au-dessus. Les valeurs sont relevées
+// dans `winny_gateway/migrations` (les colonnes n'ont pas de `check`, elles portent la liste
+// en commentaire) et dans `winny_gateway/ops/engine.py` pour les pôles.
+
+/** `outbound_actions.status` (021) — une action sortante soumise à validation. */
+const ACTION_SORTANTE: Record<string, string> = {
+  pending: "En attente",
+  executed: "Exécutée",
+  rejected: "Refusée",
+  failed: "Échouée",
+};
+export const statutActionSortante = (v?: string | null) => traduire(ACTION_SORTANTE, v);
+
+/** `finance_transactions.status` (011) — capturer, classer, rapprocher. */
+const OPERATION: Record<string, string> = {
+  uncategorized: "À classer",
+  categorized: "Classée",
+  reconciled: "Rapprochée",
+};
+export const statutOperation = (v?: string | null) => traduire(OPERATION, v);
+
+/** `finance_connections.status` (018) et `connections.status` (020). */
+const LIAISON: Record<string, string> = {
+  active: "Active",
+  error: "En erreur",
+  revoked: "Révoquée",
+};
+export const statutLiaison = (v?: string | null) => traduire(LIAISON, v);
+
+/** `connections.kind` (020) — la famille d'un connecteur, déclarée par chaque intégration. */
+const FAMILLE_CONNECTEUR: Record<string, string> = {
+  engineering: "Développement",
+  email: "Messagerie",
+  crm: "CRM",
+  tasks: "Tâches",
+  payments: "Paiements",
+  bank: "Banque",
+  accounting: "Comptabilité",
+  generic: "Autre",
+};
+export const familleConnecteur = (v?: string | null) => traduire(FAMILLE_CONNECTEUR, v);
+
+/** `departments.status` (017) — un pôle n'est actif qu'après son autotest. */
+const POLE: Record<string, string> = {
+  provisioning: "En préparation",
+  live: "Actif",
+  failing: "En échec",
+};
+export const statutPole = (v?: string | null) => traduire(POLE, v);
+
+/** `ops_tasks.status` (017) — une exécution de pôle. */
+const TACHE_POLE: Record<string, string> = {
+  queued: "En file",
+  working: "En cours",
+  done: "Terminée",
+  blocked: "Bloquée",
+  halted: "Arrêtée",
+};
+export const statutTachePole = (v?: string | null) => traduire(TACHE_POLE, v);
+
+/**
+ * Les pôles et leurs travaux (`ops/engine.py`), dits en français.
+ *
+ * Seul l'affichage change : le serveur garde ses identifiants et son `mandate` anglais, qui
+ * nourrit aussi les consignes des agents — le traduire là-bas changerait leur comportement.
+ * Un pôle ajouté côté serveur et absent d'ici garde son texte d'origine. La clé est le
+ * `slug` du pôle : son `id` est un identifiant propre à chaque organisme.
+ */
+const POLES: Record<string, { nom: string; mandat: string }> = {
+  support: { nom: "Support", mandat: "Trier la boîte de réception : classer chaque message et préparer une réponse à ceux qui en attendent une." },
+  finance: { nom: "Finance", mandat: "Rapprocher les comptes : relever les opérations bancaires, classer chacune et signaler les anomalies à revoir." },
+  revenue: { nom: "Ventes", mandat: "Garder les affaires en mouvement : préparer une relance pour chaque affaire arrêtée en proposition ou en négociation." },
+  marketing: { nom: "Marketing", mandat: "Préparer des campagnes pour la base de contacts : public, canaux et variantes de message." },
+  growth: { nom: "Prospection", mandat: "Trouver et qualifier les prospects entrants dans le CRM, puis confier les affaires au pôle Ventes." },
+  legal: { nom: "Juridique", mandat: "Relire les documents de l'organisme (le coffre) : risques, obligations et échéances, sources citées." },
+  operations: { nom: "Opérations", mandat: "Suivre les actions ouvertes et le travail bloqué : un point d'étape déterministe." },
+  cos: { nom: "Coordination", mandat: "Répartir le travail entre les pôles et rédiger la note de synthèse de la direction." },
+};
+export const nomPole = (slug: string, nomServeur: string) => POLES[slug]?.nom ?? nomServeur;
+export const mandatPole = (slug: string, mandatServeur: string) => POLES[slug]?.mandat ?? mandatServeur;
+
+/** Le regard qui relit un pôle (`head_lens`). */
+const REGARD: Record<string, string> = {
+  comms: "communication",
+  cfo_review: "direction financière",
+  cro: "direction commerciale",
+  cmo: "direction marketing",
+  legal_review: "juridique",
+  coo: "direction des opérations",
+  cos: "coordination",
+};
+export const regardPole = (v?: string | null) => (v ? REGARD[v] ?? humaniser(v).toLowerCase() : "");
+
+/** Les travaux d'un pôle (`jobs`), en verbe : ce sont des boutons. */
+const TRAVAIL: Record<string, string> = {
+  run: "Lancer",
+  triage: "Trier",
+  reconcile: "Rapprocher",
+  report: "Rapport",
+  analyze: "Analyser",
+  follow_up: "Relancer",
+  campaign: "Campagne",
+  scout: "Prospecter",
+  review: "Relire",
+  digest: "Point d'étape",
+  route: "Répartir",
+  brief: "Note de synthèse",
+  selftest: "Autotest",
+};
+export const nomTravail = (v?: string | null) => traduire(TRAVAIL, v);
+
+/**
+ * `subscriptions.status` — les états d'abonnement de Stripe, recopiés tels quels par le
+ * webhook (`routes/billing.py`), plus `inactive` que le webhook pose quand Stripe n'en dit rien.
+ */
+const ABONNEMENT: Record<string, string> = {
+  active: "Actif",
+  trialing: "Période d'essai",
+  past_due: "Paiement en retard",
+  unpaid: "Impayé",
+  canceled: "Résilié",
+  incomplete: "Paiement à finaliser",
+  incomplete_expired: "Paiement expiré",
+  paused: "Suspendu",
+  inactive: "Inactif",
+};
+export const statutAbonnement = (v?: string | null) => traduire(ABONNEMENT, v);
+
+/** Le nom d'une formule, tel que `ops/billing.py` (`OPS_PLANS`) le donne à la page Facturation. */
+const FORMULE: Record<string, string> = {
+  free: "Gratuit",
+  starter: "Starter",
+  pro: "Pro",
+  team: "Team",
+  enterprise: "Enterprise",
+};
+export const nomFormule = (v?: string | null) => traduire(FORMULE, v);
