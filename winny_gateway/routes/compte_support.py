@@ -145,10 +145,26 @@ class DemandePublique(BaseModel):
     site_web: str | None = Field(default=None, description="Piège à robots : doit rester vide.")
 
 
+#: Une référence de requête ou d'incident : l'`x-request-id` que la passerelle et LEARN
+#: écrivent dans chaque ligne de journal (`requete_id`), 8 à 32 caractères hexadécimaux.
+_REFERENCE = r"^[0-9a-f]{8,32}$"
+
+
 class DemandeConnectee(BaseModel):
     sujet: str = Field(min_length=3, max_length=160)
     message: str = Field(min_length=10, max_length=5000)
     page: str | None = Field(default=None, max_length=200)
+    reference: str | None = Field(default=None, pattern=_REFERENCE,
+                                  description="Référence affichée par l'écran d'erreur, jointe à la demande.")
+
+
+class IncidentClient(BaseModel):
+    """Ce qu'un écran d'erreur envoie : de quoi retrouver l'incident, rien de ce qui a été saisi."""
+    reference: str = Field(pattern=_REFERENCE)
+    nature: Literal["module", "rendu"]
+    page: str = Field(max_length=200)
+    message: str = Field(max_length=500)
+    version: str | None = Field(default=None, max_length=40)
 
 
 #: Le repli en mémoire, et rien d'autre qu'un repli.
@@ -288,6 +304,26 @@ async def demande_publique(body: DemandePublique, request: Request) -> dict[str,
     return {"ok": True, "data": {"recu": True, "reference": str(ticket["id"])[:8].upper()}}
 
 
+@router.post("/api/v1/support/incident")
+async def incident_client(body: IncidentClient, request: Request) -> dict[str, Any]:
+    """Un écran s'est interrompu dans le navigateur : on l'inscrit au journal sous SA référence.
+
+    Avant le 29/09, ces erreurs ne quittaient jamais le navigateur ; l'écran montrait la
+    référence du dernier appel réussi, qui ne menait à rien d'utile. Désormais la ligne existe,
+    et la référence affichée est la sienne. Public (l'erreur peut survenir avant la connexion),
+    borné en taille et en débit, et silencieux quand le plafond est atteint : un écran d'erreur
+    ne doit jamais en afficher un second.
+    """
+    ip = request.headers.get("cf-connecting-ip") or (request.client.host if request.client else "")
+    empreinte = hashlib.sha256(ip.encode()).hexdigest()[:12]
+    if await _trop_de_demandes(f"incident:{empreinte}", limite=30, fenetre=3600):
+        return {"ok": True, "data": {"note": False}}
+    logger.warning("Incident d'affichage (%s) sur %s.", body.nature, body.page,
+                   extra={"evenement": "client.incident", "request_id": body.reference, "nature": body.nature,
+                          "page": body.page, "erreur": body.message, "version": body.version, "ip": empreinte})
+    return {"ok": True, "data": {"note": True}}
+
+
 @router.post("/api/v1/support/demande")
 async def demande_connectee(body: DemandeConnectee, user: dict = Depends(get_current_user)) -> dict[str, Any]:
     uid = _uid(user)
@@ -296,6 +332,10 @@ async def demande_connectee(body: DemandeConnectee, user: dict = Depends(get_cur
         raise HTTPException(status_code=429, detail={"error": "trop_de_demandes",
                                                      "detail": "Plusieurs demandes sont déjà ouvertes. Nous y répondons."})
     message = body.message + (f"\n\n(page : {body.page})" if body.page else "")
+    if body.reference:
+        # La référence de l'écran d'erreur : l'exploitant la cherche telle quelle dans les
+        # journaux (`requete_id`), sans demander l'heure ni l'écran à la personne.
+        message += f"\n(référence technique : {body.reference} — journaux, requete_id)"
     ticket = await _creer_ticket(user_id=uid, email=prof.get("email") or user.get("email") or "", sujet=body.sujet,
                                  message=message, source="application", tenant_id=prof.get("tenant_id"))
     logger.info("Demande d'aide de %s (%s), ticket %s.", uid, prof.get("role"), ticket["id"],

@@ -2,7 +2,8 @@ import { Component, type ErrorInfo, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { estEchecDeModule, rechargerPourNouvelleVersion } from "@/lib/nouvelleVersion";
-import { derniereReference, referenceCourte } from "@/lib/reference";
+import { derniereReference, nouvelleReference, referenceCourte } from "@/lib/reference";
+import { signalerIncident } from "@/lib/compte";
 
 /**
  * Ce qu'on montre quand ça casse.
@@ -18,6 +19,7 @@ import { derniereReference, referenceCourte } from "@/lib/reference";
 export function EcranErreur({
   titre = "Cet écran n'a pas pu s'afficher",
   cause,
+  detail,
   reference,
   preserve = "Rien de ce que vous avez saisi n'a été envoyé — donc rien n'a été enregistré de travers.",
   onReessayer,
@@ -25,6 +27,8 @@ export function EcranErreur({
 }: {
   titre?: string;
   cause?: string;
+  /** Le message technique brut (souvent en anglais) : replié, pour le support. */
+  detail?: string;
   reference?: string;
   preserve?: string | null;
   onReessayer?: () => void;
@@ -32,6 +36,12 @@ export function EcranErreur({
 }) {
   const ref = reference ?? derniereReference();
   const naviguer = useNavigate();
+  // « Aide et support » emporte la référence et la page : la personne n'a rien à recopier.
+  const versAide = () => {
+    const q = new URLSearchParams({ page: window.location.pathname });
+    if (ref) q.set("reference", ref);
+    naviguer(`/aide?${q.toString()}#demande`);
+  };
   return (
     <div className={compact ? "w-full" : "flex min-h-0 flex-1 items-center justify-center px-4 py-10"}>
       <div className="w-full max-w-lg rounded-2xl border border-current/15 p-6">
@@ -41,6 +51,12 @@ export function EcranErreur({
         </div>
         <h1 className="mt-3 text-lg font-semibold">{titre}</h1>
         {cause && <p className="mt-2 break-words text-sm text-text-secondary">{cause}</p>}
+        {detail && (
+          <details className="mt-2 text-xs text-text-secondary">
+            <summary className="cursor-pointer">Détail technique</summary>
+            <p className="mt-1 break-words font-mono">{detail}</p>
+          </details>
+        )}
         {preserve && <p className="mt-3 text-sm">{preserve}</p>}
 
         <div className="mt-5 flex flex-wrap gap-2">
@@ -52,7 +68,7 @@ export function EcranErreur({
           <Button size="sm" outlined onClick={() => naviguer("/accueil")}>
             Retour à l'accueil
           </Button>
-          <Button size="sm" ghost onClick={() => naviguer("/aide")}>
+          <Button size="sm" ghost onClick={versAide}>
             Aide et support
           </Button>
         </div>
@@ -60,8 +76,8 @@ export function EcranErreur({
         {ref && (
           <div className="mt-5 border-t border-current/10 pt-4">
             <p className="text-xs text-text-secondary">
-              Si vous écrivez au support, donnez cette référence — elle mène directement à la trace
-              de votre requête, sans avoir à raconter l'heure et l'écran.
+              Cette référence est jointe automatiquement si vous passez par « Aide et support ». Elle
+              permet au support de retrouver l'incident dans nos journaux, sans vous demander l'heure ni l'écran.
             </p>
             <button
               type="button"
@@ -94,19 +110,30 @@ export class FrontiereErreur extends Component<
   state: { erreur: Error | null; reference?: string; recharge?: boolean } = { erreur: null };
 
   static getDerivedStateFromError(erreur: Error) {
-    return { erreur, reference: derniereReference() };
+    // Une référence PROPRE à l'incident : celle du dernier appel réussi ne menait à rien
+    // (capture d'Azer, 29/09 — « 3c824844 » ne correspondait à aucune erreur au journal).
+    return { erreur, reference: nouvelleReference() };
   }
 
   componentDidCatch(erreur: Error, info: ErrorInfo) {
     // Un onglet plus vieux que le déploiement : on prend la version en ligne, sans écran
     // d'incident — ce n'en est pas un (voir lib/nouvelleVersion).
-    if (estEchecDeModule(erreur) && rechargerPourNouvelleVersion()) {
-      this.setState({ recharge: true });
+    if (estEchecDeModule(erreur)) {
+      if (rechargerPourNouvelleVersion()) {
+        this.setState({ recharge: true });
+        return;
+      }
+      if (this.state.reference) {
+        signalerIncident({ reference: this.state.reference, nature: "module", page: window.location.pathname, message: erreur.message });
+      }
       return;
     }
     // La console reste la source pour le développement ; en production, l'important est
     // que la personne ait une sortie, pas qu'on remonte une pile au serveur.
     console.error("[frontière] écran interrompu", erreur, info.componentStack);
+    if (this.state.reference) {
+      signalerIncident({ reference: this.state.reference, nature: "rendu", page: window.location.pathname, message: erreur.message });
+    }
   }
 
   componentDidUpdate(prev: { children: ReactNode; titre?: string; cle?: string }) {
@@ -130,6 +157,7 @@ export class FrontiereErreur extends Component<
         <EcranErreur
           titre="Cet écran n'a pas pu se charger"
           cause="La page n'a pas pu être téléchargée : la connexion est peut-être coupée, ou une mise à jour est en cours."
+          detail={this.state.erreur.message}
           reference={this.state.reference}
           onReessayer={() => window.location.reload()}
         />
@@ -138,7 +166,8 @@ export class FrontiereErreur extends Component<
     return (
       <EcranErreur
         titre={this.props.titre}
-        cause={this.state.erreur.message}
+        cause="Une erreur inattendue a interrompu cet écran. Elle nous a été signalée."
+        detail={this.state.erreur.message}
         reference={this.state.reference}
         onReessayer={() => this.setState({ erreur: null })}
       />

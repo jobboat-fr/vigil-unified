@@ -117,3 +117,41 @@ def test_boite_cloisonnee_par_organisme(c):
     assert c.post(f"/api/v1/support/boite/{ref['id']}/reponse", json={"message": "C'est corrigé."}, headers=h("adm")).status_code == 200
     assert c.db.tables["support_tickets"][0]["status"] == "answered"
     assert len(c.get("/api/v1/support/boite", headers=h("sa")).json()["data"]["demandes"]) == 1
+
+
+# ── Incident d'affichage : journalisé sous la référence que la personne voit (29/09) ──
+INCIDENT = {"reference": "3c824844aa55bb66cc77dd88ee99ff00", "nature": "module",
+            "page": "/a-faire", "message": "Importing a module script failed.", "version": "index-dT5S80y7"}
+
+
+def test_incident_journalise_sous_sa_reference(c, caplog):
+    import logging
+    with caplog.at_level(logging.WARNING, logger="winny_gw.compte"):
+        r = c.post("/api/v1/support/incident", json=INCIDENT)
+    assert r.status_code == 200 and r.json()["data"]["note"] is True
+    ligne = next(x for x in caplog.records if getattr(x, "evenement", "") == "client.incident")
+    assert ligne.request_id == INCIDENT["reference"] and ligne.page == "/a-faire"
+
+
+@pytest.mark.parametrize("champ,valeur", [
+    ("reference", "pas-hexa!"), ("reference", "abc"), ("nature", "autre"),
+    ("message", "x" * 501), ("page", "/" + "p" * 200),
+])
+def test_incident_borne(c, champ, valeur):
+    assert c.post("/api/v1/support/incident", json={**INCIDENT, champ: valeur}).status_code == 422
+
+
+def test_incident_plafonne_sans_second_ecran_d_erreur(c):
+    notes = [c.post("/api/v1/support/incident", json=INCIDENT).json()["data"]["note"] for _ in range(32)]
+    assert notes[:30] == [True] * 30 and notes[30:] == [False, False]  # jamais un 429
+
+
+def test_demande_d_aide_porte_la_reference(c):
+    r = c.post("/api/v1/support/demande", headers=h("app"), json={
+        "sujet": "Écran en panne", "message": "La page À faire ne s'affiche pas.", "page": "/a-faire",
+        "reference": INCIDENT["reference"]})
+    assert r.status_code == 200, r.text
+    corps = c.db.tables["support_messages"][-1]["body"]
+    assert INCIDENT["reference"] in corps and "/a-faire" in corps
+    assert c.post("/api/v1/support/demande", headers=h("app"), json={
+        "sujet": "x" * 5, "message": "y" * 20, "reference": "<script>"}).status_code == 422

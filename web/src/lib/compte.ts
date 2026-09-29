@@ -40,12 +40,35 @@ export const compte = {
 };
 
 export const support = {
-  demander: (sujet: string, message: string, page?: string) =>
-    appel<{ id: string; reference: string }>("POST", "/api/v1/support/demande", { sujet, message, page }),
+  demander: (sujet: string, message: string, page?: string, reference?: string) =>
+    appel<{ id: string; reference: string }>("POST", "/api/v1/support/demande", { sujet, message, page, reference }),
   boite: (statut?: string) => appel<{ demandes: Demande[] }>("GET", `/api/v1/support/boite${statut ? `?statut=${statut}` : ""}`),
   repondre: (id: string, message: string) => appel<{ repondu: boolean }>("POST", `/api/v1/support/boite/${id}/reponse`, { message }),
   statut: (id: string, statut: Demande["status"]) => appel<{ statut: string }>("PATCH", `/api/v1/support/boite/${id}`, { statut }),
 };
+
+/**
+ * Signale un écran interrompu à la passerelle, sous la référence que la personne voit.
+ *
+ * L'en-tête `x-request-id` porte cette même référence : la passerelle l'écrit dans sa ligne
+ * de journal (`requete_id`), si bien que la chaîne lue au téléphone se cherche telle quelle.
+ * Rien de ce qui a été saisi ne part — la page, la nature de l'erreur, son message, la
+ * version. Jamais bloquant : un échec ici ne doit pas produire un second écran d'erreur.
+ */
+export function signalerIncident(incident: { reference: string; nature: "module" | "rendu"; page: string; message: string }): void {
+  const version = document.querySelector<HTMLScriptElement>('script[type="module"][src*="/assets/index-"]')
+    ?.src.match(/index-([\w-]+)\.js/)?.[1];
+  try {
+    void fetch(`${WW_BASE}/api/v1/support/incident`, {
+      method: "POST",
+      keepalive: true,
+      headers: { "content-type": "application/json", "x-request-id": incident.reference },
+      body: JSON.stringify({ ...incident, page: incident.page.slice(0, 200), message: incident.message.slice(0, 500), version }),
+    }).catch(() => undefined);
+  } catch {
+    // Rien : l'écran d'erreur reste la priorité.
+  }
+}
 
 /** Les pages légales vivent sur le site public, là où les liens d'activation pointent déjà. */
 export const LIENS_LEGAUX = [

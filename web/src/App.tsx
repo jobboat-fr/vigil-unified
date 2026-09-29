@@ -744,12 +744,23 @@ export default function App() {
       // `RootRedirect`, qui renvoyait au tableau de bord sans un mot : vu du siège, un
       // bouton cassé. Le refus reste, la phrase arrive — et l'adresse demandée ne change
       // plus sous les pieds de la personne.
+      //
+      // Une sous-adresse sans entrée de menu hérite du garde de son parent : /profiles/new
+      // (réservé au super_admin, comme /profiles) s'ouvrait pour qui la tapait (audit du 29/09).
       ...(roleResolu
-        ? Object.fromEntries(
-            [CHAT_NAV_ITEM, ...BUILTIN_NAV_REST].filter(
+        ? (() => {
+            const refuses = [CHAT_NAV_ITEM, ...BUILTIN_NAV_REST].filter(
               (n) => (n.roles || n.capability) && !navAllowed(n, learnRole, pagePerms),
-            ).map((n) => [n.path, ecranAccesRefuse(n.label)]),
-          )
+            );
+            const entrees: [string, ComponentType][] = refuses.map((n) => [n.path, ecranAccesRefuse(n.label)]);
+            for (const chemin of Object.keys(BUILTIN_ROUTES_CORE)) {
+              const parent = refuses
+                .filter((n) => chemin.startsWith(`${n.path}/`))
+                .sort((x, y) => y.path.length - x.path.length)[0];
+              if (parent) entrees.push([chemin, ecranAccesRefuse(parent.label)]);
+            }
+            return Object.fromEntries(entrees);
+          })()
         : {}),
     }),
     [embeddedChat, learnRole, roleResolu, pagePerms],

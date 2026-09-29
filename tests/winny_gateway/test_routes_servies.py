@@ -25,6 +25,7 @@ PUBLIQUES = {
     "/v1/rooms/livekit/webhook": "signature LiveKit (presence.verify_webhook)",
     "/api/v1/features": "drapeaux de fonctionnalités, rien de personnel",
     "/api/v1/support/public": "formulaire de support public, limité en débit",
+    "/api/v1/support/incident": "incident d'affichage, sans donnée saisie, borné en taille et en débit",
     "/v1/artifacts/partage/{token}": "jeton opaque 192 bits",
     "/v1/rooms/meeting/{share_token}": "jeton opaque 122 bits, 72 h",
     "/v1/rooms/guest/{share_token}/join": "jeton opaque 122 bits, 72 h",

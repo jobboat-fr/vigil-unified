@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useLearnRole } from "@/lib/supabase";
 import { LIENS_LEGAUX, support } from "@/lib/compte";
@@ -30,11 +30,17 @@ const LIENS = [
 
 export default function AidePage() {
   const { role } = useLearnRole();
-  const { pathname } = useLocation();
+  // Venue d'un écran d'erreur : la page et la référence sont dans l'adresse. On les garde
+  // telles quelles (la passerelle revérifie leur forme) et on pré-remplit la demande.
+  const [params] = useSearchParams();
+  const pageEnCause = params.get("page")?.slice(0, 200) || undefined;
+  const referenceBrute = params.get("reference") ?? "";
+  const reference = /^[0-9a-f]{8,32}$/.test(referenceBrute) ? referenceBrute : undefined;
   const [ouverte, setOuverte] = useState<number | null>(null);
   const [recherche, setRecherche] = useState("");
-  const [sujet, setSujet] = useState("");
-  const [message, setMessage] = useState("");
+  const [sujet, setSujet] = useState(() => (reference ? "Un écran ne s'affiche pas" : ""));
+  const [message, setMessage] = useState(() =>
+    reference ? `L'écran ${pageEnCause ?? ""} s'est interrompu. Ce que je faisais juste avant : ` : "");
   const [envoi, setEnvoi] = useState<{ etat: "repos" | "cours" | "ok" | "erreur"; texte?: string }>({ etat: "repos" });
 
   const questions = useMemo(() => {
@@ -45,7 +51,7 @@ export default function AidePage() {
   const envoyer = async () => {
     setEnvoi({ etat: "cours" });
     try {
-      const res = await support.demander(sujet.trim(), message.trim(), pathname);
+      const res = await support.demander(sujet.trim(), message.trim(), pageEnCause, reference);
       setEnvoi({ etat: "ok", texte: `Demande enregistrée — référence ${res.reference}. La réponse arrivera par e-mail et ici.` });
       setSujet("");
       setMessage("");
@@ -94,6 +100,11 @@ export default function AidePage() {
 
       <section id="demande" className="flex flex-col gap-3 rounded-xl border border-current/15 p-4">
         <h2 className="text-lg font-semibold">Écrire au support</h2>
+        {reference && (
+          <p className="text-xs text-text-secondary">
+            La référence de l'incident (<span className="font-mono">{reference.slice(0, 8)}</span>) sera jointe à votre demande.
+          </p>
+        )}
         <input value={sujet} onChange={(e) => setSujet(e.target.value)} placeholder="Sujet — par exemple : je ne peux pas signer ma convention"
           className="rounded-md border border-current/20 bg-transparent px-3 py-2 text-base outline-none" maxLength={160} />
         <textarea value={message} onChange={(e) => setMessage(e.target.value)} rows={5} maxLength={5000}
