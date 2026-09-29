@@ -194,15 +194,20 @@ def create_app(config: GatewayConfig | None = None) -> FastAPI:
     app.add_middleware(BaseHTTPMiddleware, dispatch=log_request)
 
     # Register routers
+    # Les routes héritées de WinnyWoo (trading, clés de courtier, chat d'origine) restent pour
+    # vigil-ai.xyz et ne servent plus les comptes VTLVS ni leurs agents (29/09) : voir perimetre.py.
+    from fastapi import Depends as _Depends
+    from winny_gateway import perimetre
+    _HORS_VTLVS = [_Depends(perimetre.hors_vtlvs)]
     # LEARN moved to jobboat-fr/hbs-backend- (app/learn/) on 2026-09-06 and is served
     # from Railway at api.vtlvs.com. It was mounted here while it was being built; keeping
     # a second copy in this repo meant two copies of the same authorization rules, and they
     # had started to diverge within a day. See learn/README.md.
 
-    app.include_router(portfolio.router)
-    app.include_router(orders.router)
+    app.include_router(portfolio.router, dependencies=_HORS_VTLVS)
+    app.include_router(orders.router, dependencies=_HORS_VTLVS)
     app.include_router(approvals.router)
-    app.include_router(agents.router)
+    app.include_router(agents.router, dependencies=_HORS_VTLVS)
 
     # Hermes-on-OVH proxy takes precedence over the in-process chat
     # orchestrator whenever HERMES_URL is set. Both share the prefix
@@ -210,20 +215,20 @@ def create_app(config: GatewayConfig | None = None) -> FastAPI:
     # router included first.
     if config.hermes_url:
         logger.info("Chat: routing /api/v1/chat/* to Hermes at %s", config.hermes_url)
-        app.include_router(chat_proxy.router)
+        app.include_router(chat_proxy.router, dependencies=_HORS_VTLVS)
     else:
         logger.info("Chat: HERMES_URL unset — using in-process orchestrator fallback")
-        app.include_router(chat.router)
-    app.include_router(backtest.router)
+        app.include_router(chat.router, dependencies=_HORS_VTLVS)
+    app.include_router(backtest.router, dependencies=_HORS_VTLVS)
     app.include_router(audit.router)
-    app.include_router(signals.router)
-    app.include_router(settings.router)
+    app.include_router(signals.router, dependencies=_HORS_VTLVS)
+    app.include_router(settings.router, dependencies=_HORS_VTLVS)
     app.include_router(onboarding.router)
-    app.include_router(broker_connect.router)
+    app.include_router(broker_connect.router, dependencies=_HORS_VTLVS)
     app.include_router(webhooks.router)
     app.include_router(features.router)
-    app.include_router(auto_trade.router)
-    app.include_router(market.router)
+    app.include_router(auto_trade.router, dependencies=_HORS_VTLVS)
+    app.include_router(market.router, dependencies=_HORS_VTLVS)
     app.include_router(billing.router)
     # Mon compte (RGPD) et support — avant l'ancien routeur, dont DELETE /api/v1/account est retiré.
     from winny_gateway.routes import compte_support
