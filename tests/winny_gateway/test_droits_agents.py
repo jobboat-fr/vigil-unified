@@ -77,13 +77,13 @@ def test_sans_abonnement_rien(db):
     assert not any(run(da.etat("adm_rien"))["agents"].values())
 
 
-def test_compte_vigil_garde_sa_regle(db):
-    """Sans ligne learn_profiles : c'est un compte vigil-ai.xyz, jugé sur son abonnement Stripe."""
-    assert not any(run(da.etat("vigil_u"))["agents"].values())
+def test_compte_sans_profil_ferme(db):
+    """vigil-ai.xyz éteint (29/09) : sans ligne learn_profiles, aucun agent — même avec un ancien
+    abonnement Stripe de l'organisation."""
     db.tables["org_members"] = [{"user_id": "vigil_u", "org_id": "o1"}]
     db.tables["subscriptions"] = [{"org_id": "o1", "status": "active", "current_period_end": None}]
     e = run(da.etat("vigil_u"))
-    assert e["compte"] == "vigil" and all(e["agents"].values())
+    assert e["compte"] is None and not any(e["agents"].values())
 
 
 @pytest.mark.parametrize("uid,surface,ouvert", [

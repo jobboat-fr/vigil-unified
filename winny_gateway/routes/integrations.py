@@ -27,7 +27,8 @@ from winny_gateway.logging import get_logger
 logger = get_logger(__name__)
 router = APIRouter(prefix="/v1/integrations", tags=["integrations"])
 
-MANAGE_URL = "https://winnywoo.vigil-ai.xyz"
+# L'ancien lien de gestion pointait vers winnywoo.vigil-ai.xyz, éteint ; aucun écran ne le lit.
+MANAGE_URL: str | None = None
 
 # 30-second response cache — the MCP config changes rarely and every VIGIL
 # Integrations page view shouldn't cost an OVH round-trip.

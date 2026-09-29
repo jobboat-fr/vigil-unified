@@ -18,7 +18,7 @@ Env:
   STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET
   STRIPE_PRICE_ID_STARTER / STRIPE_PRICE_ID_PRO / STRIPE_PRICE_ID_TEAM
   (legacy STRIPE_PRO_PRICE_ID still honoured for pro)
-  APP_URL — checkout return host (default https://vigil-ai.xyz)
+  APP_URL — checkout return host (default https://app.vtlvs.com)
 
 Data model notes (verified against prod Supabase 2026-07-07):
   * subscriptions.org_id → organizations.id (FK repointed by migration
@@ -50,7 +50,9 @@ router = APIRouter(prefix="/api/v1/billing", tags=["billing"])
 
 STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY", "")
 STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
-APP_URL = os.environ.get("APP_URL", "https://vigil-ai.xyz").rstrip("/")
+# vigil-ai.xyz est éteint (29/09) : le retour de paiement revenait sur un site mort, APP_URL
+# n'étant pas posé sur Railway.
+APP_URL = os.environ.get("APP_URL", "https://app.vtlvs.com").rstrip("/")
 
 # Tiers a customer can buy self-serve. `free` is the default; `enterprise`
 # is contact-sales (no price id on purpose).
