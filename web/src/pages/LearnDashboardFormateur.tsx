@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { SqueletteEcran } from "@/components/EmptyState";
 import { Link } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/components/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getCalendar, getSessions, getReviewQueue, type Slot, type Session } from "@/lib/learn";
 import { RejoindreSalle } from "@/components/RejoindreSalle";
 import { isoDay } from "@/lib/day";

@@ -7,7 +7,7 @@ import {
   Terminal,
 } from "lucide-react";
 import { api, type OAuthProvider } from "@/lib/api";
-import { Button } from "@nous-research/ui/ui/components/button";
+import { Button } from "@/components/ui/button";
 import { CopyButton } from "@nous-research/ui/ui/components/command-block";
 import { Spinner } from "@nous-research/ui/ui/components/spinner";
 import {
@@ -16,7 +16,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@nous-research/ui/ui/components/card";
+} from "@/components/ui/card";
 import { Badge } from "@nous-research/ui/ui/components/badge";
 import { ConfirmDialog } from "@nous-research/ui/ui/components/confirm-dialog";
 import { OAuthLoginModal } from "@/components/OAuthLoginModal";

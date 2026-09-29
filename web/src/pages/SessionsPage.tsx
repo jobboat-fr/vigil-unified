@@ -41,13 +41,13 @@ import { timeAgo } from "@/lib/utils";
 import { Markdown } from "@/components/Markdown";
 import { PlatformsCard } from "@/components/PlatformsCard";
 import { Toast } from "@nous-research/ui/ui/components/toast";
-import { Button } from "@nous-research/ui/ui/components/button";
+import { Button } from "@/components/ui/button";
 import { Checkbox } from "@nous-research/ui/ui/components/checkbox";
 import { ListItem } from "@nous-research/ui/ui/components/list-item";
 import { Segmented } from "@nous-research/ui/ui/components/segmented";
 import { Spinner } from "@nous-research/ui/ui/components/spinner";
 import { Badge } from "@nous-research/ui/ui/components/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/components/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
 import { useConfirmDelete } from "@nous-research/ui/hooks/use-confirm-delete";
 import { Input } from "@nous-research/ui/ui/components/input";
@@ -1389,7 +1389,7 @@ export default function SessionsPage() {
                 <Spinner className="shrink-0 text-[0.875rem] text-muted-foreground" />
               )}
 
-              <span className="text-xs font-mondwest tracking-[0.12em] truncate">
+              <span className="text-xs font-mondwest tracking-[0.05em] truncate">
                 {activeAction === "restart"
                   ? t.status.restartGateway
                   : t.status.updateHermes}

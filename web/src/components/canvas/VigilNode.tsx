@@ -176,7 +176,7 @@ function NodeContent({ d, editing, labelDraft, editingDesc, descDraft,
   return (
     <div className={`${center ? 'text-center' : ''} w-full`}>
       {d.kind && (
-        <p className="text-[8px] font-mono tracking-[0.2em] uppercase mb-1 opacity-50"
+        <p className="text-[8px] font-mono tracking-[0.05em] uppercase mb-1 opacity-50"
            style={{ color: d.color || '#00e5ff' }}>
           {d.kind}
         </p>

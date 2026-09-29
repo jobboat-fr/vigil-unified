@@ -21,7 +21,7 @@ import { Toast } from "@nous-research/ui/ui/components/toast";
 import { useConfirmDelete } from "@nous-research/ui/hooks/use-confirm-delete";
 import { useToast } from "@nous-research/ui/hooks/use-toast";
 import { OAuthProvidersCard } from "@/components/OAuthProvidersCard";
-import { Button } from "@nous-research/ui/ui/components/button";
+import { Button } from "@/components/ui/button";
 import { ListItem } from "@nous-research/ui/ui/components/list-item";
 import { Spinner } from "@nous-research/ui/ui/components/spinner";
 import {
@@ -30,7 +30,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@nous-research/ui/ui/components/card";
+} from "@/components/ui/card";
 import { Badge } from "@nous-research/ui/ui/components/badge";
 import { Input } from "@nous-research/ui/ui/components/input";
 import { Label } from "@nous-research/ui/ui/components/label";

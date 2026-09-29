@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Button } from "@nous-research/ui/ui/components/button";
+import { Button } from "@/components/ui/button";
 import { support, type Demande } from "@/lib/compte";
 import { expliquerCourt } from "@/lib/refus";
 

@@ -15,8 +15,8 @@ import {
 } from "lucide-react";
 import * as QRCode from "qrcode";
 import { Badge } from "@nous-research/ui/ui/components/badge";
-import { Button } from "@nous-research/ui/ui/components/button";
-import { Card, CardContent } from "@nous-research/ui/ui/components/card";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@nous-research/ui/ui/components/input";
 import { Label } from "@nous-research/ui/ui/components/label";
 import { Spinner } from "@nous-research/ui/ui/components/spinner";
@@ -706,7 +706,7 @@ function TelegramOnboardingPanel({
 
                 <div className="grid gap-2">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-xs uppercase tracking-[0.12em] text-muted-foreground">
+                    <span className="text-xs uppercase tracking-[0.05em] text-muted-foreground">
                       Utilisateurs autorisés
                     </span>
                     {detectedOwnerId && allowedIds.includes(detectedOwnerId) && (

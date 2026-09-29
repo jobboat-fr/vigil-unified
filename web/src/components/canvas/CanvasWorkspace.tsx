@@ -499,7 +499,7 @@ function CanvasInner({ initialNodes = [], initialEdges = [], onCanvasChange, col
             >
               <div className="flex items-center gap-1.5 mb-2">
                 <Sparkles className="w-3.5 h-3.5 text-cyan-electric" />
-                <span className="text-[10px] font-mono tracking-[0.18em] text-dark-100/70 uppercase">Brainstorm with the council</span>
+                <span className="text-[10px] font-mono tracking-[0.05em] text-dark-100/70 uppercase">Brainstorm with the council</span>
               </div>
 
               <div className="flex gap-1.5 mb-2">
@@ -568,7 +568,7 @@ function CanvasInner({ initialNodes = [], initialEdges = [], onCanvasChange, col
           style={{ left: contextMenu.x, top: contextMenu.y }}
           onClick={(e) => e.stopPropagation()}
         >
-          <p className="px-4 py-1.5 text-[8px] font-mono tracking-[0.2em] text-dark-300/40">ADD BLOCK</p>
+          <p className="px-4 py-1.5 text-[8px] font-mono tracking-[0.05em] text-dark-300/40">ADD BLOCK</p>
           {BLOCK_TYPES.map(({ label, kind, shape, color: c, Icon }) => (
             <button
               key={kind}
@@ -591,7 +591,7 @@ function CanvasInner({ initialNodes = [], initialEdges = [], onCanvasChange, col
           style={{ left: edgeLabelMenu.x - 110, top: edgeLabelMenu.y - 56 }}
           onClick={(e) => e.stopPropagation()}
         >
-          <p className="text-[8px] font-mono tracking-[0.2em] text-dark-300/40 mb-2">EDGE LABEL</p>
+          <p className="text-[8px] font-mono tracking-[0.05em] text-dark-300/40 mb-2">EDGE LABEL</p>
           <input
             autoFocus
             defaultValue={edgeLabelMenu.label}

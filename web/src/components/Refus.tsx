@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Button } from "@nous-research/ui/ui/components/button";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { referenceCourte } from "@/lib/reference";
 import { expliquer, type Explication, type Registre } from "@/lib/refus";
@@ -69,7 +69,7 @@ export function Refus({
     >
       <div aria-hidden className="h-[2px] w-full" style={{ background: ARETE[x.registre] }} />
       <div className={compact ? "px-4 py-4" : "px-5 py-5"}>
-        <div className="text-[11px] uppercase tracking-[0.18em] text-text-secondary">
+        <div className="text-[11px] uppercase tracking-[0.05em] text-text-secondary">
           {ENTETE[x.registre]}
         </div>
         <p className="mt-2 text-sm font-semibold">{x.titre}</p>

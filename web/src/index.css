@@ -440,3 +440,21 @@ code { font-size: 0.875rem; }
 :root body::after {
   opacity: 0;
 }
+
+/* ── VTLVS : sortie de la typographie Hermes (29/09) ─────────────────────────────────────
+   Le kit `@nous-research/ui` imposait sa marque partout : Mondwest (le serif du menu),
+   « Rules Expanded » (titres de cartes), Courier (champs de saisie), et `text-display` =
+   capitales + espacement. Sur les captures d'Azer, c'est ce qui rendait chaque page
+   « Hermes » et illisible sur téléphone. On ne retouche pas le kit : on rebranche ses
+   polices sur celles du thème (les neuf chartes gardent la main via --theme-font-*), et
+   on neutralise les capitales et l'espacement forcés. Placé en dernier : l'emporte. */
+:root {
+  --font-mondwest: var(--theme-font-sans);
+  --font-rules-expanded: var(--theme-font-display);
+  --font-rules-compressed: var(--theme-font-display);
+}
+@layer utilities {
+  .text-display { text-transform: none; letter-spacing: normal; }
+  .font-courier { font-family: var(--theme-font-sans); }
+  .font-serif { font-family: var(--theme-font-sans); }
+}

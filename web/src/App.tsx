@@ -78,7 +78,7 @@ import {
   Inbox,
   FolderKanban,
 } from "lucide-react";
-import { Button } from "@nous-research/ui/ui/components/button";
+import { Button } from "@/components/ui/button";
 import { SelectionSwitcher } from "@nous-research/ui/ui/components/selection-switcher";
 import { Spinner } from "@nous-research/ui/ui/components/spinner";
 import { Typography } from "@nous-research/ui/ui/components/typography/index";
@@ -939,7 +939,7 @@ export default function App() {
                 <Typography className="font-bold text-[1.05rem] leading-[0.95] tracking-[0.045rem]">
                   <span style={{ fontFamily: MOT, fontWeight: 700, letterSpacing: ".09em" }}>VTLVS</span>
                   <br />
-                  <span className="text-[0.72rem] font-medium uppercase tracking-[0.14em] opacity-60">
+                  <span className="text-[0.72rem] font-medium uppercase tracking-[0.05em] opacity-60">
                     Plateforme de formation
                   </span>
                 </Typography>
@@ -988,7 +988,7 @@ export default function App() {
                     <span
                       className={cn(
                         "px-5 pt-3 pb-1",
-                        "font-mondwest text-display text-[0.7rem] uppercase tracking-[0.14em] text-text-tertiary",
+                        "text-[0.7rem] font-semibold uppercase tracking-[0.06em] text-text-tertiary",
                         isDesktopCollapsed && "lg:hidden",
                       )}
                     >
@@ -1019,7 +1019,7 @@ export default function App() {
                   <span
                     className={cn(
                       "px-5 pt-2.5 pb-1",
-                      "font-mondwest text-display text-xs tracking-[0.12em] text-text-tertiary",
+                      "text-[0.7rem] font-semibold uppercase tracking-[0.06em] text-text-tertiary",
                       isDesktopCollapsed && "lg:hidden",
                     )}
                     id="hermes-sidebar-plugin-nav-heading"
@@ -1239,7 +1239,7 @@ function SidebarNavLink({
           cn(
             "group/nav relative flex items-center gap-3",
             "px-5 py-2.5",
-            "font-mondwest text-display uppercase text-sm tracking-[0.12em]",
+            "text-[0.9375rem] font-medium",
             "whitespace-nowrap transition-colors cursor-pointer",
             "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-midground",
             isActive
@@ -1321,7 +1321,7 @@ function SidebarSystemActions({
       <span
         className={cn(
           "px-5 pt-0.5 pb-0.5",
-          "font-mondwest text-display text-xs tracking-[0.12em] text-text-tertiary",
+          "text-[0.7rem] font-semibold uppercase tracking-[0.06em] text-text-tertiary",
           collapsed && "lg:hidden",
         )}
       >
@@ -1393,7 +1393,7 @@ function SystemActionButton({
         className={cn(
           "group/action relative flex w-full items-center gap-3",
           "px-5 py-2.5",
-          "font-mondwest text-display text-xs tracking-[0.1em]",
+          "text-sm font-medium",
           "whitespace-nowrap transition-colors cursor-pointer",
           "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-midground",
           busy
@@ -1548,7 +1548,7 @@ function SidebarTooltip({ anchor, label, warmRef }: SidebarTooltipProps) {
         "fixed z-[100] pointer-events-none",
         "px-2 py-1",
         "bg-background-base/95 border border-current/20 backdrop-blur-sm shadow-lg",
-        "font-mondwest text-display text-xs tracking-[0.1em] text-midground uppercase",
+        "text-xs font-medium text-midground",
       )}
       style={{
         top: rect.top + rect.height / 2,

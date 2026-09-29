@@ -26,10 +26,10 @@ import {
   X,
 } from "lucide-react";
 import { Badge } from "@nous-research/ui/ui/components/badge";
-import { Button } from "@nous-research/ui/ui/components/button";
+import { Button } from "@/components/ui/button";
 import { Spinner } from "@nous-research/ui/ui/components/spinner";
 import { H2 } from "@nous-research/ui/ui/components/typography/h2";
-import { Card, CardContent } from "@nous-research/ui/ui/components/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@nous-research/ui/ui/components/input";
 import { Label } from "@nous-research/ui/ui/components/label";
 import { Select, SelectOption } from "@nous-research/ui/ui/components/select";

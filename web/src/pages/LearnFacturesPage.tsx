@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/components/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SqueletteEcran } from "@/components/EmptyState";
 import { LiensLearn } from "@/components/LiensLearn";
 import { getFactures, getFacturePdf, LearnError, type Facture, type Factures, type StatutFacture } from "@/lib/learn";

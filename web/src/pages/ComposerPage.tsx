@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Button } from "@nous-research/ui/ui/components/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/components/card";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EnTetePage } from "@/components/EnTetePage";
 import { Refus } from "@/components/Refus";
 import { SqueletteEcran } from "@/components/EmptyState";
@@ -168,7 +168,7 @@ export default function ComposerPage() {
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
             <fieldset className="flex flex-col gap-2">
-              <legend className="text-xs font-medium uppercase tracking-[0.14em] text-text-secondary">
+              <legend className="text-xs font-medium uppercase tracking-[0.05em] text-text-secondary">
                 Nature
               </legend>
               {NATURES.map((n) => (
@@ -194,7 +194,7 @@ export default function ComposerPage() {
             </fieldset>
 
             <label className="flex flex-col gap-1.5">
-              <span className="text-xs font-medium uppercase tracking-[0.14em] text-text-secondary">
+              <span className="text-xs font-medium uppercase tracking-[0.05em] text-text-secondary">
                 Objet
               </span>
               <input
@@ -207,7 +207,7 @@ export default function ComposerPage() {
             </label>
 
             <label className="flex flex-col gap-1.5">
-              <span className="text-xs font-medium uppercase tracking-[0.14em] text-text-secondary">
+              <span className="text-xs font-medium uppercase tracking-[0.05em] text-text-secondary">
                 Message
               </span>
               <textarea

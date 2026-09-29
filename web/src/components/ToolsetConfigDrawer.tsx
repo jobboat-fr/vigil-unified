@@ -8,7 +8,7 @@ import type {
   ToolsetProvider,
 } from "@/lib/api";
 import { useToast } from "@nous-research/ui/hooks/use-toast";
-import { Button } from "@nous-research/ui/ui/components/button";
+import { Button } from "@/components/ui/button";
 import { Input } from "@nous-research/ui/ui/components/input";
 import { Label } from "@nous-research/ui/ui/components/label";
 import { Badge } from "@nous-research/ui/ui/components/badge";

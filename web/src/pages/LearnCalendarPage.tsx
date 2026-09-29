@@ -5,7 +5,7 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-} from "@nous-research/ui/ui/components/card";
+} from "@/components/ui/card";
 import { Link } from "react-router-dom";
 import { getCalendar, issueCalendarToken, LearnError, type Slot } from "@/lib/learn";
 import { isoDay } from "@/lib/day";

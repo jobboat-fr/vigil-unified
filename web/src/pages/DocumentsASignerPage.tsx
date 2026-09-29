@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/components/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   creerDocumentASigner,
   envoyerInvitation,

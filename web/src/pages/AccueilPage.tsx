@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { SqueletteEcran } from "@/components/EmptyState";
 import { EcranErreur } from "@/components/ErreurEcran";
 import { Link } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/components/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { declarerFait, getAccueil, messageAccueil, type EtatAccueil } from "@/lib/accueil";
 
 const dateCourte = (s: string) =>

@@ -48,7 +48,7 @@ export function PluginPage({ name }: { name: string }) {
     <div
       className={cn(
         "flex items-center gap-2 p-4",
-        "font-mondwest text-sm tracking-[0.1em] text-text-tertiary",
+        "font-mondwest text-sm tracking-[0.05em] text-text-tertiary",
       )}
     >
       <Spinner className="shrink-0" />

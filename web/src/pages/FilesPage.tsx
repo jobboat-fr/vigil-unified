@@ -17,8 +17,8 @@ import {
   Upload,
 } from "lucide-react";
 import { Badge } from "@nous-research/ui/ui/components/badge";
-import { Button } from "@nous-research/ui/ui/components/button";
-import { Card, CardContent } from "@nous-research/ui/ui/components/card";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,

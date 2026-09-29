@@ -8,11 +8,11 @@ import {
 import { FileText, RefreshCw } from "lucide-react";
 import { api } from "@/lib/api";
 import { Badge } from "@nous-research/ui/ui/components/badge";
-import { Button } from "@nous-research/ui/ui/components/button";
+import { Button } from "@/components/ui/button";
 import { FilterGroup, Segmented } from "@nous-research/ui/ui/components/segmented";
 import { Spinner } from "@nous-research/ui/ui/components/spinner";
 import { Switch } from "@nous-research/ui/ui/components/switch";
-import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/components/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@nous-research/ui/ui/components/label";
 import { useI18n } from "@/i18n";
 import { usePageHeader } from "@/contexts/usePageHeader";

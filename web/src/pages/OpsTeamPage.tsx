@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { SkeletonRows } from "@/components/EmptyState";
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/components/card";
-import { Button } from "@nous-research/ui/ui/components/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { EnTetePage } from "@/components/EnTetePage";
 import { vigil, type Department, type OpsEvent, type OpsTask, type OpsUsage } from "@/lib/vigil";
 import { GatewayError } from "@/lib/ww";

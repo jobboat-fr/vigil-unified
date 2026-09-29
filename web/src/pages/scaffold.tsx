@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Card, CardContent } from "@nous-research/ui/ui/components/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Spinner } from "@nous-research/ui/ui/components/spinner";
 import { Refus } from "@/components/Refus";
 import type { WwState } from "@/lib/useWw";

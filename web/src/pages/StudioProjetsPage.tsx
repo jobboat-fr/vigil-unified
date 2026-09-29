@@ -1,7 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { Button } from "@nous-research/ui/ui/components/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/components/card";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { usePageHeader } from "@/contexts/usePageHeader";
 import { Refus } from "@/components/Refus";
 import { AssistantProjet } from "@/components/studio/AssistantProjet";

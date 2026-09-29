@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Button } from "@nous-research/ui/ui/components/button";
+import { Button } from "@/components/ui/button";
 import { useLearnRole } from "@/lib/supabase";
 import { LIENS_LEGAUX, support } from "@/lib/compte";
 import { expliquerCourt } from "@/lib/refus";

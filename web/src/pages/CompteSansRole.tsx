@@ -1,5 +1,5 @@
 import { BlocMarqueVtlvs } from "@/components/MarqueVtlvs";
-import { Button } from "@nous-research/ui/ui/components/button";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
 
 /**

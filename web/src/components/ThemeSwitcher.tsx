@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Palette, Check, Type } from "lucide-react";
-import { Button } from "@nous-research/ui/ui/components/button";
+import { Button } from "@/components/ui/button";
 import { ListItem } from "@nous-research/ui/ui/components/list-item";
 import { BottomSheet } from "@nous-research/ui/ui/components/bottom-sheet";
 import { Typography } from "@nous-research/ui/ui/components/typography/index";
@@ -135,7 +135,7 @@ export function ThemeSwitcher({ collapsed = false, dropUp = false }: ThemeSwitch
             <div className="border-b border-current/20 px-3 py-2">
               <Typography
                 mondwest
-                className="text-display text-xs tracking-[0.12em] text-text-tertiary"
+                className="text-display text-xs tracking-[0.05em] text-text-tertiary"
               >
                 {sheetTitle}
               </Typography>
@@ -236,7 +236,7 @@ function FontSection({ fontChoices, fontId, setFont }: FontSectionProps) {
           <Type className="h-3 w-3 text-text-tertiary" />
           <Typography
             mondwest
-            className="text-display text-xs tracking-[0.12em] text-text-tertiary"
+            className="text-display text-xs tracking-[0.05em] text-text-tertiary"
           >
             {t.theme?.fontTitle ?? "Font"}
           </Typography>
@@ -275,7 +275,7 @@ function FontSection({ fontChoices, fontId, setFont }: FontSectionProps) {
         return (
           <div key={cat}>
             <div className="px-3 pb-0.5 pt-1.5">
-              <Typography className="text-[0.65rem] uppercase tracking-[0.1em] text-text-tertiary">
+              <Typography className="text-[0.65rem] uppercase tracking-[0.05em] text-text-tertiary">
                 {catLabel}
               </Typography>
             </div>

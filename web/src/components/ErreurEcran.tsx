@@ -1,6 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button } from "@nous-research/ui/ui/components/button";
+import { Button } from "@/components/ui/button";
 import { derniereReference, referenceCourte } from "@/lib/reference";
 
 /**
@@ -34,7 +34,7 @@ export function EcranErreur({
   return (
     <div className={compact ? "w-full" : "flex min-h-0 flex-1 items-center justify-center px-4 py-10"}>
       <div className="w-full max-w-lg rounded-2xl border border-current/15 p-6">
-        <div className="flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-text-secondary">
+        <div className="flex items-center gap-2 text-xs uppercase tracking-[0.05em] text-text-secondary">
           <span aria-hidden className="inline-block h-1.5 w-1.5 rounded-full bg-current opacity-60" />
           Incident
         </div>

@@ -1,6 +1,6 @@
 import { useId, useState } from "react";
-import { Button } from "@nous-research/ui/ui/components/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/components/card";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Refus } from "@/components/Refus";
 import { AGENTS } from "@/lib/agentique";
 import { vigil, type CleEtape, type EtapeProjet } from "@/lib/vigil";

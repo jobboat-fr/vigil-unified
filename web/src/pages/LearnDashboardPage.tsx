@@ -4,7 +4,7 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-} from "@nous-research/ui/ui/components/card";
+} from "@/components/ui/card";
 import { useLearnRole } from "@/lib/supabase";
 import LearnDashboardApprenant from "@/pages/LearnDashboardApprenant";
 import LearnDashboardFormateur from "@/pages/LearnDashboardFormateur";

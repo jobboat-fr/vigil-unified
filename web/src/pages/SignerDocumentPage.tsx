@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Skeleton } from "@/components/EmptyState";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/components/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getDocumentALire, messageAccueil, oublierAccueil, signerDocument, type DocumentALire } from "@/lib/accueil";
 
 /**

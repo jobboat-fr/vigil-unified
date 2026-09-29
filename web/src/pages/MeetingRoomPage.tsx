@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/components/card";
-import { Button } from "@nous-research/ui/ui/components/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { vigil, googleMeet, streamRoomCouncil, type Room, type CouncilRecord, type SseEvent, type LiveIntervention, type MeetingSummary, type MeetBotStatus, type AvatarSession } from "@/lib/vigil";
 import { LiveRoom } from "@/components/LiveRoom";
 import { EcartsEmargement } from "@/components/EcartsEmargement";

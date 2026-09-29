@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button } from "@nous-research/ui/ui/components/button";
+import { Button } from "@/components/ui/button";
 import { vigil, type Artifact } from "@/lib/vigil";
 import { expliquerCourt } from "@/lib/refus";
 

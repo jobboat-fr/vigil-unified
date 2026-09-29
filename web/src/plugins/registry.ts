@@ -20,10 +20,10 @@ import React, {
 import { api, fetchJSON, authedFetch, buildWsUrl, buildWsAuthParam } from "@/lib/api";
 import { cn, timeAgo, isoTimeAgo } from "@/lib/utils";
 import { Badge } from "@nous-research/ui/ui/components/badge";
-import { Button } from "@nous-research/ui/ui/components/button";
+import { Button } from "@/components/ui/button";
 import { Checkbox } from "@nous-research/ui/ui/components/checkbox";
 import { Select, SelectOption } from "@nous-research/ui/ui/components/select";
-import { Card, CardHeader, CardTitle, CardContent } from "@nous-research/ui/ui/components/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@nous-research/ui/ui/components/input";
 import { Label } from "@nous-research/ui/ui/components/label";
 import { Separator } from "@nous-research/ui/ui/components/separator";

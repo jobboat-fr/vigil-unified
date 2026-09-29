@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { Button } from "@nous-research/ui/ui/components/button";
+import { Button } from "@/components/ui/button";
 
 /**
  * Une adresse qui n'existe pas.
@@ -15,7 +15,7 @@ export default function PageIntrouvable() {
   return (
     <div className="flex min-h-0 flex-1 items-center justify-center px-4 py-10">
       <div className="w-full max-w-lg rounded-2xl border border-current/15 p-6">
-        <div className="text-xs uppercase tracking-[0.18em] text-text-secondary">Adresse inconnue</div>
+        <div className="text-xs uppercase tracking-[0.05em] text-text-secondary">Adresse inconnue</div>
         <h1 className="mt-3 text-lg font-semibold">Il n'y a rien à cette adresse</h1>
         <p className="mt-2 break-all font-mono text-xs text-text-secondary">{pathname}</p>
         <p className="mt-3 text-sm">

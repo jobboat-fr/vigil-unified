@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState, lazy, Suspense } from "react";
 import { usePageHeader } from "@/contexts/usePageHeader";
-import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/components/card";
-import { Button } from "@nous-research/ui/ui/components/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Link, useSearchParams } from "react-router-dom";
 import { vigil, type Artifact, type BrainstormPlan } from "@/lib/vigil";
 import { useLearnRole } from "@/lib/supabase";

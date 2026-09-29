@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import { Button } from "@nous-research/ui/ui/components/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/components/card";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EnTetePage } from "@/components/EnTetePage";
 import { Refus } from "@/components/Refus";
 import { SqueletteEcran } from "@/components/EmptyState";
@@ -159,14 +159,14 @@ export default function MesSalariesPage() {
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
             <label className="flex flex-col gap-1.5">
-              <span className="text-xs font-medium uppercase tracking-[0.14em] text-text-secondary">
+              <span className="text-xs font-medium uppercase tracking-[0.05em] text-text-secondary">
                 Nom et prénom
               </span>
               <input className={champ} value={nom} maxLength={120}
                      onChange={(e) => setNom(e.target.value)} placeholder="Camille Martin" />
             </label>
             <label className="flex flex-col gap-1.5">
-              <span className="text-xs font-medium uppercase tracking-[0.14em] text-text-secondary">
+              <span className="text-xs font-medium uppercase tracking-[0.05em] text-text-secondary">
                 Adresse e-mail
               </span>
               <input className={champ} value={email} maxLength={254} inputMode="email"

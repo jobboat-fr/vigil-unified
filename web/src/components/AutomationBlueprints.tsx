@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { Clock, Wand2 } from "lucide-react";
-import { Button } from "@nous-research/ui/ui/components/button";
+import { Button } from "@/components/ui/button";
 import { Select, SelectOption } from "@nous-research/ui/ui/components/select";
 import { Spinner } from "@nous-research/ui/ui/components/spinner";
-import { Card, CardContent } from "@nous-research/ui/ui/components/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@nous-research/ui/ui/components/input";
 import { Label } from "@nous-research/ui/ui/components/label";
 import { Badge } from "@nous-research/ui/ui/components/badge";

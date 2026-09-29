@@ -6,7 +6,7 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-} from "@nous-research/ui/ui/components/card";
+} from "@/components/ui/card";
 import { getVault, getVaultUrl, uploadVault, LearnError, type VaultObject } from "@/lib/learn";
 import { expliquerCourt } from "@/lib/refus";
 import { humaniser } from "@/lib/mots";
