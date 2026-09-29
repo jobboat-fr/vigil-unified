@@ -307,7 +307,11 @@ class CreerProjet(_Strict):
 @router.post("")
 async def creer_projet(body: CreerProjet, user: dict = Depends(scoped_user)) -> dict[str, Any]:
     """Un projet vide : les étapes viennent ensuite, une à une."""
-    row = await db_insert(_PROJETS, {"user_id": _uid(user), "title": body.titre, "etapes": {}})
+    uid = _uid(user)
+    plafond = droits_agents.PLAFONDS_GRATUITS["projets"]
+    miens = await db_select(_PROJETS, filters={"user_id": uid}, columns="id", limit=plafond + 1)
+    await droits_agents.verifier_plafond(uid, "projets", len(miens))
+    row = await db_insert(_PROJETS, {"user_id": uid, "title": body.titre, "etapes": {}})
     if row is None:
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail={"error": "projet_non_enregistre"})
     return {"ok": True, "data": {**_resume(row), "etapes": _etapes_ordonnees(row.get("etapes"))}}

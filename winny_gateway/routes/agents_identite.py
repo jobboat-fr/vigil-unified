@@ -117,4 +117,8 @@ async def abonnements(user: dict = Depends(get_current_user)) -> dict[str, Any]:
     """Les agents ouverts à la personne connectée — ce que l'application affiche, décidé ici."""
     uid = str(user.get("sub") or "")
     e = await droits_agents.etat(uid)
-    return {"ok": True, "data": {"agents": e["agents"], "motif": e["motif"], "mode": droits_agents.mode()}}
+    return {"ok": True, "data": {"agents": e["agents"], "motif": e["motif"], "mode": droits_agents.mode(),
+                                 "formule": e.get("formule"), "plafonds": e.get("plafonds", {}),
+                                 # Les plafonds de l'offre gratuite, pour la page « Nos offres » :
+                                 # une seule source, ici, plutôt qu'une copie dans l'application.
+                                 "plafonds_gratuits": dict(droits_agents.PLAFONDS_GRATUITS)}}

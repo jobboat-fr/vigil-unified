@@ -51,6 +51,13 @@ export interface Explication {
   reessayable: boolean;
   /** La référence de requête, quand il y en a une. */
   reference?: string;
+  /**
+   * Un refus d'offre (402) : de quoi montrer l'offre d'entrée après « D'accord » (Azer, 29/09).
+   * `agent` : l'agent refusé ; `ressource` : un plafond de l'offre gratuite. `peutSouscrire` :
+   * seule l'administration de l'organisme souscrit — les autres rôles voient l'offre et à qui
+   * s'adresser, jamais un bouton qui mène à « accès réservé ».
+   */
+  offre?: { agent?: "azzmin" | "azzco" | "azzcom" | null; ressource?: string; peutSouscrire: boolean };
 }
 
 /** La forme commune de `LearnError` et `GatewayError` — on ne dépend d'aucune des deux. */
@@ -207,6 +214,20 @@ export function expliquer(erreur: unknown, quoi?: string): Explication {
         reference,
       };
     }
+    const agentRefuse = (["azzmin", "azzco", "azzcom"] as const).find((a) => a === detail?.agent) ?? null;
+    const peutSouscrire = detail?.role === "admin" || detail?.role === "super_admin";
+    // Le plafond de l'offre gratuite (29/09) : ce n'est pas un agent qui manque, c'est une
+    // formule payante — la plus petite suffit à lever tous les plafonds.
+    if (code === "plafond_offre_gratuite") {
+      return {
+        registre: "offre",
+        titre: "L'offre gratuite s'arrête ici",
+        detail: phrasePrete(e) ?? "Une formule payante ouvre la plateforme sans plafond.",
+        reessayable: false,
+        reference,
+        offre: { ressource: typeof detail?.ressource === "string" ? detail.ressource : undefined, peutSouscrire },
+      };
+    }
     // Le verrou d'abonnement des agents (29/09) dit quel rôle il a refusé : seule
     // l'administration de l'organisme ouvre /abonnement, les autres y trouveraient
     // « accès réservé ». À eux, on dit à qui s'adresser plutôt que de montrer un bouton.
@@ -217,6 +238,7 @@ export function expliquer(erreur: unknown, quoi?: string): Explication {
         detail: `${phrasePrete(e) ?? "Cette fonction n'est pas comprise dans votre offre actuelle."} L'abonnement se souscrit par l'administration de votre organisme.`,
         reessayable: false,
         reference,
+        offre: { agent: agentRefuse, peutSouscrire: false },
       };
     }
     return {
@@ -226,6 +248,7 @@ export function expliquer(erreur: unknown, quoi?: string): Explication {
       geste: { texte: "Voir l'abonnement", vers: "/abonnement" },
       reessayable: false,
       reference,
+      offre: code === "abonnement_requis" ? { agent: agentRefuse, peutSouscrire: true } : undefined,
     };
   }
 

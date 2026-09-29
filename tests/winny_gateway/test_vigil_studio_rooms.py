@@ -103,7 +103,7 @@ def _data(resp):
 def test_blank_canvas_creates_artifact_with_empty_canvas(client):
     art = _data(client.post("/v1/artifacts/blank-canvas", json={"title": "Board A"}))
     assert art["title"] == "Board A"
-    assert art["canvas"] == {"nodes": [], "edges": [], "table": {"columns": ["Action item", "Owner", "Due"], "rows": []}}
+    assert art["canvas"] == {"nodes": [], "edges": [], "table": {"columns": ["Action", "Responsable", "Échéance"], "rows": []}}
     assert art["id"]
 
 

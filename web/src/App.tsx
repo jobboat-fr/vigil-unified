@@ -135,6 +135,8 @@ import type { StatusResponse } from "@/lib/api";
  */
 const AssistantChatPage = lazy(() => import("@/pages/AssistantChatPage"));
 const AbonnementPage = lazy(() => import("@/pages/AbonnementPage"));
+// « Voir tout ce que nous proposons » : ouverte à tous les rôles, d'où l'absence d'entrée de menu gardée.
+const OffresPage = lazy(() => import("@/pages/OffresPage"));
 const ProduitsPage = lazy(() => import("@/pages/ProduitsPage"));
 const PageIntrouvable = lazy(() => import("@/pages/PageIntrouvable"));
 const ConfigPage = lazy(() => import("@/pages/ConfigPage"));
@@ -294,6 +296,7 @@ const BUILTIN_ROUTES_CORE: Record<string, ComponentType> = {
   // VIGIL workspace
   "/ops-team": OpsTeamPage,
   "/abonnement": AbonnementPage,
+  "/offres": OffresPage,
   "/produits": ProduitsPage,
   "/connections": ConnectionsPage,
   "/approvals": ApprovalsPage,

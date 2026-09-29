@@ -577,14 +577,19 @@ class BlankCanvasBody(BaseModel):
 
 @router.post("/blank-canvas")
 async def create_blank_canvas(body: BlankCanvasBody, user: dict = Depends(scoped_user)) -> dict[str, Any]:
-    """Create an empty canvas artifact so the user can jump straight onto a board."""
+    """Un tableau vierge, sans agent — la seule création du Studio ouverte à l'offre gratuite,
+    donc la seule que son plafond concerne (les autres passent déjà par l'abonnement AZZCO)."""
+    uid = _uid(user)
+    plafond = droits_agents.PLAFONDS_GRATUITS["artefacts"]
+    miens = await db_select("artifacts", filters={"user_id": uid}, columns="id", limit=plafond + 1)
+    await droits_agents.verifier_plafond(uid, "artefacts", len(miens))
     row = await db_insert("artifacts", {
-        "user_id": _uid(user),
-        "title": (body.title or "New board")[:120],
+        "user_id": uid,
+        "title": (body.title or "Nouveau tableau")[:120],
         "kind": "report",
-        "brief": "Brainstorming board",
+        "brief": "Tableau de réflexion",
         "text_dump": "",
-        "canvas": {"nodes": [], "edges": [], "table": {"columns": ["Action item", "Owner", "Due"], "rows": []}},
+        "canvas": {"nodes": [], "edges": [], "table": {"columns": ["Action", "Responsable", "Échéance"], "rows": []}},
         "status": "draft",
         "version": 1,
     })

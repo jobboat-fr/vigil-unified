@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { AGENTS, PRIX_PACK_AGENTS, useAbonnementAgents } from "@/lib/agentique";
 
@@ -11,6 +12,7 @@ import { AGENTS, PRIX_PACK_AGENTS, useAbonnementAgents } from "@/lib/agentique";
  */
 export default function AbonnementPage() {
   const { estAbonne, enPreparation } = useAbonnementAgents();
+  const naviguer = useNavigate();
   const total = AGENTS.reduce((n, a) => n + a.prix, 0);
   const pack = PRIX_PACK_AGENTS;
 
@@ -27,9 +29,13 @@ export default function AbonnementPage() {
       {enPreparation && (
         <Card>
           <CardContent className="py-4 text-sm">
-            <b>Bientôt disponible.</b> Le paiement en ligne n&apos;est pas encore ouvert : les
-            agents restent verrouillés pour tout le monde. Écrivez-nous pour être prévenu de
-            l&apos;ouverture, ou pour un essai encadré.
+            <b>Le paiement en ligne n&apos;est pas encore ouvert.</b> Pour souscrire dès maintenant,
+            ou pour un essai encadré, écrivez-nous : nous ouvrons l&apos;abonnement de votre
+            organisme à la main.
+            <span className="mt-3 flex flex-wrap gap-2">
+              <Button size="sm" onClick={() => naviguer("/aide#demande")}>Nous écrire</Button>
+              <Button size="sm" outlined onClick={() => naviguer("/offres")}>Comparer les offres</Button>
+            </span>
           </CardContent>
         </Card>
       )}

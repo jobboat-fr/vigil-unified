@@ -602,8 +602,15 @@ export const vigil = {
   agents: {
     /** Le verdict d'abonnement de la passerelle — seule source de ce qui est ouvert. */
     abonnements: () =>
-      vigilCall<{ agents: Record<"azzmin" | "azzco" | "azzcom", boolean>; motif: string | null; mode: string }>(
-        "GET", "/v1/agents/abonnements"),
+      vigilCall<{
+        agents: Record<"azzmin" | "azzco" | "azzcom", boolean>;
+        motif: string | null;
+        mode: string;
+        /** super_admin | contrat_hbs | payant | gratuit — décidé par la passerelle (29/09). */
+        formule?: "super_admin" | "contrat_hbs" | "payant" | "gratuit" | null;
+        plafonds?: Record<string, number>;
+        plafonds_gratuits?: Record<string, number>;
+      }>("GET", "/v1/agents/abonnements"),
   },
   connect: {
     status: () => vigilCall<ConnectStatus>("GET", "/v1/connect/status"),

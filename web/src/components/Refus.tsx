@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { OffreEntree } from "@/components/OffreEntree";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { referenceCourte } from "@/lib/reference";
@@ -56,6 +58,8 @@ export function Refus({
 }) {
   const x: Explication = expliquer(erreur, quoi);
   const naviguer = useNavigate();
+  // Un refus d'offre se lit d'abord ; « D'accord » montre ensuite l'offre d'entrée.
+  const [offreVue, setOffreVue] = useState(false);
 
   return (
     <div
@@ -77,7 +81,15 @@ export function Refus({
           <p className="mt-1.5 text-sm leading-relaxed text-text-secondary">{x.detail}</p>
         )}
 
-        {(x.reessayable && onReessayer) || x.geste ? (
+        {x.offre ? (
+          offreVue ? (
+            <OffreEntree offre={x.offre} />
+          ) : (
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <Button size="sm" onClick={() => setOffreVue(true)}>D'accord</Button>
+            </div>
+          )
+        ) : (x.reessayable && onReessayer) || x.geste ? (
           <div className="mt-4 flex flex-wrap items-center gap-2">
             {x.reessayable && onReessayer && (
               <Button size="sm" onClick={onReessayer}>

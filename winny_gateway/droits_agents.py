@@ -55,6 +55,33 @@ SURFACES: dict[str, str | None] = {
 }
 
 
+# ── Les formules d'accès (Azer, 29/09) ─────────────────────────────────────────────────
+#
+# contrat_hbs : HBS FORMATION, par l'Accord de collaboration — la plateforme (Art. 2.1) et les
+#               trois agents (Art. 2.5), inclus dans l'abonnement de maintenance tant qu'aucun
+#               tarif n'est notifié (Art. 2.7). Codé en dur, parce que c'est le contrat qui le
+#               donne, pas un paiement. Tout compte de l'organisme HBS en hérite — y compris
+#               la personne qui a acheté une formation HBS ou un agent par HBS.
+#               Le privilège agents est révocable (Art. 2.6) : CONTRAT_HBS_AGENTS=revoque le
+#               ferme sans toucher au reste, et HBS retombe sur ses abonnements réels.
+# payant      : un autre organisme qui détient une formule payante (plateforme `vtlvs` ou un
+#               agent). Toute la plateforme ; les agents, eux, un par un, selon l'abonnement.
+# gratuit     : un organisme sans rien de payé. Pas d'agent, et des plafonds (PLAFONDS_GRATUITS).
+#
+# L'offre d'entrée montrée après un refus se déduit des prix fixés par Azer (lib/agentique.ts
+# côté application) : l'agent refusé, ou le moins cher (AZZCOM) pour un plafond gratuit.
+SLUG_CONTRAT = "hbs"
+FORMULES = ("super_admin", "contrat_hbs", "payant", "gratuit")
+
+#: Seule l'offre gratuite est plafonnée : toute formule payante ouvre la plateforme entière.
+PLAFONDS_GRATUITS: dict[str, int] = {"projets": 1, "artefacts": 5}
+_NOMS_RESSOURCES = {"projets": ("projet", "projets"), "artefacts": ("document du Studio", "documents du Studio")}
+
+
+def _contrat_hbs_agents_actif() -> bool:
+    return (os.getenv("CONTRAT_HBS_AGENTS") or "actif").strip().lower() != "revoque"
+
+
 def mode() -> str:
     m = (os.getenv("AGENTS_ABONNEMENT_MODE") or "observe").strip().lower()
     return m if m in ("observe", "enforce") else "enforce"
@@ -66,25 +93,60 @@ async def _profil(user_id: str) -> dict[str, Any] | None:
     return rows[0] if rows else None
 
 
-async def _abonnements_organisme(tenant_id: str | None) -> set[str]:
+async def _organisme(tenant_id: str | None) -> tuple[str | None, set[str]]:
+    """Le slug de l'organisme et ses abonnements."""
     if not tenant_id:
-        return set()
+        return None, set()
     rows = await db_select("learn_tenants", filters={"id": tenant_id},
-                           columns="abonnements", limit=1, allow_unscoped=True)
-    return set((rows[0].get("abonnements") or []) if rows else [])
+                           columns="slug,abonnements", limit=1, allow_unscoped=True)
+    if not rows:
+        return None, set()
+    return rows[0].get("slug"), set(rows[0].get("abonnements") or [])
 
 
 async def etat(user_id: str) -> dict[str, Any]:
     """Les agents ouverts à cette personne, et pourquoi. Aucun modèle, aucune supposition."""
     p = await _profil(user_id)
     if p is None:
-        return {"compte": None, "role": None, "motif": None, "agents": {a: False for a in AGENTS}}
+        return {"compte": None, "role": None, "motif": None, "formule": "gratuit",
+                "plafonds": dict(PLAFONDS_GRATUITS), "agents": {a: False for a in AGENTS}}
     if p.get("role") == "super_admin":
-        return {"compte": "vtlvs", "role": "super_admin", "motif": "super_admin",
-                "agents": {a: True for a in AGENTS}}
-    abos = await _abonnements_organisme(p.get("tenant_id"))
+        return {"compte": "vtlvs", "role": "super_admin", "motif": "super_admin", "formule": "super_admin",
+                "plafonds": {}, "agents": {a: True for a in AGENTS}}
+    slug, abos = await _organisme(p.get("tenant_id"))
+    if slug == SLUG_CONTRAT:
+        agents = {a: True for a in AGENTS} if _contrat_hbs_agents_actif() else {a: a in abos for a in AGENTS}
+        return {"compte": "vtlvs", "role": p.get("role"), "motif": "contrat_hbs", "formule": "contrat_hbs",
+                "plafonds": {}, "agents": agents}
+    formule = "payant" if abos else "gratuit"
     return {"compte": "vtlvs", "role": p.get("role"), "motif": "abonnement_organisme" if abos else None,
+            "formule": formule, "plafonds": {} if abos else dict(PLAFONDS_GRATUITS),
             "agents": {a: a in abos for a in AGENTS}}
+
+
+async def verifier_plafond(user_id: str, ressource: str, deja: int) -> None:
+    """Lève 402 si l'offre gratuite atteint son plafond pour `ressource` (`deja` = le compte actuel).
+
+    Appliqué dès `observe` : ce plafond n'a jamais été ouvert, il n'y a donc pas de parcours
+    existant à ne pas casser. Base injoignable → on laisse passer : un plafond de volume ne
+    justifie pas de bloquer une personne qui travaille (au contraire du verrou des agents).
+    """
+    try:
+        e = await etat(user_id)
+    except Exception:  # noqa: BLE001
+        return
+    limite = e.get("plafonds", {}).get(ressource)
+    if limite is None or deja < limite:
+        return
+    un, plusieurs = _NOMS_RESSOURCES.get(ressource, (ressource, ressource))
+    logger.info("Plafond de l'offre gratuite atteint (%s).", ressource,
+                extra={"evenement": "offre.plafond_gratuit", "ressource": ressource, "utilisateur": user_id,
+                       "limite": limite, "role": e.get("role")})
+    raise HTTPException(status_code=402, detail={
+        "error": "plafond_offre_gratuite", "ressource": ressource, "limite": limite, "role": e.get("role"),
+        "message": (f"L'offre gratuite comprend {limite} {un if limite == 1 else plusieurs}. "
+                    "Une formule payante ouvre la plateforme sans plafond."),
+    })
 
 
 def _ouvert(e: dict[str, Any], surface: str) -> bool:
