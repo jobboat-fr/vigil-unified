@@ -59,3 +59,14 @@ describe("refus d'offre lu en une ligne → fenêtre d'offre", () => {
     }
   });
 });
+
+describe("lien vers les journaux", () => {
+  it("cherche la référence exacte dans Loki, tous services", async () => {
+    const { lienJournaux } = await import("./reference");
+    const u = new URL(lienJournaux("3c824844aa55bb66cc77dd88ee99ff00"));
+    expect(u.origin).toBe("https://grafana.vtlvs.com");
+    const panes = JSON.parse(u.searchParams.get("panes")!);
+    expect(panes.a.queries[0].expr).toBe('{service=~".+"} |= "3c824844aa55bb66cc77dd88ee99ff00"');
+    expect(panes.a.datasource).toBe("loki-vtlvs");
+  });
+});

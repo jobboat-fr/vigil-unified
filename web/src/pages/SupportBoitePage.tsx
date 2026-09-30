@@ -2,11 +2,18 @@ import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { support, type Demande } from "@/lib/compte";
 import { expliquerCourt } from "@/lib/refus";
+import { lienJournaux } from "@/lib/reference";
+import { useLearnRole } from "@/lib/supabase";
+
+// La référence technique qu'une demande venue d'un écran d'erreur porte (passerelle, 29/09).
+const REFERENCE = /référence technique : ([0-9a-f]{8,32})/;
 
 const STATUTS: Record<Demande["status"], string> = { open: "À traiter", answered: "Répondu", closed: "Clos" };
 
 /** Les demandes d'aide de l'organisme (l'éditeur voit toutes les demandes, y compris celles du site). */
 export default function SupportBoitePage() {
+  // Grafana est un outil d'exploitation : le lien vers les journaux ne s'affiche qu'au super_admin.
+  const exploitation = useLearnRole().role === "super_admin";
   const [filtre, setFiltre] = useState<Demande["status"] | "">("open");
   const [demandes, setDemandes] = useState<Demande[] | null>(null);
   const [ouverte, setOuverte] = useState<string | null>(null);
@@ -66,6 +73,12 @@ export default function SupportBoitePage() {
                   <div key={i} className={`rounded-lg p-3 text-sm ${m.auteur === "staff" ? "ml-6 bg-current/5" : "mr-6 border border-current/10"}`}>
                     <p className="mb-1 text-xs text-text-secondary">{m.auteur === "staff" ? "Réponse" : m.email} · {new Date(m.le).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })}</p>
                     <p className="whitespace-pre-wrap">{m.texte}</p>
+                    {exploitation && REFERENCE.test(m.texte) && (
+                      <a href={lienJournaux(m.texte.match(REFERENCE)![1])} target="_blank" rel="noreferrer"
+                        className="mt-2 inline-block text-xs font-medium underline">
+                        Voir l'incident dans les journaux ↗
+                      </a>
+                    )}
                   </div>
                 ))}
                 <textarea rows={3} value={reponse} onChange={(e) => setReponse(e.target.value)} placeholder="Votre réponse"

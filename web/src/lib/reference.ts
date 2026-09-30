@@ -34,6 +34,21 @@ export function derniereReference(): string | undefined {
   return DERNIERES[0];
 }
 
+/**
+ * La recherche de cette référence dans les journaux (Grafana → Loki, tous services, 7 jours).
+ * Réservé à l'exploitation VTLVS : Grafana est un outil interne, protégé par son propre compte.
+ */
+export function lienJournaux(reference: string): string {
+  const panes = {
+    a: {
+      datasource: "loki-vtlvs",
+      queries: [{ refId: "A", expr: `{service=~".+"} |= "${reference}"`, datasource: { type: "loki", uid: "loki-vtlvs" } }],
+      range: { from: "now-7d", to: "now" },
+    },
+  };
+  return `https://grafana.vtlvs.com/explore?schemaVersion=1&orgId=1&panes=${encodeURIComponent(JSON.stringify(panes))}`;
+}
+
 /** Les huit premiers caractères : assez pour retrouver la ligne, assez court pour être
  *  lu au téléphone. */
 export function referenceCourte(reference: string | null | undefined): string {

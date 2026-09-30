@@ -84,6 +84,7 @@ import { Spinner } from "@nous-research/ui/ui/components/spinner";
 import { Typography } from "@nous-research/ui/ui/components/typography/index";
 import { cn } from "@/lib/utils";
 import { ecranAccesRefuse } from "@/components/AccesRefuse";
+import { cheminsRefuses, navAllowed } from "@/lib/gardeRoutes";
 import { Backdrop } from "@/components/Backdrop";
 import { SidebarFooter } from "@/components/SidebarFooter";
 import { SidebarStatusStrip, gatewayLine } from "@/components/SidebarStatusStrip";
@@ -106,7 +107,7 @@ import { useSystemActions } from "@/contexts/useSystemActions";
 import type { SystemAction } from "@/contexts/system-actions-context";
 // VIGIL × WinnyWoo product pages (added on top of the agent runtime)
 import { supabase, useLearnRole } from "@/lib/supabase";
-import { usePagePermissions, type PagePermissions } from "@/lib/vigil";
+import { usePagePermissions } from "@/lib/vigil";
 import { AssistantIndisponible } from "@/components/AssistantIndisponible";
 import { getAccueilRecent } from "@/lib/accueil";
 import { poserOrganisme } from "@/lib/organisme";
@@ -697,12 +698,12 @@ export default function App() {
   const pagePerms = usePagePermissions(learnRole);
   // Tant qu'un document requis n'est pas signé, l'API refuse tout sauf l'accueil (0041) :
   // l'application ne montre donc que l'accueil, au lieu d'écrans qui échoueraient un à un.
-  const [aSigner, setASigner] = useState(false);
+  const [aSignerLu, setASigner] = useState(false);
+  // Sans rôle, ou pour le super_admin, rien à signer : dérivé ici plutôt que remis à `false`
+  // dans l'effet (un setState synchrone dans un effet relance un rendu en cascade).
+  const aSigner = Boolean(learnRole && learnRole !== "super_admin" && aSignerLu);
   useEffect(() => {
-    if (!learnRole || learnRole === "super_admin") {
-      setASigner(false);
-      return;
-    }
+    if (!learnRole || learnRole === "super_admin") return;
     let vivant = true;
     getAccueilRecent()
       .then((e) => {
@@ -753,17 +754,9 @@ export default function App() {
       // (réservé au super_admin, comme /profiles) s'ouvrait pour qui la tapait (audit du 29/09).
       ...(roleResolu
         ? (() => {
-            const refuses = [CHAT_NAV_ITEM, ...BUILTIN_NAV_REST].filter(
-              (n) => (n.roles || n.capability) && !navAllowed(n, learnRole, pagePerms),
-            );
-            const entrees: [string, ComponentType][] = refuses.map((n) => [n.path, ecranAccesRefuse(n.label)]);
-            for (const chemin of Object.keys(BUILTIN_ROUTES_CORE)) {
-              const parent = refuses
-                .filter((n) => chemin.startsWith(`${n.path}/`))
-                .sort((x, y) => y.path.length - x.path.length)[0];
-              if (parent) entrees.push([chemin, ecranAccesRefuse(parent.label)]);
-            }
-            return Object.fromEntries(entrees);
+            const refuses = cheminsRefuses(
+              [CHAT_NAV_ITEM, ...BUILTIN_NAV_REST], Object.keys(BUILTIN_ROUTES_CORE), learnRole, pagePerms);
+            return Object.fromEntries([...refuses].map(([chemin, libelle]) => [chemin, ecranAccesRefuse(libelle)]));
           })()
         : {}),
     }),
@@ -1234,7 +1227,8 @@ function SidebarNavLink({
   t,
 }: SidebarNavLinkProps) {
   const { path, label, labelKey, icon: Icon } = item;
-  const liRef = useRef<HTMLLIElement>(null);
+  // L'ancre de l'infobulle, tenue en état : lire une ref pendant le rendu ne se met pas à jour.
+  const [li, setLi] = useState<HTMLLIElement | null>(null);
   const [hovered, setHovered] = useState(false);
 
   const navLabel = labelKey
@@ -1243,7 +1237,7 @@ function SidebarNavLink({
 
   return (
     <li
-      ref={liRef}
+      ref={setLi}
       onMouseEnter={collapsed ? () => setHovered(true) : undefined}
       onMouseLeave={collapsed ? () => setHovered(false) : undefined}
     >
@@ -1298,8 +1292,8 @@ function SidebarNavLink({
         )}
       </NavLink>
 
-      {collapsed && hovered && liRef.current && (
-        <SidebarTooltip anchor={liRef.current} label={navLabel} warmRef={tooltipWarmRef} />
+      {collapsed && hovered && li && (
+        <SidebarTooltip anchor={li} label={navLabel} warmRef={tooltipWarmRef} />
       )}
     </li>
   );
@@ -1390,14 +1384,15 @@ function SystemActionButton({
   tooltipWarmRef,
 }: SystemActionButtonProps) {
   const { icon: Icon, label, runningLabel, spin } = item;
-  const liRef = useRef<HTMLLIElement>(null);
+  // L'ancre de l'infobulle, tenue en état : lire une ref pendant le rendu ne se met pas à jour.
+  const [li, setLi] = useState<HTMLLIElement | null>(null);
   const [hovered, setHovered] = useState(false);
   const busy = isPending || isActionRunning;
   const displayLabel = isActionRunning ? runningLabel : label;
 
   return (
     <li
-      ref={liRef}
+      ref={setLi}
       onMouseEnter={collapsed ? () => setHovered(true) : undefined}
       onMouseLeave={collapsed ? () => setHovered(false) : undefined}
     >
@@ -1454,8 +1449,8 @@ function SystemActionButton({
         )}
       </button>
 
-      {collapsed && hovered && liRef.current && (
-        <SidebarTooltip anchor={liRef.current} label={displayLabel} warmRef={tooltipWarmRef} />
+      {collapsed && hovered && li && (
+        <SidebarTooltip anchor={li} label={displayLabel} warmRef={tooltipWarmRef} />
       )}
     </li>
   );
@@ -1467,12 +1462,12 @@ function SidebarIconWithTooltip({
   label,
   tooltipWarmRef,
 }: SidebarIconWithTooltipProps) {
-  const ref = useRef<HTMLDivElement>(null);
+  const [ancre, setAncre] = useState<HTMLDivElement | null>(null);
   const [hovered, setHovered] = useState(false);
 
   return (
     <div
-      ref={ref}
+      ref={setAncre}
       className={cn(
         "relative w-fit",
         collapsed && "group/icon",
@@ -1489,8 +1484,8 @@ function SidebarIconWithTooltip({
         />
       )}
 
-      {collapsed && hovered && ref.current && (
-        <SidebarTooltip anchor={ref.current} label={label} warmRef={tooltipWarmRef} />
+      {collapsed && hovered && ancre && (
+        <SidebarTooltip anchor={ancre} label={label} warmRef={tooltipWarmRef} />
       )}
     </div>
   );
@@ -1498,7 +1493,7 @@ function SidebarIconWithTooltip({
 
 function GatewayDot({ collapsed, status, tooltipWarmRef }: GatewayDotProps) {
   const { t } = useI18n();
-  const ref = useRef<HTMLDivElement>(null);
+  const [ancre, setAncre] = useState<HTMLDivElement | null>(null);
   const [hovered, setHovered] = useState(false);
 
   const toneToColor: Record<string, string> = {
@@ -1522,7 +1517,7 @@ function GatewayDot({ collapsed, status, tooltipWarmRef }: GatewayDotProps) {
 
   return (
     <div
-      ref={ref}
+      ref={setAncre}
       className={cn(
         "hidden lg:flex py-3 pl-[1.625rem] transition-opacity duration-300",
         collapsed ? "lg:opacity-100" : "lg:opacity-0 lg:h-0 lg:py-0 lg:overflow-hidden",
@@ -1540,26 +1535,34 @@ function GatewayDot({ collapsed, status, tooltipWarmRef }: GatewayDotProps) {
         className={cn("h-1.5 w-1.5 rounded-full", color)}
       />
 
-      {hovered && ref.current && (
-        <SidebarTooltip anchor={ref.current} label={label} warmRef={tooltipWarmRef} />
+      {hovered && ancre && (
+        <SidebarTooltip anchor={ancre} label={label} warmRef={tooltipWarmRef} />
       )}
     </div>
   );
 }
 
-function SidebarTooltip({ anchor, label, warmRef }: SidebarTooltipProps) {
+/**
+ * Quand une infobulle de la barre latérale s'est ouverte ou fermée pour la dernière fois.
+ * Une variable de module, pas une ref : elle ne sert qu'à décider, à l'ouverture, si le survol
+ * enchaîne (« chaud », sans animation) — et une ref ne se lit pas pendant le rendu.
+ */
+let derniereInfobulle = 0;
+
+function SidebarTooltip({ anchor, label }: SidebarTooltipProps) {
   const rect = anchor.getBoundingClientRect();
   const sidebar = document.getElementById("app-sidebar");
   const sidebarRight = sidebar?.getBoundingClientRect().right ?? rect.right;
 
-  const isWarm = warmRef ? Date.now() - warmRef.current < 300 : false;
+  // Lu une fois, à l'ouverture : l'infobulle « chaude » (survol enchaîné) s'ouvre sans délai.
+  const [isWarm] = useState(() => Date.now() - derniereInfobulle < 300);
 
   useEffect(() => {
-    if (warmRef) warmRef.current = Date.now();
+    derniereInfobulle = Date.now();
     return () => {
-      if (warmRef) warmRef.current = Date.now();
+      derniereInfobulle = Date.now();
     };
-  }, [warmRef]);
+  }, []);
 
   return createPortal(
     <span
@@ -1605,12 +1608,7 @@ interface NavItem {
   capability?: [string, string];
 }
 
-function navAllowed(n: NavItem, role: string | null, perms: PagePermissions | null): boolean {
-  if (n.capability && perms) {
-    return perms.grants[n.capability[0]]?.includes(n.capability[1]) ?? false;
-  }
-  return !n.roles || (!!role && n.roles.includes(role));
-}
+// navAllowed : lib/gardeRoutes (testé là-bas, avec le garde des routes).
 
 interface SidebarIconWithTooltipProps {
   children: ReactNode;
